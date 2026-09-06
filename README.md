@@ -12,17 +12,39 @@ MKM is a large-scale RPG conversion mod for Minecraft. The project targets a mid
 
 ## Current milestone
 
-`0.0.1 — Foundation`
+`0.0.1 — Foundation`, with the first Character Core prototype now implemented on the foundation branch.
 
-The current milestone is deliberately technical. Before content production begins, MKM must establish a stable common bootstrap, dedicated-server-safe architecture, build automation, persistence boundaries, networking conventions and project documentation.
+The foundation establishes a stable common bootstrap, dedicated-server-safe architecture, build automation, persistence boundaries, synchronization conventions and project documentation. Character Core now proves the first real RPG state path: persistent player XP and prototype attributes, derived levels, owner-only synchronization and administrative/debug commands.
 
 See:
 
 - `docs/GAME_DESIGN.md` — product vision and RPG design pillars
 - `docs/ARCHITECTURE.md` — technical boundaries and system design
+- `docs/CHARACTER_CORE.md` — current player-state implementation and prototype progression
 - `docs/ROADMAP.md` — implementation sequence
 - `docs/TECHNICAL_DECISIONS.md` — durable architectural decisions
 - `AGENTS.md` — rules for AI-assisted development
+
+## Character Core prototype
+
+Current player RPG state contains:
+
+- total experience;
+- derived level;
+- Strength, Dexterity and Vitality prototype attributes;
+- a versioned persistence schema;
+- copy-on-death persistence;
+- server-to-owner synchronization.
+
+Development commands:
+
+```text
+/mkm stats
+/mkm xp add <amount>
+/mkm xp set <amount>
+```
+
+XP mutation commands require gamemaster permission.
 
 ## Development
 
@@ -42,7 +64,7 @@ Useful commands:
 
 On Windows PowerShell or Command Prompt, use `gradlew.bat` instead of `./gradlew` when appropriate.
 
-The repository CI builds the project on every push and pull request.
+GitHub Actions builds the project on every push and pull request and uploads the resulting mod JAR as a short-lived workflow artifact after a successful build.
 
 ## Engineering principles
 

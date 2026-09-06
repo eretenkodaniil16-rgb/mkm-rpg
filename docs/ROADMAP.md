@@ -6,34 +6,48 @@ This roadmap is ordered by architectural risk and integration value, not by cont
 
 Goal: establish a trustworthy technical baseline before RPG content work.
 
+Implemented on the foundation branch:
+
 - project identity (`mkm`, package namespace, metadata);
 - minimal common bootstrap with no template/demo content;
 - CI build on push and pull request;
+- build artifact upload after successful CI;
 - dedicated-server-safe code boundary;
 - architecture, game-design and agent guidance documents;
-- verify client development startup;
+- persistence mechanism selected: NeoForge player data attachment;
+- server-to-client Character Core synchronization selected: owner-only attachment synchronization;
+- first Character Core persistence prototype implemented to exercise the chosen boundaries.
+
+Still required before closing the foundation milestone:
+
+- verify client development startup and in-game commands;
+- verify save/exit/reload persistence;
+- verify death/respawn copy behavior in a running game;
 - verify dedicated server startup;
-- choose and document persistence mechanism for RPG player data;
-- choose and document networking pattern for player-state synchronization;
-- add the first minimal test infrastructure where useful.
+- add focused automated tests where the first stable domain rules justify them.
 
 Exit criterion: a clean technical skeleton that can support Character Core without rewriting the bootstrap.
 
 ## 0.0.2 — Character Core
 
-Goal: prove persistent, synchronized RPG state.
+Goal: prove persistent, synchronized RPG state and then turn the current prototype into a tested gameplay foundation.
 
-Initial scope:
+Current prototype scope already present:
 
 - player RPG state container;
-- level and experience;
-- a small attribute set used only for the prototype;
-- deterministic derived-stat calculation;
-- save/load persistence;
-- server-to-client synchronization;
-- `/mkm` debug/admin commands for inspection and controlled mutation;
-- schema/version strategy;
-- tests for progression and serialization rules.
+- total experience and derived level;
+- prototype Strength, Dexterity and Vitality attributes;
+- save/load persistence through a versioned attachment schema;
+- owner-only server-to-client synchronization;
+- `/mkm stats`, `/mkm xp add` and `/mkm xp set` commands.
+
+Next Character Core work:
+
+- runtime verification on client and dedicated server;
+- progression/serialization tests;
+- decide how attribute points/build choices are acquired;
+- expose synchronized state through the first client HUD/character presentation only after the data path is verified;
+- evaluate schema migration mechanics before the first public save format is considered stable.
 
 Avoid committing to the final progression model until the prototype produces useful gameplay feedback.
 
