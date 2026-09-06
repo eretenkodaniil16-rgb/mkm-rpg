@@ -7,7 +7,6 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.neoforge.registries.RegisterEvent;
 
@@ -34,7 +33,7 @@ public final class MkmCreativeTabs {
                 MAIN,
                 CreativeModeTab.builder()
                         .title(Component.translatable("itemGroup.mkm.main"))
-                        .icon(() -> new ItemStack(Items.NETHER_STAR))
+                        .icon(() -> new ItemStack(MkmItems.CODEX.get()))
                         .withSearchBar()
                         .displayItems(MkmItems.ITEMS.getEntries())
                         .build()));

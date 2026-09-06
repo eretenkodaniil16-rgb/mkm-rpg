@@ -51,7 +51,9 @@ Command diagnostics:
 
 ## MKM creative tab
 
-MKM registers its own searchable Creative Mode inventory tab. The tab is backed by the central MKM item registry, so future MKM items can appear there automatically rather than being manually added to creative inventory code one by one. Until the first content items are registered, the tab uses a vanilla Nether Star as its icon.
+MKM registers its own searchable Creative Mode inventory tab. The tab is backed by the central MKM item registry, so future MKM items appear there automatically rather than being manually added to creative inventory code one by one.
+
+The first registered item is `mkm:codex` (`MKM Codex` / `Кодекс MKM`). It currently has no gameplay action; it provides a real MKM-owned tab icon and a stable first item that can later become the entry point for character, quest or codex UI.
 
 ## Development
 
