@@ -72,14 +72,43 @@ The project will grow through vertical slices. Empty package trees, universal ma
 
 **Consequence:** Extension points should be added when a second real use case or a clearly established invariant justifies them.
 
+## TD-008 — Player RPG persistence uses NeoForge data attachments
+
+**Status:** Accepted
+
+Player-specific RPG state is stored in a registered NeoForge `AttachmentType` on the player entity. The initial schema uses a `MapCodec`, and the attachment opts into copy-on-death behavior.
+
+**Rationale:** Character state is entity-specific. NeoForge attachments provide native entity ownership, persistence and respawn-copy semantics without inventing a parallel save-file layer or misusing world-scoped `SavedData`.
+
+**Consequence:** `mkm:character` becomes the persistence root for the first Character Core schema. Schema evolution must remain deliberate and versioned.
+
+## TD-009 — Character state uses owner-only attachment synchronization
+
+**Status:** Accepted
+
+Server-to-client Character Core synchronization uses NeoForge attachment synchronization and sends the player attachment only to its owning player.
+
+**Rationale:** The platform already synchronizes attachment creation/replacement and initial state. A second custom synchronization protocol would duplicate lifecycle behavior and create additional desynchronization risk.
+
+**Consequence:** Custom network payloads are reserved for cases the attachment mechanism does not express well, especially validated client-to-server gameplay intent such as future ability activation.
+
+## TD-010 — Character state is immutable and level is derived
+
+**Status:** Accepted
+
+The initial `CharacterData` value is immutable. Mutations replace the whole attachment value through `setData`. Total experience is persisted; character level is derived from progression rules instead of stored independently.
+
+**Rationale:** Immutable replacement gives persistence/synchronization a clear mutation boundary. Deriving level prevents duplicated persisted values from drifting apart.
+
+**Consequence:** Balance changes to the prototype XP curve can be isolated in progression rules without changing the stored schema. Any future field that can be safely derived should be evaluated before being persisted redundantly.
+
 ## Pending decisions
 
-The following require implementation research/prototyping before acceptance:
+The following still require implementation research/prototyping before acceptance:
 
-- concrete NeoForge 26.2 persistence API and schema strategy for player RPG state;
-- concrete networking registration/payload conventions;
 - final attribute/progression model;
 - degree of vanilla combat replacement;
 - ability resource/cooldown model;
+- client-to-server payload conventions for interactive abilities and UI actions;
 - quest/dialogue data representation;
 - compatibility/migration policy for the first public release.

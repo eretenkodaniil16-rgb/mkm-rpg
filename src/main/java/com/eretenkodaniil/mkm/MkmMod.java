@@ -1,9 +1,13 @@
 package com.eretenkodaniil.mkm;
 
+import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.character.CharacterEvents;
+import com.eretenkodaniil.mkm.command.MkmCommands;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
+import net.neoforged.neoforge.common.NeoForge;
 import org.slf4j.Logger;
 
 /**
@@ -19,8 +23,11 @@ public final class MkmMod {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public MkmMod(IEventBus modEventBus, ModContainer modContainer) {
-        // Keep the bootstrap intentionally small. Domain systems will register themselves through
-        // dedicated bootstrap/registry classes as they are introduced.
+        CharacterAttachments.register(modEventBus);
+
+        NeoForge.EVENT_BUS.addListener(CharacterEvents::onPlayerLoggedIn);
+        NeoForge.EVENT_BUS.addListener(MkmCommands::onRegisterCommands);
+
         LOGGER.info("MKM bootstrap initialized");
     }
 }
