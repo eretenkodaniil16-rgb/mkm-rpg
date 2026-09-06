@@ -12,9 +12,9 @@ MKM is a large-scale RPG conversion mod for Minecraft. The project targets a mid
 
 ## Current milestone
 
-`0.0.1 — Foundation`, with the first Character Core prototype now implemented on the foundation branch.
+`0.0.2 — Character Core`
 
-The foundation establishes a stable common bootstrap, dedicated-server-safe architecture, build automation, persistence boundaries, synchronization conventions and project documentation. Character Core now proves the first real RPG state path: persistent player XP and prototype attributes, derived levels, owner-only synchronization and administrative/debug commands.
+The foundation establishes a stable common bootstrap, dedicated-server-safe architecture, build automation, persistence boundaries, synchronization conventions and project documentation. Character Core now proves the first real RPG state path: persistent player XP and prototype attributes, derived levels, owner-only synchronization and diagnostic/admin commands.
 
 See:
 
@@ -36,15 +36,22 @@ Current player RPG state contains:
 - copy-on-death persistence;
 - server-to-owner synchronization.
 
-Development commands:
+Command diagnostics:
 
 ```text
+/mkm
+/mkm help
+/mkm ping
 /mkm stats
 /mkm xp add <amount>
 /mkm xp set <amount>
 ```
 
-XP mutation commands require gamemaster permission.
+`/mkm`, `/mkm ping` and `/mkm stats` are available to normal players. XP mutation commands require gamemaster/operator permission (or cheats in an integrated single-player world).
+
+## MKM creative tab
+
+MKM registers its own searchable Creative Mode inventory tab. The tab is backed by the central MKM item registry, so future MKM items can appear there automatically rather than being manually added to creative inventory code one by one. Until the first content items are registered, the tab uses a vanilla Nether Star as its icon.
 
 ## Development
 

@@ -2,7 +2,8 @@ package com.eretenkodaniil.mkm;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.CharacterEvents;
-import com.eretenkodaniil.mkm.command.MkmCommands;
+import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
+import com.eretenkodaniil.mkm.registry.MkmItems;
 import com.mojang.logging.LogUtils;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -23,10 +24,11 @@ public final class MkmMod {
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public MkmMod(IEventBus modEventBus, ModContainer modContainer) {
+        MkmItems.register(modEventBus);
+        MkmCreativeTabs.register(modEventBus);
         CharacterAttachments.register(modEventBus);
 
         NeoForge.EVENT_BUS.addListener(CharacterEvents::onPlayerLoggedIn);
-        NeoForge.EVENT_BUS.addListener(MkmCommands::onRegisterCommands);
 
         LOGGER.info("MKM bootstrap initialized");
     }
