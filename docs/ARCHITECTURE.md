@@ -49,23 +49,29 @@ Cross-domain communication should prefer explicit service calls/events with well
 
 ## Persistence
 
-Persistent RPG state will need an explicit schema and versioning strategy before the first stable save format is introduced.
+Player-specific RPG state uses a NeoForge data attachment on the player entity. The first registered root is `mkm:character`.
+
+The Character Core attachment is serialized with a `MapCodec`, carries an explicit schema version and currently opts into copy-on-death. It is represented as an immutable value; authoritative changes replace the attachment instead of mutating hidden fields in place.
 
 Key principles:
 
 - stable identifiers over Java class names;
-- version saved payloads once compatibility matters;
+- version saved payloads from the first schema;
 - keep derived values derivable where practical rather than persisting redundant copies;
 - distinguish player-scoped, world-scoped and encounter-scoped data;
 - define migration behavior before changing persistent schemas after public releases.
 
-The concrete NeoForge storage mechanism should be selected and documented when Character Core is implemented, after checking the current 26.2 APIs.
+The player attachment decision does not imply that every future persistent system belongs on a player. World/campaign state and large encounter state should use storage appropriate to their ownership and lifecycle.
 
-## Networking
+## Networking and synchronization
 
-Networking should be introduced only for state that requires synchronization or client requests.
+Character Core server-to-client state uses NeoForge's built-in attachment synchronization. The `mkm:character` attachment is synchronized only to its owning player.
 
-Rules:
+This avoids creating a second protocol for a lifecycle that the attachment system already understands. Replacing the immutable attachment through `setData` is also the synchronization boundary for normal Character Core mutations.
+
+Custom payloads should be introduced only when needed, especially for client-to-server intent or for state that does not fit attachment synchronization.
+
+Rules for custom networking:
 
 - validate all client-originated requests server-side;
 - prefer intent messages ("attempt ability X at target Y") over client-authored results ("deal 20 damage");
@@ -121,6 +127,6 @@ The `0.0.1` foundation is complete when the project can demonstrate:
 2. reproducible CI build;
 3. client dev startup;
 4. dedicated-server-safe bootstrap and server startup;
-5. an explicit persistence approach ready for Character Core;
-6. an explicit networking approach ready for synchronized player RPG state;
+5. a working player persistence path ready for Character Core iteration;
+6. a working synchronization path for player RPG state;
 7. project rules/documentation sufficient for further AI-assisted development.
