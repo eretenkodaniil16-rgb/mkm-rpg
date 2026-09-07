@@ -177,9 +177,6 @@ public final class CharacterSheetScreen extends Screen {
         graphics.text(font, Component.translatable("screen.mkm.character.vit", data.vitality()), contentLeft, statsTop + 45, TEXT);
 
         CharacterDerivedStats derived = CharacterDerivedStats.from(data);
-        String initiative = derived.initiativeBonus() >= 0
-                ? "+" + derived.initiativeBonus()
-                : Integer.toString(derived.initiativeBonus());
 
         graphics.text(font, Component.translatable("screen.mkm.character.derived"), split, statsTop, BORDER);
         graphics.text(
@@ -196,7 +193,7 @@ public final class CharacterSheetScreen extends Screen {
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.initiative", initiative),
+                Component.translatable("screen.mkm.character.max_stamina", derived.maxStaminaPreview()),
                 split,
                 statsTop + 45,
                 TEXT);
