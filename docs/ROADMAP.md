@@ -39,44 +39,63 @@ Current prototype scope already present:
 - prototype Strength, Dexterity and Vitality attributes;
 - save/load persistence through a versioned attachment schema;
 - owner-only server-to-client synchronization;
-- `/mkm stats`, `/mkm xp add` and `/mkm xp set` commands.
+- `/mkm stats`, `/mkm xp add` and `/mkm xp set` commands;
+- first read-only Character Sheet client interface.
+
+Current design work:
+
+- accepted player-modifier vocabulary is documented in `PLAYER_MODIFIERS.md`;
+- real-time Minecraft combat is the foundation; ordinary combat will not use initiative/turn order;
+- magic is planned as a first-class path and already has reserved player modifier categories for spell power, mana, magical defense and support magic.
 
 Next Character Core work:
 
 - runtime verification on client and dedicated server;
 - progression/serialization tests;
+- define the final primary attribute set;
+- map primary attributes to the accepted player modifiers;
 - decide how attribute points/build choices are acquired;
-- expose synchronized state through the first client HUD/character presentation only after the data path is verified;
-- evaluate schema migration mechanics before the first public save format is considered stable.
+- evaluate schema migration mechanics before replacing the prototype STR/DEX/VIT format;
+- update Character Sheet after the attribute model is accepted.
 
-Avoid committing to the final progression model until the prototype produces useful gameplay feedback.
+Avoid committing to final numerical formulas until the attribute-to-modifier mapping is reviewed.
 
 ## 0.0.3 — Combat Core
 
-Goal: introduce RPG combat rules without making the entire game depend on a monolithic combat manager.
+Goal: add RPG depth while preserving Minecraft's real-time combat loop and avoiding a monolithic combat manager.
 
 Candidate scope:
 
-- damage context and calculation pipeline;
-- derived offense/defense values;
-- critical/mitigation rules for the prototype;
+- authoritative player modifier snapshot and aggregation rules;
+- real-time damage context and calculation pipeline around valid Minecraft combat interactions;
+- physical offense/defense values and mitigation;
+- slashing, piercing and blunt physical damage categories;
+- stagger/poise boundary;
+- stamina boundary for advanced actions rather than normal attacks;
+- critical/backstab/weak-point condition hooks without mandatory hidden accuracy/evasion rolls;
 - status/effect application boundary;
 - server-authoritative combat events;
 - diagnostics/testing hooks.
 
-## 0.0.4 — Ability Framework
+Weapon-specific modifiers, weapon mastery and detailed equipment rules should build on this core after the player modifier model is stable.
 
-Goal: support one active and one passive ability end-to-end.
+## 0.0.4 — Ability and Magic Framework
+
+Goal: support active/passive abilities and the first spell end-to-end without bypassing server authority.
 
 Candidate scope:
 
-- stable ability identifiers;
+- stable ability/spell identifiers;
 - eligibility and targeting;
-- resource/cooldown representation;
+- stamina/mana/resource and cooldown representation;
 - server validation/execution;
 - client request and feedback;
+- spell damage/healing/barrier hooks into the shared player modifier model;
+- first magic penetration/resistance path;
 - data definition where justified;
-- UI exposure for the prototype ability.
+- UI exposure for the prototype ability/spell.
+
+Final spell schools and elemental taxonomy should be defined through gameplay/lore design rather than assumed in advance.
 
 ## 0.0.5 — First RPG Vertical Slice
 
@@ -85,7 +104,7 @@ Goal: integrate systems into a small playable scenario rather than expanding fra
 Target content:
 
 - one build/progression path;
-- one active ability;
+- one active ability or spell;
 - one equipment interaction;
 - one NPC;
 - one enemy archetype;
@@ -101,8 +120,8 @@ The vertical slice must survive save/load and work with the project's multiplaye
 Only after the slice is reviewed should the project scale into larger domains such as:
 
 - class/build trees and perk systems;
-- deeper ability/spell systems;
-- equipment/loot progression;
+- deeper spell schools and magic systems;
+- equipment/loot progression and weapon mastery;
 - faction and reputation systems;
 - richer dialogue/check mechanics;
 - quest graphs and world-state consequences;
