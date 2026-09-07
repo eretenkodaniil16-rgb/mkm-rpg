@@ -12,9 +12,9 @@ MKM is a large-scale RPG conversion mod for Minecraft. The project targets a mid
 
 ## Current milestone
 
-`0.0.2 — Character Core`
+`0.0.1 — Foundation`, with the first Character Core prototype now implemented on the foundation branch.
 
-The foundation establishes a stable common bootstrap, dedicated-server-safe architecture, build automation, persistence boundaries, synchronization conventions and project documentation. Character Core now proves the first real RPG state path: persistent player XP and prototype attributes, derived levels, owner-only synchronization and diagnostic/admin commands.
+The foundation establishes a stable common bootstrap, dedicated-server-safe architecture, build automation, persistence boundaries, synchronization conventions and project documentation. Character Core now proves the first real RPG state path: persistent player XP and prototype attributes, derived levels, owner-only synchronization and administrative/debug commands.
 
 See:
 
@@ -36,7 +36,7 @@ Current player RPG state contains:
 - copy-on-death persistence;
 - server-to-owner synchronization.
 
-Command diagnostics:
+Development commands:
 
 ```text
 /mkm
@@ -47,13 +47,28 @@ Command diagnostics:
 /mkm xp set <amount>
 ```
 
-`/mkm`, `/mkm ping` and `/mkm stats` are available to normal players. XP mutation commands require gamemaster/operator permission (or cheats in an integrated single-player world).
+XP mutation commands require gamemaster permission.
+
+## Character Sheet v1
+
+The first player-facing RPG screen is now implemented on the client:
+
+- press `K` to open it;
+- right-click the `MKM Codex` to open it;
+- shows player name, level, total XP and XP progress;
+- shows STR / DEX / VIT;
+- shows provisional derived previews for max health, physical power and initiative;
+- reports whether synchronized Character Core data is present;
+- shows the loaded MKM version so the screen doubles as a runtime diagnostic;
+- includes placeholder tabs for Skills and Quests without pretending those systems exist yet.
+
+The derived values are presentation-only in this milestone. Combat Core will decide which of them become authoritative gameplay rules.
 
 ## MKM creative tab
 
 MKM registers its own searchable Creative Mode inventory tab. The tab is backed by the central MKM item registry, so future MKM items appear there automatically rather than being manually added to creative inventory code one by one.
 
-The first registered item is `mkm:codex` (`MKM Codex` / `Кодекс MKM`). It currently has no gameplay action; it provides a real MKM-owned tab icon and a stable first item that can later become the entry point for character, quest or codex UI.
+The first registered item is `mkm:codex` (`MKM Codex` / `Кодекс MKM`). It is now the client entry point for the Character Sheet while remaining a stable first MKM-owned item and creative-tab icon.
 
 ## Development
 
