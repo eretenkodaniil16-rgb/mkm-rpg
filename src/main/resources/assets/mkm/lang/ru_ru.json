@@ -21,10 +21,17 @@
   "screen.mkm.character.attributes": "Характеристики",
   "screen.mkm.character.str": "СИЛ  %s",
   "screen.mkm.character.dex": "ЛОВ  %s",
-  "screen.mkm.character.vit": "ВЫН  %s",
+  "screen.mkm.character.vit": "ЖИВ  %s",
   "screen.mkm.character.derived": "Производные · прототип",
   "screen.mkm.character.max_health": "Макс. здоровье: %s",
   "screen.mkm.character.physical_power": "Физическая сила: %s",
-  "screen.mkm.character.initiative": "Инициатива: %s",
-  "screen.mkm.character.derived_note": "Производные пока только отображаются; Combat Core позже сделает их игровыми правилами."
+  "screen.mkm.character.max_stamina": "Макс. выносливость: %s",
+  "screen.mkm.character.derived_note": "Производные пока только отображаются; Combat Core позже сделает их игровыми правилами.",
+  "attribute.mkm.strength": "Сила",
+  "attribute.mkm.dexterity": "Ловкость",
+  "attribute.mkm.vitality": "Живучесть",
+  "attribute.mkm.endurance": "Выносливость",
+  "attribute.mkm.intelligence": "Интеллект",
+  "attribute.mkm.willpower": "Воля",
+  "attribute.mkm.perception": "Восприятие"
 }
