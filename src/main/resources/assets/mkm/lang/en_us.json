@@ -25,6 +25,13 @@
   "screen.mkm.character.derived": "Derived preview",
   "screen.mkm.character.max_health": "Max health: %s",
   "screen.mkm.character.physical_power": "Physical power: %s",
-  "screen.mkm.character.initiative": "Initiative: %s",
-  "screen.mkm.character.derived_note": "Derived values are preview-only until Combat Core makes them authoritative."
+  "screen.mkm.character.max_stamina": "Max stamina: %s",
+  "screen.mkm.character.derived_note": "Derived values are preview-only until Combat Core makes them authoritative.",
+  "attribute.mkm.strength": "Strength",
+  "attribute.mkm.dexterity": "Dexterity",
+  "attribute.mkm.vitality": "Vitality",
+  "attribute.mkm.endurance": "Endurance",
+  "attribute.mkm.intelligence": "Intelligence",
+  "attribute.mkm.willpower": "Willpower",
+  "attribute.mkm.perception": "Perception"
 }
