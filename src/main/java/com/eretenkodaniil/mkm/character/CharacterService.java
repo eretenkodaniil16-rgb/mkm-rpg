@@ -1,5 +1,6 @@
 package com.eretenkodaniil.mkm.character;
 
+import com.eretenkodaniil.mkm.character.attribute.PrimaryAttribute;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Player;
 
@@ -41,5 +42,30 @@ public final class CharacterService {
                 ? Long.MAX_VALUE
                 : currentExperience + amount;
         return setExperience(player, updatedExperience);
+    }
+
+    /**
+     * Authoritative mutation boundary for primary attributes. CharacterData performs the final
+     * storage clamp, so all callers share the same invariant.
+     */
+    public static CharacterData setAttribute(ServerPlayer player, PrimaryAttribute attribute, int value) {
+        CharacterData current = get(player);
+        CharacterData updated = current.withAttribute(attribute, value);
+        player.setData(CharacterAttachments.CHARACTER, updated);
+        return updated;
+    }
+
+    public static CharacterData addAttribute(ServerPlayer player, PrimaryAttribute attribute, int amount) {
+        CharacterData current = get(player);
+        long candidate = (long) current.attribute(attribute) + amount;
+        int safeValue;
+        if (candidate > Integer.MAX_VALUE) {
+            safeValue = Integer.MAX_VALUE;
+        } else if (candidate < Integer.MIN_VALUE) {
+            safeValue = Integer.MIN_VALUE;
+        } else {
+            safeValue = (int) candidate;
+        }
+        return setAttribute(player, attribute, safeValue);
     }
 }

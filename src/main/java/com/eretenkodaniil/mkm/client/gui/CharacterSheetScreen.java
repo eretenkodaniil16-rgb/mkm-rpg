@@ -175,6 +175,10 @@ public final class CharacterSheetScreen extends Screen {
         graphics.text(font, Component.translatable("screen.mkm.character.str", data.strength()), contentLeft, statsTop + 17, TEXT);
         graphics.text(font, Component.translatable("screen.mkm.character.dex", data.dexterity()), contentLeft, statsTop + 31, TEXT);
         graphics.text(font, Component.translatable("screen.mkm.character.vit", data.vitality()), contentLeft, statsTop + 45, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.end", data.endurance()), contentLeft, statsTop + 59, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.int", data.intelligence()), contentLeft, statsTop + 73, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.wil", data.willpower()), contentLeft, statsTop + 87, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.per", data.perception()), contentLeft, statsTop + 101, TEXT);
 
         CharacterDerivedStats derived = CharacterDerivedStats.from(data);
 
@@ -193,9 +197,33 @@ public final class CharacterSheetScreen extends Screen {
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_stamina", derived.maxStaminaPreview()),
+                Component.translatable("screen.mkm.character.attack_speed", derived.attackSpeedPercent() + "%"),
                 split,
                 statsTop + 45,
+                TEXT);
+        graphics.text(
+                font,
+                Component.translatable("screen.mkm.character.max_stamina", derived.maxStaminaPreview()),
+                split,
+                statsTop + 59,
+                TEXT);
+        graphics.text(
+                font,
+                Component.translatable("screen.mkm.character.magic_power", derived.magicPowerPercent() + "%"),
+                split,
+                statsTop + 73,
+                TEXT);
+        graphics.text(
+                font,
+                Component.translatable("screen.mkm.character.max_mana", derived.maxManaPreview()),
+                split,
+                statsTop + 87,
+                TEXT);
+        graphics.text(
+                font,
+                Component.translatable("screen.mkm.character.weak_point_damage", derived.weakPointDamagePercent() + "%"),
+                split,
+                statsTop + 101,
                 TEXT);
 
         graphics.text(
@@ -230,11 +258,11 @@ public final class CharacterSheetScreen extends Screen {
     }
 
     private int panelWidth() {
-        return Math.min(420, Math.max(240, width - 32));
+        return Math.min(460, Math.max(280, width - 32));
     }
 
     private int panelHeight() {
-        return Math.min(270, Math.max(220, height - 32));
+        return Math.min(330, Math.max(300, height - 32));
     }
 
     private int panelLeft() {

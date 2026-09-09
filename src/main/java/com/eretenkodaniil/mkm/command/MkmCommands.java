@@ -16,7 +16,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
- * Minimal diagnostics/admin surface for the Character Core prototype.
+ * Minimal diagnostics/admin surface for Character Core.
  *
  * <p>The class uses automatic event-bus subscription so command registration does not depend on
  * manual bootstrap listener wiring.</p>
@@ -76,7 +76,11 @@ public final class MkmCommands {
                         + " | XP: " + experienceText
                         + " | STR: " + data.strength()
                         + " | DEX: " + data.dexterity()
-                        + " | VIT: " + data.vitality()), false);
+                        + " | VIT: " + data.vitality()
+                        + " | END: " + data.endurance()
+                        + " | INT: " + data.intelligence()
+                        + " | WIL: " + data.willpower()
+                        + " | PER: " + data.perception()), false);
         return Command.SINGLE_SUCCESS;
     }
 

@@ -76,11 +76,11 @@ The project will grow through vertical slices. Empty package trees, universal ma
 
 **Status:** Accepted
 
-Player-specific RPG state is stored in a registered NeoForge `AttachmentType` on the player entity. The initial schema uses a `MapCodec`, and the attachment opts into copy-on-death behavior.
+Player-specific RPG state is stored in a registered NeoForge `AttachmentType` on the player entity. The schema uses a `MapCodec`, and the attachment opts into copy-on-death behavior.
 
 **Rationale:** Character state is entity-specific. NeoForge attachments provide native entity ownership, persistence and respawn-copy semantics without inventing a parallel save-file layer or misusing world-scoped `SavedData`.
 
-**Consequence:** `mkm:character` becomes the persistence root for the first Character Core schema. Schema evolution must remain deliberate and versioned.
+**Consequence:** `mkm:character` is the persistence root for Character Core. Schema evolution must remain deliberate and versioned.
 
 ## TD-009 — Character state uses owner-only attachment synchronization
 
@@ -96,19 +96,31 @@ Server-to-client Character Core synchronization uses NeoForge attachment synchro
 
 **Status:** Accepted
 
-The initial `CharacterData` value is immutable. Mutations replace the whole attachment value through `setData`. Total experience is persisted; character level is derived from progression rules instead of stored independently.
+`CharacterData` is immutable. Mutations replace the whole attachment value through `setData`. Total experience is persisted; character level is derived from progression rules instead of stored independently.
 
 **Rationale:** Immutable replacement gives persistence/synchronization a clear mutation boundary. Deriving level prevents duplicated persisted values from drifting apart.
 
 **Consequence:** Balance changes to the prototype XP curve can be isolated in progression rules without changing the stored schema. Any future field that can be safely derived should be evaluated before being persisted redundantly.
 
+## TD-011 — Seven primary attributes and versioned migration
+
+**Status:** Accepted
+
+Character Core uses seven persistent primary attributes: Strength, Dexterity, Vitality, Endurance, Intelligence, Willpower and Perception.
+
+Schema v2 adds END/INT/WIL/PER while preserving the schema-v1 XP/STR/DEX/VIT field names. Missing v2 attribute fields decode to the neutral default `10`.
+
+**Rationale:** Physical durability and stamina economy need separate build axes, as do offensive/technical magic and mana/mental resilience. Perception provides a distinct weak-point/ranged axis without introducing hidden accuracy rolls.
+
+**Consequence:** Future combat and magic systems consume derived modifier snapshots from these attributes rather than adding more ad-hoc persisted combat numbers. Attribute-to-modifier relationships distinguish primary and secondary influence, while numerical coefficients remain tunable Combat Core work.
+
 ## Pending decisions
 
 The following still require implementation research/prototyping before acceptance:
 
-- final attribute/progression model;
-- degree of vanilla combat replacement;
-- ability resource/cooldown model;
+- exact attribute-to-modifier coefficients, diminishing returns and caps;
+- ability resource/cooldown model beyond the accepted stamina/mana vocabulary;
 - client-to-server payload conventions for interactive abilities and UI actions;
 - quest/dialogue data representation;
+- whether social/reward systems justify additional persistent attributes such as Presence or Luck;
 - compatibility/migration policy for the first public release.

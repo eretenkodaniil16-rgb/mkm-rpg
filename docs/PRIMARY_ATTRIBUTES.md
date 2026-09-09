@@ -2,144 +2,172 @@
 
 ## Status
 
-This document defines the first reviewable MKM primary-attribute candidate set. It is deliberately introduced before any final numerical formulas or persistence migration.
-
-The current persisted `CharacterData` fields `strength`, `dexterity` and `vitality` remain the Character Core prototype. They are not yet migrated because changing the save schema before the attribute set is reviewed would create unnecessary compatibility work.
-
-The candidate set contains seven combat/build attributes:
+The seven-attribute set is now the accepted Character Core baseline and is persisted by `CharacterData` schema v2.
 
 | ID | Name | Abbrev. | Role |
 | --- | --- | --- | --- |
 | `strength` | Strength | STR | Raw physical force, heavy melee output, stagger and knockback. |
-| `dexterity` | Dexterity | DEX | Attack cadence, precision-oriented physical combat and mobility. |
+| `dexterity` | Dexterity | DEX | Attack cadence, weapon handling, mobility and agile physical combat. |
 | `vitality` | Vitality | VIT | Health, bodily resilience, recovery and resistance to physical pressure. |
 | `endurance` | Endurance | END | Stamina economy, sustained exertion, blocking endurance and movement endurance. |
 | `intelligence` | Intelligence | INT | Offensive spell scaling, spell shaping and magical penetration/control. |
-| `willpower` | Willpower | WIL | Mana economy, magical resistance, concentration, support magic and hostile-status resistance. |
+| `willpower` | Willpower | WIL | Mana economy, concentration, magical defense, support magic and status resistance. |
 | `perception` | Perception | PER | Weak-point exploitation, ranged effectiveness and situational attack quality. |
 
-This is a candidate set rather than a final balance commitment. Values, caps, point costs and level-up rules are intentionally unresolved.
+Default stored value is `10`; the current defensive storage clamp remains `1..100`. Those limits are storage invariants, not final balance caps.
 
-## Why Vitality and Endurance are separate
+## Persistence
 
-Health and stamina are intentionally separated so one attribute does not become the universally optimal defensive and action-economy choice.
+Schema v2 persists all seven attributes:
 
-- Vitality is about surviving damage and recovering from bodily stress.
-- Endurance is about how long the character can keep performing demanding actions.
+- `strength`
+- `dexterity`
+- `vitality`
+- `endurance`
+- `intelligence`
+- `willpower`
+- `perception`
 
-This also leaves room for a heavy build with high Vitality but mediocre stamina, or a mobile fighter with high Endurance but lower raw health.
+Schema-v1 saves remain loadable. END/INT/WIL/PER were absent in v1, so the v2 codec supplies the neutral default value `10` when those fields are missing. The in-memory value is then treated as schema v2.
 
-## Why Intelligence and Willpower are separate
+## Influence tiers
 
-Magic is planned as a first-class path rather than one generic `magic` statistic.
+Attribute-to-modifier relationships now distinguish two tiers:
 
-- Intelligence primarily governs offensive spell construction, scaling and technical control.
-- Willpower primarily governs magical resource economy, concentration, defensive magic and resistance.
+- **Primary** — the attribute is intended to be a major source of that modifier.
+- **Secondary** — the attribute may contribute, but should not dominate the modifier by itself.
 
-A future spell school may deliberately scale from one, both, or neither. The spell system must not assume every magical effect uses the same attribute formula.
-
-## Attribute-to-modifier influence
-
-The mapping below defines **influence relationships only**. It does not define coefficients.
-
-A modifier may receive input from more than one primary attribute and may also receive larger contributions from equipment, skills, buffs, weapon rules or spell definitions.
+This tiering resolves intentional double dependencies without committing to final numerical coefficients.
 
 ### Strength
 
-Primary influences:
+Primary:
 
 - `physical_power`
 - `melee_damage`
-- `armor_penetration`
 - `stagger_power`
 - `knockback_power`
+
+Secondary:
+
+- `armor_penetration`
 - `block_stability`
 
 ### Dexterity
 
-Primary influences:
+Primary:
 
 - `attack_speed`
 - `ranged_damage`
 - `backstab_damage`
-- `movement_speed`
 - `dodge_speed`
-- `dodge_distance`
 - `interaction_speed`
+
+Secondary:
+
+- `movement_speed`
+- `dodge_distance`
 
 ### Vitality
 
-Primary influences:
+Primary:
 
 - `max_health`
-- `health_regeneration`
 - `healing_received`
 - `physical_resistance`
+- `stagger_resistance`
+- `knockback_resistance`
+
+Secondary:
+
+- `health_regeneration`
 - `slashing_resistance`
 - `piercing_resistance`
 - `blunt_resistance`
-- `stagger_resistance`
-- `knockback_resistance`
 - `status_duration_resistance`
 
 ### Endurance
 
-Primary influences:
+Primary:
 
 - `max_stamina`
 - `stamina_regeneration`
 - `stamina_regen_delay`
 - `stamina_cost`
 - `dodge_cost`
+- `block_stability`
+
+Secondary:
+
 - `sprint_speed`
 - `jump_power`
 - `fall_damage_resistance`
-- `block_stability`
 
 ### Intelligence
 
-Primary influences:
+Primary:
 
 - `magic_power`
 - `spell_damage`
 - `magic_penetration`
-- `spell_critical_damage`
 - `cast_speed`
 - `spell_range`
+- `spell_status_power`
+
+Secondary:
+
+- `spell_critical_damage`
 - `spell_area`
 - `spell_projectile_speed`
 - `spell_duration`
-- `spell_status_power`
 
 ### Willpower
 
-Primary influences:
+Primary:
 
 - `max_mana`
 - `mana_regeneration`
 - `mana_regen_delay`
 - `mana_cost`
 - `magic_resistance`
-- `elemental_resistance`
 - `status_resistance`
-- `status_duration_resistance`
 - `concentration_stability`
 - `healing_power`
 - `barrier_power`
 
+Secondary:
+
+- `elemental_resistance`
+- `status_duration_resistance`
+
 ### Perception
 
-Primary influences:
+Primary:
 
-- `ranged_damage`
 - `critical_damage`
 - `weak_point_damage`
+
+Secondary:
+
+- `ranged_damage`
 - `backstab_damage`
 - `spell_range`
 
-## Modifiers intentionally not assigned to a primary attribute yet
+## Intentional multi-attribute dependencies
 
-Some accepted player modifiers should remain predominantly equipment-, skill- or system-driven until their design is clearer:
+The following overlaps are deliberate:
+
+- `block_stability`: primarily END, secondarily STR;
+- `ranged_damage`: primarily DEX, secondarily PER;
+- `backstab_damage`: primarily DEX, secondarily PER;
+- `spell_range`: primarily INT, secondarily PER;
+- `status_duration_resistance`: secondary input from both VIT and WIL.
+
+Equipment, skills, buffs, weapon rules and spell definitions may later contribute much more strongly than primary attributes to specific modifiers.
+
+## Modifiers still not driven by a primary attribute
+
+These remain predominantly system/equipment/skill-driven for now:
 
 - `armor`
 - `block_efficiency`
@@ -148,26 +176,20 @@ Some accepted player modifiers should remain predominantly equipment-, skill- or
 - `experience_gain`
 - `loot_bonus`
 
-This avoids forcing every modifier to scale from a base attribute simply for symmetry.
+## Current preview formulas
 
-## Social and reward attributes
+The Character Sheet exposes deliberately simple tuning previews so all seven attributes can be tested in-game:
 
-A social attribute such as Charisma/Presence and a reward-oriented attribute such as Luck are intentionally not added to this combat/build set yet. Dialogue checks, reputation, trade and loot systems should define their own needs before another persistent primary attribute is introduced.
+- VIT -> maximum health preview;
+- STR -> physical power preview;
+- DEX -> attack speed preview;
+- END -> maximum stamina preview;
+- INT -> magic power preview;
+- WIL -> maximum mana preview;
+- PER -> weak-point damage preview.
 
-If one of those systems proves that a new primary attribute is valuable, it should be added before the public persistence schema is declared stable.
-
-## Implementation boundary
-
-The Java domain vocabulary mirrors this candidate through `PrimaryAttribute`, `PlayerModifierId` and `PrimaryAttributeInfluence`.
-
-This code is deliberately formula-free. It gives later Character Core and Combat Core work compile-time identifiers and a reviewable influence graph without prematurely changing player saves.
+These previews are **not authoritative Combat Core formulas**. Their purpose is to verify persistence, synchronization, presentation and the qualitative role of each attribute before final coefficients, diminishing returns and caps are accepted.
 
 ## Next step
 
-Review this seven-attribute set and the influence graph. After approval:
-
-1. choose base values and allowed ranges;
-2. define how attribute points are acquired;
-3. define initial attribute-to-modifier coefficients and diminishing returns/caps;
-4. migrate `CharacterData` from the STR/DEX/VIT prototype to the approved schema;
-5. update the Character Sheet to display the full authoritative set.
+Define the modifier-definition layer: units, base values, aggregation semantics, caps and first numerical primary/secondary coefficients. Only then should Combat Core consume the derived modifier snapshot for real damage, stamina, movement and magic rules.
