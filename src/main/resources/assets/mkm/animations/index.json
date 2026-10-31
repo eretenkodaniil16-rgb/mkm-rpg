@@ -1,0 +1,20 @@
+{
+  "format": 1,
+  "clips": [
+    "sword/light_1.json",
+    "sword/light_2.json",
+    "sword/light_3.json",
+    "sword/dodge_0.json",
+    "sword/dodge_1.json",
+    "sword/dodge_2.json",
+    "sword/dodge_3.json",
+    "sword/dodge_4.json",
+    "sword/dodge_5.json",
+    "sword/dodge_6.json",
+    "sword/dodge_7.json",
+    "sword/combat_idle.json"
+  ],
+  "profiles": [
+    "profiles/one_handed_sword.json"
+  ]
+}
