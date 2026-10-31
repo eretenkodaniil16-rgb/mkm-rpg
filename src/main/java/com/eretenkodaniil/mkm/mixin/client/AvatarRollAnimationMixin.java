@@ -35,7 +35,7 @@ public abstract class AvatarRollAnimationMixin {
         // Rotate about the avatar's waist rather than the feet to avoid a
         // huge visual arc. Model animation tucks arms, legs and head in.
         stack.translate(0F, 0.75F * entityScale, 0F);
-        stack.mulPose(new Quaternionf().rotationAxis(
+        stack.rotate(new Quaternionf().rotationAxis(
                 CombatAnimationMath.rollRadians(p), axisX / norm, 0F, axisZ / norm));
         stack.translate(0F, -0.75F * entityScale, 0F);
     }
