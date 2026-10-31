@@ -1,0 +1,11 @@
+Third-party component: Fabric API
+Upstream: https://github.com/FabricMC/fabric-api
+Version: 0.165.0+26.3
+Copyright: FabricMC and contributors
+License: Apache License, Version 2.0
+License copy: third_party/FABRIC_API_LICENSE.txt
+
+MKM distributes the unmodified upstream Fabric API distribution as a nested
+mod via Fabric Loom include(). No Fabric API Java classes have been copied into
+MKM's own packages. Fabric Loader loads the official nested distribution and its
+individual API modules in accordance with its standard mod dependency system.
