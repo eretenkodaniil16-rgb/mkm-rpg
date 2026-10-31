@@ -3,6 +3,7 @@
   "item.mkm.codex": "Кодекс MKM",
   "key.categories.mkm.general": "MKM",
   "key.mkm.open_character_sheet": "Открыть лист персонажа",
+  "key.mkm.dodge": "Уклонение (боевой режим)",
   "screen.mkm.character.title": "Лист персонажа",
   "screen.mkm.character.close": "Закрыть",
   "screen.mkm.character.runtime": "MKM %s · клиент загружен",

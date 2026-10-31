@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
+import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -11,6 +12,8 @@ import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
+import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
 import org.lwjgl.glfw.GLFW;
 
@@ -37,6 +40,11 @@ public final class MkmClient {
         }
     };
 
+    private static final KeyMapping DODGE = new KeyMapping(
+            "key.mkm.dodge",
+            GLFW.GLFW_KEY_G,
+            CATEGORY);
+
     private MkmClient() {
     }
 
@@ -44,6 +52,28 @@ public final class MkmClient {
     private static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
         event.registerCategory(CATEGORY);
         event.register(OPEN_CHARACTER_SHEET);
+        event.register(DODGE);
+    }
+
+    @SubscribeEvent
+    private static void onClientTick(ClientTickEvent.Post event) {
+        Minecraft minecraft = Minecraft.getInstance();
+        while (DODGE.consumeClick()) {
+            if (minecraft.player == null || minecraft.screen != null || minecraft.getConnection() == null) {
+                continue;
+            }
+
+            byte direction = 0; // forward if no directional key is pressed
+            if (minecraft.options.keyDown.isDown()) {
+                direction = 1;
+            } else if (minecraft.options.keyLeft.isDown()) {
+                direction = 2;
+            } else if (minecraft.options.keyRight.isDown()) {
+                direction = 3;
+            }
+
+            ClientPacketDistributor.sendToServer(new DodgeRequest(direction));
+        }
     }
 
     @SubscribeEvent

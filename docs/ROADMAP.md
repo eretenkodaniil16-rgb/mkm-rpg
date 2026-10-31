@@ -62,9 +62,22 @@ Next Character Core work:
 
 Avoid committing to final numerical formulas until the attribute-to-modifier mapping is reviewed.
 
-## 0.0.3 — Combat Core
+## 0.0.3 — Action Combat (Variant C)
 
-Goal: add RPG depth while preserving Minecraft's real-time combat loop and avoiding a monolithic combat manager.
+Goal: move toward a deeper real-time Action-RPG without replacing Minecraft hit detection or introducing initiative/accuracy rolls.
+
+First functional slice (feature branch):
+
+- server-authoritative stamina with owner-only throttled synchronization;
+- direct-melee physical scaling through `PlayerModifierSnapshot`;
+- Shift + valid melee hit becomes a resource-gated heavy attack with recovery;
+- G sends validated dodge intent; server applies bounded directional impulse with cooldown;
+- transient mob poise builds from valid hits, decays, and briefly slows a staggered mob;
+- resource/math unit tests and synced stamina visible in Character Sheet.
+
+Not implemented yet: animation blending/combos, hitbox-specific strikes, true attack-animation interrupts, invulnerability frames, advanced enemy tells, weapon mastery, fully balanced mitigation and a dedicated Action-RPG HUD. These need runtime tests and further vertical slices.
+
+Original candidate scope follows.
 
 Candidate scope:
 
