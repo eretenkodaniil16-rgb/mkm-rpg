@@ -15,6 +15,8 @@ public final class MkmItems {
     private MkmItems() {}
 
     public static void initialize() {
-        CODEX.getDefaultInstance();
+        // Calling this static method initializes MkmItems and registers CODEX.
+        // Do NOT construct an ItemStack here: vanilla item components are not
+        // bound until after early Fabric entrypoints have finished.
     }
 }
