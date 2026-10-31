@@ -22,9 +22,13 @@ public final class ActionTimelineRules {
     }
 
     public static ActionTimeline beginDodge(ActionTimeline current, long now) {
-        if (!current.idle()) return null;
+        return beginDodge(current, now, DodgeDirection.FORWARD);
+    }
+
+    public static ActionTimeline beginDodge(ActionTimeline current, long now, byte direction) {
+        if (!current.idle() || direction < 0 || direction > DodgeDirection.LAST) return null;
         return new ActionTimeline(ActionTimeline.Kind.DODGE, ActionTimeline.Phase.DODGING,
-                0, now + DODGE_ACTIVE_TICKS, 0L);
+                0, now + DODGE_ACTIVE_TICKS, 0L, direction);
     }
 
     public static ActionTimeline advance(ActionTimeline current, long now) {
