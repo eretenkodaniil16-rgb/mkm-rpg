@@ -51,8 +51,8 @@ public final class CombatService {
         }
         // Action bar is interim feedback, not a permanent HUD (which will use synced attachment).
         if (now % 10L == 0 && next.stamina() < max - 0.1F) {
-            player.displayClientMessage(Component.literal(String.format(
-                    Locale.ROOT, "MKM  Stamina %.0f / %.0f", next.stamina(), max)), true);
+            player.sendOverlayMessage(Component.literal(String.format(
+                    Locale.ROOT, "MKM  Stamina %.0f / %.0f", next.stamina(), max)));
         }
     }
 
@@ -67,8 +67,8 @@ public final class CombatService {
             return false;
         }
         player.setData(CombatAttachments.PLAYER, next);
-        player.displayClientMessage(Component.literal(String.format(
-                Locale.ROOT, "Heavy strike  -%.0f stamina", cost)), true);
+        player.sendOverlayMessage(Component.literal(String.format(
+                Locale.ROOT, "Heavy strike  -%.0f stamina", cost)));
         return true;
     }
 
@@ -108,8 +108,8 @@ public final class CombatService {
         player.push(axis.x * scale, 0.06D, axis.z * scale);
         player.hurtMarked = true;
         player.setData(CombatAttachments.PLAYER, next);
-        player.displayClientMessage(Component.literal(String.format(
-                Locale.ROOT, "Dodge  -%.0f stamina", cost)), true);
+        player.sendOverlayMessage(Component.literal(String.format(
+                Locale.ROOT, "Dodge  -%.0f stamina", cost)));
     }
 
     private static CombatState fresh(

@@ -69,7 +69,7 @@ public final class CombatEvents {
             // Prototype stagger: strong temporary slowdown. A true attack-animation interrupt
             // will require validated AI/animation hooks rather than an unsafe entity freeze.
             target.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 25, 3));
-            attacker.displayClientMessage(Component.literal("MKM  STAGGER!"), true);
+            attacker.sendOverlayMessage(Component.literal("MKM  STAGGER!"));
         }
     }
 }

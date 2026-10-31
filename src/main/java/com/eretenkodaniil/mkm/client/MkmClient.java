@@ -59,7 +59,7 @@ public final class MkmClient {
     private static void onClientTick(ClientTickEvent.Post event) {
         Minecraft minecraft = Minecraft.getInstance();
         while (DODGE.consumeClick()) {
-            if (minecraft.player == null || minecraft.screen != null || minecraft.getConnection() == null) {
+            if (minecraft.player == null || minecraft.gui.screen() != null || minecraft.getConnection() == null) {
                 continue;
             }
 
