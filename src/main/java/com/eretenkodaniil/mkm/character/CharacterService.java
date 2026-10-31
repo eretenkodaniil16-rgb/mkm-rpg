@@ -12,22 +12,25 @@ public final class CharacterService {
     }
 
     public static CharacterData get(Player player) {
-        return player.getData(CharacterAttachments.CHARACTER);
+        return player.getAttachedOrCreate(CharacterAttachments.CHARACTER);
     }
 
     /**
      * Guarantees that a default attachment exists and explicitly synchronizes it to its owner.
      */
     public static CharacterData ensureAndSync(ServerPlayer player) {
-        CharacterData data = get(player);
-        player.syncData(CharacterAttachments.CHARACTER);
+        CharacterData data = player.getAttached(CharacterAttachments.CHARACTER);
+        if (data == null) {
+            data = new CharacterData();
+            player.setAttached(CharacterAttachments.CHARACTER, data);
+        }
         return data;
     }
 
     public static CharacterData setExperience(ServerPlayer player, long experience) {
         CharacterData current = get(player);
         CharacterData updated = current.withExperience(Math.max(0L, experience));
-        player.setData(CharacterAttachments.CHARACTER, updated);
+        player.setAttached(CharacterAttachments.CHARACTER, updated);
         return updated;
     }
 
@@ -51,7 +54,7 @@ public final class CharacterService {
     public static CharacterData setAttribute(ServerPlayer player, PrimaryAttribute attribute, int value) {
         CharacterData current = get(player);
         CharacterData updated = current.withAttribute(attribute, value);
-        player.setData(CharacterAttachments.CHARACTER, updated);
+        player.setAttached(CharacterAttachments.CHARACTER, updated);
         return updated;
     }
 

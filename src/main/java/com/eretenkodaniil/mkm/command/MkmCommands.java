@@ -1,6 +1,5 @@
 package com.eretenkodaniil.mkm.command;
 
-import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
@@ -8,15 +7,13 @@ import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.mojang.brigadier.Command;
+import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
 
 /**
  * Minimal diagnostics/admin surface for Character Core.
@@ -24,14 +21,12 @@ import net.neoforged.neoforge.event.RegisterCommandsEvent;
  * <p>The class uses automatic event-bus subscription so command registration does not depend on
  * manual bootstrap listener wiring.</p>
  */
-@EventBusSubscriber(modid = MkmMod.MOD_ID)
 public final class MkmCommands {
     private MkmCommands() {
     }
 
-    @SubscribeEvent
-    public static void onRegisterCommands(RegisterCommandsEvent event) {
-        event.getDispatcher().register(Commands.literal("mkm")
+    public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        dispatcher.register(Commands.literal("mkm")
                 .executes(context -> showHelp(context.getSource()))
                 .then(Commands.literal("help")
                         .executes(context -> showHelp(context.getSource())))
@@ -54,7 +49,6 @@ public final class MkmCommands {
                                                 context.getSource(),
                                                 LongArgumentType.getLong(context, "amount")))))));
 
-        MkmMod.LOGGER.info("Registered MKM commands: /mkm, /mkm ping, /mkm stats, /mkm modifiers, /mkm xp ...");
     }
 
     private static int showHelp(CommandSourceStack source) {

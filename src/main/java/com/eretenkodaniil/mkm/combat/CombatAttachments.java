@@ -1,22 +1,14 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.MkmMod;
-import java.util.function.Supplier;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
+import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.neoforge.attachment.AttachmentType;
-import net.neoforged.neoforge.registries.DeferredRegister;
-import net.neoforged.neoforge.registries.NeoForgeRegistries;
 
-/**
- * Runtime-only combat attachments. Combat state is synchronized to its player, but neither
- * stamina nor mob poise is persisted in CharacterData (schema v2 remains unchanged).
- */
+/** Volatile synchronized owner resources; poise stays private to the server. */
 public final class CombatAttachments {
-    private static final DeferredRegister<AttachmentType<?>> REGISTER =
-            DeferredRegister.create(NeoForgeRegistries.Keys.ATTACHMENT_TYPES, MkmMod.MOD_ID);
-
     private static final StreamCodec<RegistryFriendlyByteBuf, CombatState> COMBAT_CODEC = new StreamCodec<>() {
         @Override
         public CombatState decode(RegistryFriendlyByteBuf buf) {
@@ -34,18 +26,18 @@ public final class CombatAttachments {
         }
     };
 
-    public static final Supplier<AttachmentType<CombatState>> PLAYER = REGISTER.register(
-            "combat",
-            () -> AttachmentType.builder(CombatState::new)
-                    .sync((holder, player) -> holder == player, COMBAT_CODEC)
-                    .build());
+    public static final AttachmentType<CombatState> PLAYER = AttachmentRegistry.create(
+            MkmMod.id("combat"), builder -> builder
+                    .initializer(CombatState::new)
+                    .syncWith(COMBAT_CODEC, AttachmentSyncPredicate.targetOnly()));
 
-    public static final Supplier<AttachmentType<PoiseState>> POISE = REGISTER.register(
-            "poise", () -> AttachmentType.builder(PoiseState::new).build());
+    public static final AttachmentType<PoiseState> POISE = AttachmentRegistry.createDefaulted(
+            MkmMod.id("poise"), PoiseState::new);
 
     private CombatAttachments() {}
 
-    public static void register(IEventBus bus) {
-        REGISTER.register(bus);
+    public static void initialize() {
+        PLAYER.identifier();
+        POISE.identifier();
     }
 }

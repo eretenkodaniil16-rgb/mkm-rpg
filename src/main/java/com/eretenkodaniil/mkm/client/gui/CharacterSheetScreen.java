@@ -13,7 +13,7 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.neoforged.fml.ModList;
+import net.fabricmc.loader.api.FabricLoader;
 
 /**
  * First player-facing MKM RPG screen.
@@ -124,7 +124,7 @@ public final class CharacterSheetScreen extends Screen {
             return;
         }
 
-        CharacterData data = minecraft.player.getExistingData(CharacterAttachments.CHARACTER).orElse(null);
+        CharacterData data = minecraft.player.getAttached(CharacterAttachments.CHARACTER);
         int contentTop = top + 75;
         int contentLeft = left + 22;
 
@@ -185,7 +185,7 @@ public final class CharacterSheetScreen extends Screen {
         graphics.text(font, Component.translatable("screen.mkm.character.per", data.perception()), contentLeft, statsTop + 101, TEXT);
 
         PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(data);
-        CombatState combat = minecraft.player.getExistingData(CombatAttachments.PLAYER).orElse(null);
+        CombatState combat = minecraft.player.getAttached(CombatAttachments.PLAYER);
         String stamina = combat == null
                 ? "? / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA)
                 : Math.round(combat.stamina()) + " / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA);
@@ -282,9 +282,9 @@ public final class CharacterSheetScreen extends Screen {
     }
 
     private static String modVersion() {
-        return ModList.get()
-                .getModContainerById(MkmMod.MOD_ID)
-                .map(container -> container.getModInfo().getVersion().toString())
+        return FabricLoader.getInstance()
+                .getModContainer(MkmMod.MOD_ID)
+                .map(container -> container.getMetadata().getVersion().getFriendlyString())
                 .orElse("dev");
     }
 }
