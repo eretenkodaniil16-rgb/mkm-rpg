@@ -8,6 +8,7 @@ import java.util.Locale;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.component.SwingAnimation;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerPlayer;
@@ -93,7 +94,7 @@ public final class CombatService {
         // A single ACTIVE transition is the only point where the combo can hit.
         if (current.phase() == ActionTimeline.Phase.WINDUP
                 && next.phase() == ActionTimeline.Phase.ACTIVE) {
-            player.swing(InteractionHand.MAIN_HAND, true);
+            player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, true);
             hitServerSelectedMob(player);
         }
     }
