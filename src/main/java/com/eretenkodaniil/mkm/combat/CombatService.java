@@ -183,7 +183,7 @@ public final class CombatService {
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
         player.setAttached(CombatAttachments.PLAYER, next);
         player.setAttached(CombatAttachments.TIMELINE, ActionTimelineRules.beginDodge(
-                player.getAttachedOrCreate(CombatAttachments.TIMELINE), now));
+                player.getAttachedOrCreate(CombatAttachments.TIMELINE), now, direction));
         player.sendOverlayMessage(Component.literal(String.format(
                 Locale.ROOT, "Dodge %s  -%.0f stamina", DodgeDirection.label(direction), cost)));
     }
