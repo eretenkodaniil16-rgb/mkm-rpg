@@ -62,7 +62,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p run
-          printf 'eula=true\\n' > run/eula.txt
+          echo eula=true > run/eula.txt
           python3 - <<'PY'
           import os
           import signal
