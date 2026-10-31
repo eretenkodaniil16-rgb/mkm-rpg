@@ -3,6 +3,7 @@ package com.eretenkodaniil.mkm.client;
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
+import com.eretenkodaniil.mkm.combat.DodgeDirection;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
@@ -39,14 +40,12 @@ public final class MkmClient implements ClientModInitializer {
                     continue;
                 }
 
-                byte direction = 0;
-                if (client.options.keyDown.isDown()) {
-                    direction = 1;
-                } else if (client.options.keyLeft.isDown()) {
-                    direction = 2;
-                } else if (client.options.keyRight.isDown()) {
-                    direction = 3;
-                }
+                // Use the movement snapshot Minecraft itself processes in
+                // KeyboardInput.tick. KeyMapping.isDown() sampling here could
+                // default G+A / G+S / G+D to a forward-only dodge.
+                var keys = client.player.input.keyPresses;
+                byte direction = DodgeDirection.fromMovement(
+                        keys.forward(), keys.backward(), keys.left(), keys.right());
                 ClientPlayNetworking.send(new DodgeRequest(direction));
             }
         });
