@@ -7,6 +7,8 @@ import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
+import com.eretenkodaniil.mkm.combat.CombatAttachments;
+import com.eretenkodaniil.mkm.combat.CombatState;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -183,6 +185,10 @@ public final class CharacterSheetScreen extends Screen {
         graphics.text(font, Component.translatable("screen.mkm.character.per", data.perception()), contentLeft, statsTop + 101, TEXT);
 
         PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(data);
+        CombatState combat = minecraft.player.getExistingData(CombatAttachments.PLAYER).orElse(null);
+        String stamina = combat == null
+                ? "? / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA)
+                : Math.round(combat.stamina()) + " / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA);
 
         graphics.text(font, Component.translatable("screen.mkm.character.derived"), split, statsTop, BORDER);
         graphics.text(
@@ -205,7 +211,7 @@ public final class CharacterSheetScreen extends Screen {
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_stamina", modifiers.formatted(PlayerModifierId.MAX_STAMINA)),
+                Component.translatable("screen.mkm.character.max_stamina", stamina),
                 split,
                 statsTop + 59,
                 TEXT);
