@@ -13,7 +13,8 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 public final class LocalCombatAnimation {
     private LocalCombatAnimation() {}
 
-    public record Frame(ActionTimeline timeline, float progress, float weight) {}
+    public record Frame(ActionTimeline timeline, float progress, float weight,
+                        AnimationController.Frame sampledClip) {}
 
     public static Frame frame(AvatarRenderState state) {
         Minecraft client = Minecraft.getInstance();
@@ -27,6 +28,8 @@ public final class LocalCombatAnimation {
                 timeline, client.level.getGameTime(),
                 client.getDeltaTracker().getGameTimeDeltaPartialTick(false));
         float weight = CombatAnimationMath.poseWeight(timeline.phase(), progress);
-        return new Frame(timeline, progress, weight);
+        AnimationController.Frame clip = AnimationController.sample(
+                AnimationLibrary.embedded(), AnimationController.FIRST_PROFILE, timeline, progress);
+        return new Frame(timeline, progress, weight, clip);
     }
 }
