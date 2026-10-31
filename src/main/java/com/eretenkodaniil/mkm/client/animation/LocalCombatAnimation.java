@@ -24,7 +24,8 @@ public final class LocalCombatAnimation {
         ActionTimeline timeline = client.player.getAttached(CombatAttachments.TIMELINE);
         if (timeline == null || timeline.idle()) return null;
         float progress = CombatAnimationMath.phaseProgress(
-                timeline, client.level.getGameTime(), state.partialTick);
+                timeline, client.level.getGameTime(),
+                client.getDeltaTracker().getGameTimeDeltaPartialTick(false));
         float weight = CombatAnimationMath.poseWeight(timeline.phase(), progress);
         return new Frame(timeline, progress, weight);
     }
