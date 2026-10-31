@@ -31,6 +31,38 @@ public final class CombatAttachments {
                     .initializer(CombatState::new)
                     .syncWith(COMBAT_CODEC, AttachmentSyncPredicate.targetOnly()));
 
+    private static final StreamCodec<RegistryFriendlyByteBuf, ActionTimeline> TIMELINE_CODEC = new StreamCodec<>() {
+        @Override
+        public ActionTimeline decode(RegistryFriendlyByteBuf buf) {
+            int kind = buf.readUnsignedByte();
+            int phase = buf.readUnsignedByte();
+            if (kind >= ActionTimeline.Kind.values().length
+                    || phase >= ActionTimeline.Phase.values().length) {
+                throw new IllegalArgumentException("Unknown MKM action timeline value");
+            }
+            return new ActionTimeline(
+                    ActionTimeline.Kind.values()[kind],
+                    ActionTimeline.Phase.values()[phase],
+                    buf.readUnsignedByte(),
+                    buf.readLong(),
+                    buf.readLong());
+        }
+
+        @Override
+        public void encode(RegistryFriendlyByteBuf buf, ActionTimeline value) {
+            buf.writeByte(value.kind().ordinal());
+            buf.writeByte(value.phase().ordinal());
+            buf.writeByte(value.comboStep());
+            buf.writeLong(value.phaseUntilTick());
+            buf.writeLong(value.comboUntilTick());
+        }
+    };
+
+    public static final AttachmentType<ActionTimeline> TIMELINE = AttachmentRegistry.create(
+            MkmMod.id("action_timeline"), builder -> builder
+                    .initializer(ActionTimeline::new)
+                    .syncWith(TIMELINE_CODEC, AttachmentSyncPredicate.targetOnly()));
+
     public static final AttachmentType<PoiseState> POISE = AttachmentRegistry.createDefaulted(
             MkmMod.id("poise"), PoiseState::new);
 
@@ -38,6 +70,7 @@ public final class CombatAttachments {
 
     public static void initialize() {
         PLAYER.identifier();
+        TIMELINE.identifier();
         POISE.identifier();
     }
 }
