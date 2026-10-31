@@ -4,9 +4,11 @@ on:
     branches:
       - 'port/fabric-26.3'
       - 'feature/fabric-26.3-bundled-api'
+      - 'feature/fabric-26.3-oneclick-installer'
   pull_request:
     branches:
       - 'port/fabric-26.3'
+      - 'feature/fabric-26.3-bundled-api'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -56,9 +58,32 @@ jobs:
               assert api_distributions[0].get("jars"), "Bundled Fabric API has no module jars"
               print(f"PASS: {os.path.basename(path)} embeds Fabric API with {len(api_distributions[0]['jars'])} nested modules")
           PY
+      - name: Validate Windows PowerShell installer syntax
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "distribution/windows/Install_MKM.ps1").Path,
+            [ref]$tokens, [ref]$errors
+          ) | Out-Null
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
+          }
+          Write-Host "PowerShell installer syntax: OK"
+      - name: Package one-click Windows installer
+        run: python3 distribution/windows/package.py
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
           path: build/libs/mkm-rpg-0.0.3-fabric.2.jar
+          if-no-files-found: error
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mkm-fabric-26.3-oneclick-windows
+          path: dist/MKM_Fabric_26.3_Installer_Windows.zip
           if-no-files-found: error
           retention-days: 14
