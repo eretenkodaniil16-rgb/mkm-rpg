@@ -62,18 +62,46 @@ jobs:
         shell: bash
         run: |
           mkdir -p run
-          printf 'eula=true\n' > run/eula.txt
-          set +e
-          timeout 150s ./gradlew runServer --no-daemon > server-smoke.log 2>&1
-          result=$?
-          set -e
-          if grep -q 'MKM Fabric 26.3 initialized' server-smoke.log && grep -Eiq 'Done \\([0-9.,]+s\\)' server-smoke.log; then
-            echo 'PASS: MKM initialized and dedicated server reached startup ready state.'
-          else
-            echo "FAIL: dedicated server did not reach ready state (exit code $result)"
-            tail -n 170 server-smoke.log
-            exit 1
-          fi
+          printf 'eula=true\\n' > run/eula.txt
+          python3 - <<'PY'
+          import os
+          import signal
+          import subprocess
+          import time
+          from pathlib import Path
+
+          log_path = Path("server-smoke.log")
+          with log_path.open("w", encoding="utf-8") as output:
+              process = subprocess.Popen(
+                  ["./gradlew", "runServer", "--no-daemon"],
+                  stdout=output, stderr=subprocess.STDOUT,
+                  start_new_session=True)
+              initialized = False
+              ready = False
+              try:
+                  for i in range(100):
+                      time.sleep(1)
+                      text = log_path.read_text(encoding="utf-8", errors="replace")
+                      initialized = "MKM Fabric 26.3 initialized" in text
+                      ready = "Done (" in text and 'For help, type "help"' in text
+                      if initialized and ready:
+                          print("PASS: MKM loaded and dedicated server reached ready state.", flush=True)
+                          break
+                      if process.poll() is not None:
+                          break
+                  if not (initialized and ready):
+                      print("FAIL: server did not initialize and reach ready state.", flush=True)
+                      print(log_path.read_text(encoding="utf-8", errors="replace")[-15000:], flush=True)
+                      raise SystemExit(1)
+              finally:
+                  if process.poll() is None:
+                      os.killpg(process.pid, signal.SIGTERM)
+                      try:
+                          process.wait(timeout=10)
+                      except subprocess.TimeoutExpired:
+                          os.killpg(process.pid, signal.SIGKILL)
+                          process.wait()
+          PY
       - name: Validate Windows PowerShell installer syntax
         shell: pwsh
         run: |
