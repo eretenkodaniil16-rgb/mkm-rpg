@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import java.util.Locale;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.protocol.game.ClientboundSetEntityMotionPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
 
@@ -15,7 +16,6 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class CombatService {
     private static final long SYNC_INTERVAL_TICKS = 5L;
-    private static final double DODGE_IMPULSE = 0.9D;
 
     private CombatService() {}
 
@@ -72,20 +72,6 @@ public final class CombatService {
                 || player.isSpectator() || player.isPassenger() || !player.onGround()) {
             return;
         }
-        Vec3 look = player.getLookAngle();
-        Vec3 flat = new Vec3(look.x, 0.0D, look.z);
-        if (flat.lengthSqr() < 0.0001D) {
-            return;
-        }
-        Vec3 forward = flat.normalize();
-        Vec3 right = new Vec3(-forward.z, 0.0D, forward.x);
-        Vec3 axis = switch (direction) {
-            case 0 -> forward;
-            case 1 -> forward.scale(-1.0D);
-            case 2 -> right.scale(-1.0D);
-            default -> right;
-        };
-
         long now = player.level().getGameTime();
         PlayerModifierSnapshot modifiers = modifiers(player);
         CombatState current = fresh(player, modifiers, now);
@@ -97,9 +83,22 @@ public final class CombatService {
             return;
         }
 
-        // Server-side impulse uses bounded modifiers; no teleport and no invulnerability frames.
-        double scale = DODGE_IMPULSE * modifiers.get(PlayerModifierId.DODGE_DISTANCE);
-        player.push(axis.x * scale, 0.06D, axis.z * scale);
+        // Clients simulate local-player movement. Updating only the server-side
+        // velocity was nearly invisible to the controlling player.
+        //
+        // A bounded impulse is computed from SERVER facing and SERVER modifiers;
+        // the client cannot choose a velocity, distance or stamina cost.
+        Vec3 look = player.getLookAngle();
+        DodgeMotion motion = DodgeMotion.fromFacing(
+                look.x, look.z, direction, modifiers.get(PlayerModifierId.DODGE_DISTANCE));
+        if (motion == null) {
+            return;
+        }
+        double vertical = Math.max(0.06D, player.getDeltaMovement().y);
+        player.setDeltaMovement(motion.x(), vertical, motion.z());
+        // Send motion explicitly to the owner. Normal entity tracking does not
+        // reliably transmit the player's own new velocity to their local client.
+        player.connection.send(new ClientboundSetEntityMotionPacket(player));
         player.setAttached(CombatAttachments.PLAYER, next);
         player.sendOverlayMessage(Component.literal(String.format(
                 Locale.ROOT, "Dodge  -%.0f stamina", cost)));
