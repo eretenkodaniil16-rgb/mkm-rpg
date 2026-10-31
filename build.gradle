@@ -50,3 +50,14 @@ java {
     sourceCompatibility = JavaVersion.VERSION_25
     targetCompatibility = JavaVersion.VERSION_25
 }
+
+jar {
+    // Keep the required third-party notices with the distributed binary.
+    from("third_party/FABRIC_API_LICENSE.txt") {
+        into "META-INF/licenses/fabric-api"
+        rename { "LICENSE.txt" }
+    }
+    from("third_party/THIRD_PARTY_NOTICES.txt") {
+        into "META-INF"
+    }
+}
