@@ -2,7 +2,7 @@
 
 ## Status
 
-The seven-attribute set is now the accepted Character Core baseline and is persisted by `CharacterData` schema v2.
+The seven-attribute set is the accepted Character Core baseline and is persisted by `CharacterData` schema v2. Player Modifier System v1 now turns these persisted values into a calculated combat-facing modifier snapshot.
 
 | ID | Name | Abbrev. | Role |
 | --- | --- | --- | --- |
@@ -188,8 +188,11 @@ The Character Sheet exposes deliberately simple tuning previews so all seven att
 - WIL -> maximum mana preview;
 - PER -> weak-point damage preview.
 
-These previews are **not authoritative Combat Core formulas**. Their purpose is to verify persistence, synchronization, presentation and the qualitative role of each attribute before final coefficients, diminishing returns and caps are accepted.
+The old standalone preview formulas have been removed. Character Sheet now reads the same calculated `PlayerModifierSnapshot` that Combat Core will consume.
 
 ## Next step
 
-Define the modifier-definition layer: units, base values, aggregation semantics, caps and first numerical primary/secondary coefficients. Only then should Combat Core consume the derived modifier snapshot for real damage, stamina, movement and magic rules.
+1. define how attribute points are acquired and spent;
+2. verify schema-v1 -> schema-v2 migration and all seven attributes in a real NeoForge runtime;
+3. tune the initial coefficients from gameplay evidence;
+4. connect real-time damage, stamina and later magic systems to `PlayerModifierSnapshot`.

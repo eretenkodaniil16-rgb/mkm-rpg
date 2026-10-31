@@ -2,11 +2,11 @@
 
 ## Status
 
-This document is the design baseline for MKM player-side RPG modifiers. It intentionally defines the *modifier vocabulary* before the final primary attribute set and formulas are chosen.
+This document defines the MKM player-side RPG modifier vocabulary. Player Modifier System v1 now provides centralized numeric definitions, units, bounds and initial primary-attribute coefficients for this vocabulary.
 
 Primary attributes and player modifiers are different concepts:
 
-- **Primary attributes** are persistent character-build inputs chosen later (the current STR/DEX/VIT set remains a prototype).
+- **Primary attributes** are the persisted STR/DEX/VIT/END/INT/WIL/PER character-build inputs.
 - **Player modifiers** are gameplay-facing values consumed by combat, movement, resource, spell and progression systems.
 - Equipment, skills, buffs, debuffs and temporary effects may contribute to the same modifier snapshot later without being persisted as final values in `CharacterData`.
 
@@ -14,7 +14,7 @@ The final player modifier snapshot should conceptually be derived as:
 
 `base values + primary attributes + level progression + equipment + skills + buffs/debuffs + temporary effects = player modifier snapshot`
 
-Exact formulas, units, caps and primary-attribute mappings are deliberately unresolved at this stage.
+Initial units, hard safety caps and PRIMARY/SECONDARY coefficients are implemented in `character.modifier`. They remain balance-tunable and are not persisted.
 
 ## Health and recovery
 

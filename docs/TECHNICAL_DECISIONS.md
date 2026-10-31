@@ -114,11 +114,23 @@ Schema v2 adds END/INT/WIL/PER while preserving the schema-v1 XP/STR/DEX/VIT fie
 
 **Consequence:** Future combat and magic systems consume derived modifier snapshots from these attributes rather than adding more ad-hoc persisted combat numbers. Attribute-to-modifier relationships distinguish primary and secondary influence, while numerical coefficients remain tunable Combat Core work.
 
+## TD-012 — Derived player modifier snapshot is the combat-facing character contract
+
+**Status:** Accepted
+
+Combat-facing player values are calculated into an immutable `PlayerModifierSnapshot` from persistent primary attributes and centralized `ModifierDefinition` records.
+
+The snapshot uses explicit units, neutral bases, hard safety bounds and PRIMARY/SECONDARY attribute coefficients. Raw attributes use a shared soft-cap transform before contributing.
+
+**Rationale:** Combat, weapons, spells and future equipment should not each reinterpret STR/DEX/VIT/END/INT/WIL/PER independently. A single derived contract prevents formula drift and lets new contribution sources be added without changing persistent CharacterData.
+
+**Consequence:** Final modifier values are not persisted. Combat Core and later systems should read the snapshot. Equipment, skills, buffs and weapon rules will extend the contribution pipeline rather than writing ad-hoc derived fields into saves.
+
 ## Pending decisions
 
 The following still require implementation research/prototyping before acceptance:
 
-- exact attribute-to-modifier coefficients, diminishing returns and caps;
+- long-term balance tuning of the initial modifier coefficients and soft-cap span;
 - ability resource/cooldown model beyond the accepted stamina/mana vocabulary;
 - client-to-server payload conventions for interactive abilities and UI actions;
 - quest/dialogue data representation;

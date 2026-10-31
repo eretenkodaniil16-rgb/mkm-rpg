@@ -3,8 +3,10 @@ package com.eretenkodaniil.mkm.client.gui;
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.CharacterData;
-import com.eretenkodaniil.mkm.character.CharacterDerivedStats;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
+import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
+import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
+import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -180,48 +182,48 @@ public final class CharacterSheetScreen extends Screen {
         graphics.text(font, Component.translatable("screen.mkm.character.wil", data.willpower()), contentLeft, statsTop + 87, TEXT);
         graphics.text(font, Component.translatable("screen.mkm.character.per", data.perception()), contentLeft, statsTop + 101, TEXT);
 
-        CharacterDerivedStats derived = CharacterDerivedStats.from(data);
+        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(data);
 
         graphics.text(font, Component.translatable("screen.mkm.character.derived"), split, statsTop, BORDER);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_health", derived.maxHealthPreview()),
+                Component.translatable("screen.mkm.character.max_health", modifiers.formatted(PlayerModifierId.MAX_HEALTH)),
                 split,
                 statsTop + 17,
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.physical_power", derived.physicalPowerPercent() + "%"),
+                Component.translatable("screen.mkm.character.physical_power", modifiers.formatted(PlayerModifierId.PHYSICAL_POWER)),
                 split,
                 statsTop + 31,
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.attack_speed", derived.attackSpeedPercent() + "%"),
+                Component.translatable("screen.mkm.character.attack_speed", modifiers.formatted(PlayerModifierId.ATTACK_SPEED)),
                 split,
                 statsTop + 45,
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_stamina", derived.maxStaminaPreview()),
+                Component.translatable("screen.mkm.character.max_stamina", modifiers.formatted(PlayerModifierId.MAX_STAMINA)),
                 split,
                 statsTop + 59,
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.magic_power", derived.magicPowerPercent() + "%"),
+                Component.translatable("screen.mkm.character.magic_power", modifiers.formatted(PlayerModifierId.MAGIC_POWER)),
                 split,
                 statsTop + 73,
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_mana", derived.maxManaPreview()),
+                Component.translatable("screen.mkm.character.max_mana", modifiers.formatted(PlayerModifierId.MAX_MANA)),
                 split,
                 statsTop + 87,
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.weak_point_damage", derived.weakPointDamagePercent() + "%"),
+                Component.translatable("screen.mkm.character.weak_point_damage", modifiers.formatted(PlayerModifierId.WEAK_POINT_DAMAGE)),
                 split,
                 statsTop + 101,
                 TEXT);

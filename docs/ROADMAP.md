@@ -42,21 +42,23 @@ Current prototype scope already present:
 - `/mkm stats`, `/mkm xp add` and `/mkm xp set` commands;
 - first read-only Character Sheet client interface.
 
-Current design work:
+Current implementation/design work:
 
+- seven primary attributes are persisted through Character Core schema v2;
 - accepted player-modifier vocabulary is documented in `PLAYER_MODIFIERS.md`;
+- `ModifierDefinition`, `PlayerModifierCalculator` and immutable `PlayerModifierSnapshot` provide the first numeric derived-stat layer;
+- primary/secondary attribute influence uses a shared diminishing-return curve and hard modifier caps;
+- Character Sheet and `/mkm modifiers` read the same calculated snapshot;
 - real-time Minecraft combat is the foundation; ordinary combat will not use initiative/turn order;
-- magic is planned as a first-class path and already has reserved player modifier categories for spell power, mana, magical defense and support magic.
+- magic is planned as a first-class path and already has spell power, mana, magical defense and support-magic modifiers.
 
 Next Character Core work:
 
 - runtime verification on client and dedicated server;
-- progression/serialization tests;
-- define the final primary attribute set;
-- map primary attributes to the accepted player modifiers;
+- runtime verification of schema-v1 -> schema-v2 migration and all seven attributes;
 - decide how attribute points/build choices are acquired;
-- evaluate schema migration mechanics before replacing the prototype STR/DEX/VIT format;
-- update Character Sheet after the attribute model is accepted.
+- tune initial attribute-to-modifier coefficients from gameplay evidence;
+- keep the modifier snapshot as the integration boundary for Combat Core.
 
 Avoid committing to final numerical formulas until the attribute-to-modifier mapping is reviewed.
 
@@ -66,7 +68,7 @@ Goal: add RPG depth while preserving Minecraft's real-time combat loop and avoid
 
 Candidate scope:
 
-- authoritative player modifier snapshot and aggregation rules;
+- authoritative player modifier snapshot and initial aggregation rules (implemented);
 - real-time damage context and calculation pipeline around valid Minecraft combat interactions;
 - physical offense/defense values and mitigation;
 - slashing, piercing and blunt physical damage categories;

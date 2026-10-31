@@ -4,6 +4,9 @@ import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
+import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
+import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
+import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.LongArgumentType;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -36,6 +39,8 @@ public final class MkmCommands {
                         .executes(context -> ping(context.getSource())))
                 .then(Commands.literal("stats")
                         .executes(context -> showStats(context.getSource())))
+                .then(Commands.literal("modifiers")
+                        .executes(context -> showModifiers(context.getSource())))
                 .then(Commands.literal("xp")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("add")
@@ -49,12 +54,12 @@ public final class MkmCommands {
                                                 context.getSource(),
                                                 LongArgumentType.getLong(context, "amount")))))));
 
-        MkmMod.LOGGER.info("Registered MKM commands: /mkm, /mkm ping, /mkm stats, /mkm xp ...");
+        MkmMod.LOGGER.info("Registered MKM commands: /mkm, /mkm ping, /mkm stats, /mkm modifiers, /mkm xp ...");
     }
 
     private static int showHelp(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal(
-                "MKM commands: /mkm ping, /mkm stats. Admin/cheats: /mkm xp add <amount>, /mkm xp set <amount>."), false);
+                "MKM commands: /mkm ping, /mkm stats, /mkm modifiers. Admin/cheats: /mkm xp add <amount>, /mkm xp set <amount>."), false);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -81,6 +86,32 @@ public final class MkmCommands {
                         + " | INT: " + data.intelligence()
                         + " | WIL: " + data.willpower()
                         + " | PER: " + data.perception()), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+
+    private static int showModifiers(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(CharacterService.get(player));
+
+        source.sendSuccess(() -> Component.literal(
+                "MKM modifiers | HP " + modifiers.formatted(PlayerModifierId.MAX_HEALTH)
+                        + " | Physical " + modifiers.formatted(PlayerModifierId.PHYSICAL_POWER)
+                        + " | Melee " + modifiers.formatted(PlayerModifierId.MELEE_DAMAGE)
+                        + " | Ranged " + modifiers.formatted(PlayerModifierId.RANGED_DAMAGE)
+                        + " | Attack speed " + modifiers.formatted(PlayerModifierId.ATTACK_SPEED)), false);
+        source.sendSuccess(() -> Component.literal(
+                "Stamina " + modifiers.formatted(PlayerModifierId.MAX_STAMINA)
+                        + " | Regen " + modifiers.formatted(PlayerModifierId.STAMINA_REGENERATION)
+                        + " | Cost " + modifiers.formatted(PlayerModifierId.STAMINA_COST)
+                        + " | Armor penetration " + modifiers.formatted(PlayerModifierId.ARMOR_PENETRATION)), false);
+        source.sendSuccess(() -> Component.literal(
+                "Magic " + modifiers.formatted(PlayerModifierId.MAGIC_POWER)
+                        + " | Spell damage " + modifiers.formatted(PlayerModifierId.SPELL_DAMAGE)
+                        + " | Mana " + modifiers.formatted(PlayerModifierId.MAX_MANA)
+                        + " | Mana regen " + modifiers.formatted(PlayerModifierId.MANA_REGENERATION)
+                        + " | Magic resistance " + modifiers.formatted(PlayerModifierId.MAGIC_RESISTANCE)
+                        + " | Weak point " + modifiers.formatted(PlayerModifierId.WEAK_POINT_DAMAGE)), false);
         return Command.SINGLE_SUCCESS;
     }
 
