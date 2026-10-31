@@ -4,6 +4,7 @@
   "key.categories.mkm.general": "MKM",
   "key.mkm.open_character_sheet": "Open Character Sheet",
   "key.mkm.dodge": "Dodge (Action Combat)",
+  "key.mkm.combo": "Combo attack (C2)",
   "screen.mkm.character.title": "Character Sheet",
   "screen.mkm.character.close": "Close",
   "screen.mkm.character.runtime": "MKM %s · client loaded",

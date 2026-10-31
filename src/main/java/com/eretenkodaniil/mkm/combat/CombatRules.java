@@ -4,6 +4,7 @@ package com.eretenkodaniil.mkm.combat;
 public final class CombatRules {
     public static final float HEAVY_BASE_COST = 25.0F;
     public static final float DODGE_BASE_COST = 20.0F;
+    public static final float COMBO_BASE_COST = 8.0F;
     public static final long HEAVY_RECOVERY_TICKS = 12L;
     public static final long DODGE_RECOVERY_TICKS = 8L;
     public static final long DODGE_COOLDOWN_TICKS = 18L;
@@ -47,6 +48,22 @@ public final class CombatRules {
         return new CombatState(state.stamina() - cost, now,
                 now + Math.max(0L, regenDelayTicks),
                 now + DODGE_RECOVERY_TICKS, now + DODGE_COOLDOWN_TICKS);
+    }
+
+    /**
+     * One stamina debit per successfully queued combo action, with the same
+     * resource invariants and cooldown interlock as special attacks.
+     */
+    public static CombatState combo(
+            CombatState state, long now, float cost, long regenDelayTicks) {
+        if (!Float.isFinite(cost) || cost < 0.0F
+                || now < state.heavyReadyTick() || now < state.dodgeReadyTick()
+                || state.stamina() + 0.0001F < cost) {
+            return null;
+        }
+        return new CombatState(state.stamina() - cost, now,
+                now + Math.max(0L, regenDelayTicks),
+                state.heavyReadyTick(), state.dodgeReadyTick());
     }
 
     public static float scaleIncomingMelee(float vanilla, double power, double melee, boolean heavy) {
