@@ -1,0 +1,84 @@
+{
+  "format": 1,
+  "description": "Example mapping. Rename source bones to match your Blender humanoid rig; calibrate signs in-game.",
+  "bones": {
+    "head": {
+      "source": "head",
+      "axis_order": [
+        0,
+        1,
+        2
+      ],
+      "axis_sign": [
+        1,
+        1,
+        1
+      ]
+    },
+    "body": {
+      "source": "chest",
+      "axis_order": [
+        0,
+        1,
+        2
+      ],
+      "axis_sign": [
+        1,
+        1,
+        1
+      ]
+    },
+    "right_arm": {
+      "source": "upper_arm.R",
+      "axis_order": [
+        0,
+        1,
+        2
+      ],
+      "axis_sign": [
+        1,
+        1,
+        1
+      ]
+    },
+    "left_arm": {
+      "source": "upper_arm.L",
+      "axis_order": [
+        0,
+        1,
+        2
+      ],
+      "axis_sign": [
+        1,
+        1,
+        1
+      ]
+    },
+    "right_leg": {
+      "source": "thigh.R",
+      "axis_order": [
+        0,
+        1,
+        2
+      ],
+      "axis_sign": [
+        1,
+        1,
+        1
+      ]
+    },
+    "left_leg": {
+      "source": "thigh.L",
+      "axis_order": [
+        0,
+        1,
+        2
+      ],
+      "axis_sign": [
+        1,
+        1,
+        1
+      ]
+    }
+  }
+}
