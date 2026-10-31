@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 $MinecraftVersion = '26.3'
 $FabricLoaderVersion = '0.20.1'
 $InstallerVersion = '1.1.2'
-$ModFilename = 'mkm-rpg-0.0.4-fabric.0.jar'
+$ModFilename = 'mkm-rpg-0.0.4-fabric.1.jar'
 $InstallerUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/$InstallerVersion/fabric-installer-$InstallerVersion.exe"
 $InstallerHashUrl = "$InstallerUrl.sha256"
 
@@ -33,7 +33,7 @@ function Download-VerifiedInstaller {
 }
 
 try {
-    Say 'MKM 0.0.4-fabric.0 installer - official Minecraft Launcher'
+    Say 'MKM 0.0.4-fabric.1 installer - official Minecraft Launcher'
     Say "Minecraft $MinecraftVersion | Fabric Loader $FabricLoaderVersion"
 
     $modSource = Join-Path $PSScriptRoot $ModFilename

@@ -8,6 +8,7 @@ on:
       - 'fix/fabric-dodge-movement-sync'
       - 'fix/fabric-dodge-direction-input'
       - 'feature/action-combat-c2-state-hud'
+      - 'feature/action-combat-c2-1-animations'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -15,6 +16,7 @@ on:
       - 'feature/fabric-26.3-oneclick-installer'
       - 'fix/fabric-dodge-movement-sync'
       - 'fix/fabric-dodge-direction-input'
+      - 'feature/action-combat-c2-state-hud'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -43,7 +45,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.4-fabric.0.jar")
+              if p.endswith("0.0.4-fabric.1.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -108,6 +110,54 @@ jobs:
                           os.killpg(process.pid, signal.SIGKILL)
                           process.wait()
           PY
+      - name: Smoke-test client startup under virtual display
+        timeout-minutes: 3
+        run: |
+          python3 - <<'PY'
+          import os
+          import signal
+          import subprocess
+          import time
+          from pathlib import Path
+
+          log_path = Path("client-smoke.log")
+          environment = dict(os.environ, LIBGL_ALWAYS_SOFTWARE="1")
+          with log_path.open("w", encoding="utf-8") as output:
+              process = subprocess.Popen(
+                  ["xvfb-run", "-a", "./gradlew", "runClient", "--no-daemon"],
+                  stdout=output, stderr=subprocess.STDOUT, env=environment,
+                  start_new_session=True)
+              initialized_at = None
+              try:
+                  for i in range(115):
+                      time.sleep(1)
+                      logs = log_path.read_text(encoding="utf-8", errors="replace")
+                      if "MKM Fabric 26.3 initialized" in logs and initialized_at is None:
+                          initialized_at = i
+                      if process.poll() is not None:
+                          raise RuntimeError(f"Client exited early (code {process.returncode})")
+                      if initialized_at is not None and i - initialized_at >= 22:
+                          fatal = ("MixinApplyError", "Mixin apply failed",
+                                   "Could not execute entrypoint", "Game crashed!",
+                                   "Crash report saved to")
+                          if any(message in logs for message in fatal):
+                              raise RuntimeError("Fatal client mixin or initialization message")
+                          print("PASS: C2.1 client initialized and remained alive under Xvfb.", flush=True)
+                          break
+                  else:
+                      raise RuntimeError("Client did not initialize and stay alive before timeout")
+              except Exception:
+                  print(log_path.read_text(encoding="utf-8", errors="replace")[-19000:], flush=True)
+                  raise
+              finally:
+                  if process.poll() is None:
+                      os.killpg(process.pid, signal.SIGTERM)
+                      try:
+                          process.wait(timeout=10)
+                      except subprocess.TimeoutExpired:
+                          os.killpg(process.pid, signal.SIGKILL)
+                          process.wait()
+          PY
       - name: Validate Windows PowerShell installer syntax
         shell: pwsh
         run: |
@@ -127,7 +177,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.4-fabric.0.jar
+          path: build/libs/mkm-rpg-0.0.4-fabric.1.jar
           if-no-files-found: error
           retention-days: 14
 

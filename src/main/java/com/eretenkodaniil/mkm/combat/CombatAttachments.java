@@ -45,7 +45,8 @@ public final class CombatAttachments {
                     ActionTimeline.Phase.values()[phase],
                     buf.readUnsignedByte(),
                     buf.readLong(),
-                    buf.readLong());
+                    buf.readLong(),
+                    buf.readByte());
         }
 
         @Override
@@ -55,6 +56,7 @@ public final class CombatAttachments {
             buf.writeByte(value.comboStep());
             buf.writeLong(value.phaseUntilTick());
             buf.writeLong(value.comboUntilTick());
+            buf.writeByte(value.dodgeDirection());
         }
     };
 
