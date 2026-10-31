@@ -27,10 +27,11 @@ dependencies {
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
 
+def mkmVersionForResources = project.version.toString()
 processResources {
-    inputs.property "version", project.version
+    inputs.property "version", mkmVersionForResources
     filesMatching("fabric.mod.json") {
-        expand "version": project.version
+        expand "version": mkmVersionForResources
     }
 }
 
