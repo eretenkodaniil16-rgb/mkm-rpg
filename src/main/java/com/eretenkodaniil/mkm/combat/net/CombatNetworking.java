@@ -12,5 +12,8 @@ public final class CombatNetworking {
         PayloadTypeRegistry.serverboundPlay().register(DodgeRequest.TYPE, DodgeRequest.STREAM_CODEC);
         ServerPlayNetworking.registerGlobalReceiver(DodgeRequest.TYPE,
                 (payload, context) -> CombatService.tryDodge(context.player(), payload.direction()));
+        PayloadTypeRegistry.serverboundPlay().register(ComboRequest.TYPE, ComboRequest.STREAM_CODEC);
+        ServerPlayNetworking.registerGlobalReceiver(ComboRequest.TYPE,
+                (payload, context) -> CombatService.tryCombo(context.player(), payload.kind()));
     }
 }
