@@ -8,8 +8,6 @@ import java.util.Locale;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.phys.Vec3;
-import net.neoforged.neoforge.event.entity.player.PlayerEvent;
-import net.neoforged.neoforge.event.tick.PlayerTickEvent;
 
 /**
  * Runtime stamina and movement authority. Player combat attachments are volatile and
@@ -21,17 +19,13 @@ public final class CombatService {
 
     private CombatService() {}
 
-    public static void onLogin(PlayerEvent.PlayerLoggedInEvent event) {
-        if (event.getEntity() instanceof ServerPlayer player) {
-            player.getData(CombatAttachments.PLAYER);
-            player.syncData(CombatAttachments.PLAYER);
+    public static void onLogin(ServerPlayer player) {
+        if (player.getAttached(CombatAttachments.PLAYER) == null) {
+            player.setAttached(CombatAttachments.PLAYER, new CombatState());
         }
     }
 
-    public static void onPlayerTick(PlayerTickEvent.Post event) {
-        if (!(event.getEntity() instanceof ServerPlayer player)) {
-            return;
-        }
+    public static void onPlayerTick(ServerPlayer player) {
         long now = player.level().getGameTime();
         if (now % SYNC_INTERVAL_TICKS != 0L) {
             return;
@@ -40,14 +34,14 @@ public final class CombatService {
         PlayerModifierSnapshot modifiers = modifiers(player);
         float max = (float) modifiers.get(PlayerModifierId.MAX_STAMINA);
         float regen = (float) modifiers.get(PlayerModifierId.STAMINA_REGENERATION);
-        CombatState current = player.getData(CombatAttachments.PLAYER);
+        CombatState current = player.getAttachedOrCreate(CombatAttachments.PLAYER);
         // Do not send attachment updates when only the bookkeeping timestamp changed.
         if (Math.abs(current.stamina() - max) < 0.001F) {
             return;
         }
         CombatState next = CombatRules.regenerate(current, now, max, regen);
         if (Math.abs(next.stamina() - current.stamina()) > 0.001F) {
-            player.setData(CombatAttachments.PLAYER, next);
+            player.setAttached(CombatAttachments.PLAYER, next);
         }
         // Action bar is interim feedback, not a permanent HUD (which will use synced attachment).
         if (now % 10L == 0 && next.stamina() < max - 0.1F) {
@@ -66,7 +60,7 @@ public final class CombatService {
         if (next == null) {
             return false;
         }
-        player.setData(CombatAttachments.PLAYER, next);
+        player.setAttached(CombatAttachments.PLAYER, next);
         player.sendOverlayMessage(Component.literal(String.format(
                 Locale.ROOT, "Heavy strike  -%.0f stamina", cost)));
         return true;
@@ -106,8 +100,7 @@ public final class CombatService {
         // Server-side impulse uses bounded modifiers; no teleport and no invulnerability frames.
         double scale = DODGE_IMPULSE * modifiers.get(PlayerModifierId.DODGE_DISTANCE);
         player.push(axis.x * scale, 0.06D, axis.z * scale);
-        player.hurtMarked = true;
-        player.setData(CombatAttachments.PLAYER, next);
+        player.setAttached(CombatAttachments.PLAYER, next);
         player.sendOverlayMessage(Component.literal(String.format(
                 Locale.ROOT, "Dodge  -%.0f stamina", cost)));
     }
@@ -115,7 +108,7 @@ public final class CombatService {
     private static CombatState fresh(
             ServerPlayer player, PlayerModifierSnapshot modifiers, long now) {
         return CombatRules.regenerate(
-                player.getData(CombatAttachments.PLAYER), now,
+                player.getAttachedOrCreate(CombatAttachments.PLAYER), now,
                 (float) modifiers.get(PlayerModifierId.MAX_STAMINA),
                 (float) modifiers.get(PlayerModifierId.STAMINA_REGENERATION));
     }
@@ -126,6 +119,6 @@ public final class CombatService {
     }
 
     private static PlayerModifierSnapshot modifiers(ServerPlayer player) {
-        return PlayerModifierCalculator.calculate(player.getData(CharacterAttachments.CHARACTER));
+        return PlayerModifierCalculator.calculate(player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
     }
 }

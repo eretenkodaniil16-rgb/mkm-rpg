@@ -4,113 +4,68 @@ import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.registry.MkmItems;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.Identifier;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterKeyMappingsEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.network.ClientPacketDistributor;
-import net.neoforged.neoforge.event.entity.player.PlayerInteractEvent;
-import org.lwjgl.glfw.GLFW;
 
-/**
- * Physical-client entry points for the first MKM character interface.
- *
- * <p>This class is never loaded on a dedicated server.</p>
- */
-@EventBusSubscriber(value = Dist.CLIENT, modid = MkmMod.MOD_ID)
-public final class MkmClient {
-    private static final KeyMapping.Category CATEGORY = new KeyMapping.Category(
-            Identifier.fromNamespaceAndPath(MkmMod.MOD_ID, "general"));
+public final class MkmClient implements ClientModInitializer {
+    private static final KeyMapping.Category CATEGORY = KeyMapping.Category.register(MkmMod.id("general"));
+    private static final KeyMapping OPEN_SHEET = new KeyMapping(
+            "key.mkm.open_character_sheet", InputConstants.KEY_K, CATEGORY);
+    private static final KeyMapping DODGE = new KeyMapping(
+            "key.mkm.dodge", InputConstants.KEY_G, CATEGORY);
 
-    private static final KeyMapping OPEN_CHARACTER_SHEET = new KeyMapping(
-            "key.mkm.open_character_sheet",
-            GLFW.GLFW_KEY_K,
-            CATEGORY) {
-        @Override
-        public void setDown(boolean down) {
-            if (down) {
+    @Override
+    public void onInitializeClient() {
+        KeyMappingHelper.registerKeyMapping(OPEN_SHEET);
+        KeyMappingHelper.registerKeyMapping(DODGE);
+
+        ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (OPEN_SHEET.consumeClick()) {
+                if (client.player != null && client.gui.screen() == null) {
+                    openCharacterSheet();
+                }
+            }
+            while (DODGE.consumeClick()) {
+                if (client.player == null || client.gui.screen() != null ||
+                        !ClientPlayNetworking.canSend(DodgeRequest.TYPE)) {
+                    continue;
+                }
+
+                byte direction = 0;
+                if (client.options.keyDown.isDown()) {
+                    direction = 1;
+                } else if (client.options.keyLeft.isDown()) {
+                    direction = 2;
+                } else if (client.options.keyRight.isDown()) {
+                    direction = 3;
+                }
+                ClientPlayNetworking.send(new DodgeRequest(direction));
+            }
+        });
+
+        UseItemCallback.EVENT.register((player, level, hand) -> {
+            if (player.getItemInHand(hand).getItem() != MkmItems.CODEX) {
+                return InteractionResult.PASS;
+            }
+            if (level.isClientSide()) {
                 openCharacterSheet();
             }
-            super.setDown(down);
-        }
-    };
-
-    private static final KeyMapping DODGE = new KeyMapping(
-            "key.mkm.dodge",
-            GLFW.GLFW_KEY_G,
-            CATEGORY);
-
-    private MkmClient() {
-    }
-
-    @SubscribeEvent
-    private static void onRegisterKeyMappings(RegisterKeyMappingsEvent event) {
-        event.registerCategory(CATEGORY);
-        event.register(OPEN_CHARACTER_SHEET);
-        event.register(DODGE);
-    }
-
-    @SubscribeEvent
-    private static void onClientTick(ClientTickEvent.Post event) {
-        Minecraft minecraft = Minecraft.getInstance();
-        while (DODGE.consumeClick()) {
-            if (minecraft.player == null || minecraft.gui.screen() != null || minecraft.getConnection() == null) {
-                continue;
-            }
-
-            byte direction = 0; // forward if no directional key is pressed
-            if (minecraft.options.keyDown.isDown()) {
-                direction = 1;
-            } else if (minecraft.options.keyLeft.isDown()) {
-                direction = 2;
-            } else if (minecraft.options.keyRight.isDown()) {
-                direction = 3;
-            }
-
-            ClientPacketDistributor.sendToServer(new DodgeRequest(direction));
-        }
-    }
-
-    @SubscribeEvent
-    private static void onRightClickItem(PlayerInteractEvent.RightClickItem event) {
-        if (isCodex(event)) {
-            openCharacterSheet();
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            event.setCanceled(true);
-        }
-    }
-
-    @SubscribeEvent
-    private static void onRightClickBlock(PlayerInteractEvent.RightClickBlock event) {
-        if (isCodex(event)) {
-            openCharacterSheet();
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            event.setCanceled(true);
-        }
-    }
-
-    @SubscribeEvent
-    private static void onRightClickEntity(PlayerInteractEvent.EntityInteract event) {
-        if (isCodex(event)) {
-            openCharacterSheet();
-            event.setCancellationResult(InteractionResult.SUCCESS);
-            event.setCanceled(true);
-        }
-    }
-
-    private static boolean isCodex(PlayerInteractEvent event) {
-        return event.getItemStack().getItem() == MkmItems.CODEX.get();
+            return InteractionResult.SUCCESS;
+        });
     }
 
     private static void openCharacterSheet() {
-        Minecraft minecraft = Minecraft.getInstance();
-        if (minecraft.player != null) {
-            minecraft.gui.setScreen(new CharacterSheetScreen());
+        Minecraft client = Minecraft.getInstance();
+        if (client.player != null) {
+            client.gui.setScreen(new CharacterSheetScreen());
         }
     }
 }
