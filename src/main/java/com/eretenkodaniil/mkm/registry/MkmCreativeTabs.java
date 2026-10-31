@@ -19,6 +19,7 @@ public final class MkmCreativeTabs {
     private MkmCreativeTabs() {}
 
     public static void initialize() {
-        MAIN.getDisplayName();
+        // The static MAIN registration occurs during class initialization.
+        // Leave the tab icon supplier lazy; never create ItemStacks here.
     }
 }
