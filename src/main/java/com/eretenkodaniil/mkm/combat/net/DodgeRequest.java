@@ -8,7 +8,7 @@ import net.minecraft.resources.Identifier;
 
 /**
  * Untrusted client intent. Only the direction (not displacement or stamina) crosses the wire.
- * 0 forward, 1 back, 2 left, 3 right.
+ * 0 forward, 1 back, 2 left, 3 right, 4-7 diagonals.
  */
 public record DodgeRequest(byte direction) implements CustomPacketPayload {
     public static final Type<DodgeRequest> TYPE = new Type<>(

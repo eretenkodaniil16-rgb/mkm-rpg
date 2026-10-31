@@ -68,7 +68,7 @@ public final class CombatService {
 
     public static void tryDodge(ServerPlayer player, byte direction) {
         // A one-byte packet is just an intent. Never trust a client-supplied velocity or position.
-        if (direction < 0 || direction > 3
+        if (direction < 0 || direction > DodgeDirection.LAST
                 || player.isSpectator() || player.isPassenger() || !player.onGround()) {
             return;
         }
@@ -101,7 +101,7 @@ public final class CombatService {
         player.connection.send(new ClientboundSetEntityMotionPacket(player));
         player.setAttached(CombatAttachments.PLAYER, next);
         player.sendOverlayMessage(Component.literal(String.format(
-                Locale.ROOT, "Dodge  -%.0f stamina", cost)));
+                Locale.ROOT, "Dodge %s  -%.0f stamina", DodgeDirection.label(direction), cost)));
     }
 
     private static CombatState fresh(

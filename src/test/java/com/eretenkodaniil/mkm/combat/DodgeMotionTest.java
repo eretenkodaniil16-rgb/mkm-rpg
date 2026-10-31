@@ -28,6 +28,24 @@ final class DodgeMotionTest {
     }
 
     @Test
+    void diagonalImpulseIsNormalizedAndCorrectlyOriented() {
+        DodgeMotion forwardLeft = DodgeMotion.fromFacing(0, 1, 4, 1);
+        DodgeMotion forwardRight = DodgeMotion.fromFacing(0, 1, 5, 1);
+        DodgeMotion backwardLeft = DodgeMotion.fromFacing(0, 1, 6, 1);
+        DodgeMotion backwardRight = DodgeMotion.fromFacing(0, 1, 7, 1);
+        for (DodgeMotion motion : new DodgeMotion[]{
+                forwardLeft, forwardRight, backwardLeft, backwardRight}) {
+            assertNotNull(motion);
+            assertEquals(DodgeMotion.BASE_IMPULSE,
+                    Math.hypot(motion.x(), motion.z()), 1e-8);
+        }
+        assertTrue(forwardLeft.x() > 0 && forwardLeft.z() > 0);
+        assertTrue(forwardRight.x() < 0 && forwardRight.z() > 0);
+        assertTrue(backwardLeft.x() > 0 && backwardLeft.z() < 0);
+        assertTrue(backwardRight.x() < 0 && backwardRight.z() < 0);
+    }
+
+    @Test
     void attributeScalingIsBounded() {
         DodgeMotion boosted = DodgeMotion.fromFacing(1, 0, 0, 10000);
         assertEquals(DodgeMotion.MAX_IMPULSE, Math.hypot(boosted.x(), boosted.z()), 1e-8);
@@ -37,7 +55,7 @@ final class DodgeMotionTest {
 
     @Test
     void invalidInputsDoNotProduceMovementOrConsumeResources() {
-        assertNull(DodgeMotion.fromFacing(0, 1, 4, 1));
+        assertNull(DodgeMotion.fromFacing(0, 1, 8, 1));
         assertNull(DodgeMotion.fromFacing(0, 1, -1, 1));
         assertNull(DodgeMotion.fromFacing(0, 0, 0, 1));
         assertNull(DodgeMotion.fromFacing(Double.NaN, 1, 0, 1));
