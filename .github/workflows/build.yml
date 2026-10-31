@@ -7,12 +7,14 @@ on:
       - 'feature/fabric-26.3-oneclick-installer'
       - 'fix/fabric-dodge-movement-sync'
       - 'fix/fabric-dodge-direction-input'
+      - 'feature/action-combat-c2-state-hud'
   pull_request:
     branches:
       - 'port/fabric-26.3'
       - 'feature/fabric-26.3-bundled-api'
       - 'feature/fabric-26.3-oneclick-installer'
       - 'fix/fabric-dodge-movement-sync'
+      - 'fix/fabric-dodge-direction-input'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -41,7 +43,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.3-fabric.5.jar")
+              if p.endswith("0.0.4-fabric.0.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -125,7 +127,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.3-fabric.5.jar
+          path: build/libs/mkm-rpg-0.0.4-fabric.0.jar
           if-no-files-found: error
           retention-days: 14
 
