@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.eretenkodaniil.mkm.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "LivingEntityCombatMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

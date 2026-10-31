@@ -6,40 +6,47 @@ import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
+import com.eretenkodaniil.mkm.command.MkmCommands;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
 import com.eretenkodaniil.mkm.registry.MkmItems;
-import com.mojang.logging.LogUtils;
-import net.neoforged.bus.api.IEventBus;
-import net.neoforged.fml.ModContainer;
-import net.neoforged.fml.common.Mod;
-import net.neoforged.neoforge.common.NeoForge;
+import net.fabricmc.api.ModInitializer;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/**
- * Common entry point for MKM.
- *
- * <p>This class must remain safe to load on a dedicated server. Client-only Minecraft classes
- * belong under {@code com.eretenkodaniil.mkm.client} and must never be referenced from common
- * bootstrap code.</p>
- */
-@Mod(MkmMod.MOD_ID)
-public final class MkmMod {
+public final class MkmMod implements ModInitializer {
     public static final String MOD_ID = "mkm";
-    public static final Logger LOGGER = LogUtils.getLogger();
+    public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    public MkmMod(IEventBus modEventBus, ModContainer modContainer) {
-        MkmItems.register(modEventBus);
-        MkmCreativeTabs.register(modEventBus);
-        CharacterAttachments.register(modEventBus);
-        CombatAttachments.register(modEventBus);
-        modEventBus.addListener(CombatNetworking::register);
+    public static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath(MOD_ID, path);
+    }
 
-        NeoForge.EVENT_BUS.addListener(CharacterEvents::onPlayerLoggedIn);
-        NeoForge.EVENT_BUS.addListener(CombatService::onLogin);
-        NeoForge.EVENT_BUS.addListener(CombatService::onPlayerTick);
-        NeoForge.EVENT_BUS.addListener(CombatEvents::onIncomingDamage);
-        NeoForge.EVENT_BUS.addListener(CombatEvents::onDamagePre);
+    @Override
+    public void onInitialize() {
+        // Explicit static initialization registers Fabric attachments before player data is read.
+        CharacterAttachments.initialize();
+        CombatAttachments.initialize();
+        MkmItems.initialize();
+        MkmCreativeTabs.initialize();
+        CombatNetworking.initialize();
 
-        LOGGER.info("MKM bootstrap initialized");
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            CharacterEvents.onPlayerLoggedIn(handler.player);
+            CombatService.onLogin(handler.player);
+        });
+        ServerTickEvents.END_SERVER_TICK.register(server -> {
+            for (var player : server.getPlayerList().getPlayers()) {
+                CombatService.onPlayerTick(player);
+            }
+        });
+        ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
+        ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
+        LOGGER.info("MKM Fabric 26.3 initialized");
     }
 }

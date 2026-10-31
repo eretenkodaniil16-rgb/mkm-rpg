@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "mkm",
+  "version": "${version}",
+  "name": "MKM RPG",
+  "description": "Minecraft RPG action combat and character system (Fabric 26.3)",
+  "authors": [
+    "MKM Project"
+  ],
+  "contact": {
+    "sources": "https://github.com/eretenkodaniil16-rgb/mkm-rpg"
+  },
+  "license": "All Rights Reserved",
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "com.eretenkodaniil.mkm.MkmMod"
+    ],
+    "client": [
+      "com.eretenkodaniil.mkm.client.MkmClient"
+    ]
+  },
+  "mixins": [
+    "mkm.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.20.1",
+    "minecraft": "~26.3",
+    "java": ">=25",
+    "fabric-api": "*"
+  }
+}
