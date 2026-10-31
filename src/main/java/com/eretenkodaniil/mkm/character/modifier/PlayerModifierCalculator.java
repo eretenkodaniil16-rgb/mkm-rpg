@@ -7,12 +7,17 @@ import com.eretenkodaniil.mkm.character.attribute.PrimaryAttributeInfluence;
 import com.eretenkodaniil.mkm.character.attribute.PrimaryAttributeInfluence.InfluenceTier;
 import java.util.EnumMap;
 import java.util.Map;
+import java.util.function.ToIntFunction;
 
 public final class PlayerModifierCalculator {
     private PlayerModifierCalculator() {
     }
 
     public static PlayerModifierSnapshot calculate(CharacterData data) {
+        return calculate(data::attribute);
+    }
+
+    static PlayerModifierSnapshot calculate(ToIntFunction<PrimaryAttribute> attributeValues) {
         EnumMap<PlayerModifierId, Double> values = new EnumMap<>(PlayerModifierId.class);
 
         for (PlayerModifierId id : PlayerModifierId.values()) {
@@ -20,7 +25,7 @@ public final class PlayerModifierCalculator {
         }
 
         for (PrimaryAttribute attribute : PrimaryAttribute.values()) {
-            double effectiveDelta = AttributeScaling.effectiveDelta(data.attribute(attribute));
+            double effectiveDelta = AttributeScaling.effectiveDelta(attributeValues.applyAsInt(attribute));
             if (effectiveDelta == 0.0D) {
                 continue;
             }
