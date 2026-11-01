@@ -22,6 +22,18 @@ final class FordDialogueContractTest {
         }
     }
 
+    @Test void cosmeticSinkFailureNeverPropagatesIntoGameplay() {
+        try {
+            NpcVisualSignals.installObserver(intent -> { throw new IllegalStateException("renderer offline"); });
+            var initial = new FordQuestState();
+            assertDoesNotThrow(() -> NpcVisualSignals.publish(new NpcVisualSignals.Intent(
+                    "npc", NpcVisualSignals.HUMANOID, NpcVisualSignals.Cue.REACT, 1, 1)));
+            assertEquals(FordQuestState.NOT_STARTED, initial.stage());
+        } finally {
+            NpcVisualSignals.installObserver(intent -> {});
+        }
+    }
+
     @Test void semanticCuesAreExplicitAndCannotMutateAQuest() {
         assertEquals(8,NpcVisualSignals.Cue.values().length);
         assertEquals("mkm:npc/greet",NpcVisualSignals.Cue.GREET.id());

@@ -4,6 +4,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
 import java.util.Objects;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.util.function.Consumer;
 
 /**
@@ -11,6 +13,7 @@ import java.util.function.Consumer;
  * World emits only after SERVER-validated narrative state transitions. MNAE owns transport/rendering.
  */
 public final class NpcVisualSignals {
+    private static final Logger LOGGER = LoggerFactory.getLogger(NpcVisualSignals.class);
     public enum Cue {
         IDLE("mkm:npc/idle", 0),
         WAIT("mkm:npc/wait", 0),
@@ -57,13 +60,26 @@ public final class NpcVisualSignals {
     }
 
     public static void publish(Intent intent) {
-        observer.accept(Objects.requireNonNull(intent));
+        Objects.requireNonNull(intent);
+        try {
+            observer.accept(intent);
+        } catch (RuntimeException renderingFailure) {
+            // Observer transport/renderer is an optional cosmetic consumer.
+            // Its failure must never interrupt an authoritative quest or death callback.
+            LOGGER.warn("MKM NPC cosmetic observer failed for {} cue {}", intent.actorUuid(),
+                    intent.actionId(), renderingFailure);
+        }
     }
 
     /** Logical-server only, with cosmetic ordering scoped to the current server process. */
     public static void emit(Entity actor, Cue cue) {
+        emit(actor, HUMANOID, cue);
+    }
+
+    /** Future nonhuman actors must supply their own creature rig, never reuse humanoid bones. */
+    public static void emit(Entity actor, String rigProfile, Cue cue) {
         if (actor == null || !(actor.level() instanceof ServerLevel level)) return;
-        publish(new Intent(actor.getUUID().toString(), HUMANOID, cue,
+        publish(new Intent(actor.getUUID().toString(), rigProfile, cue,
                 Math.max(0L, level.getGameTime()),
                 COSMETIC_SEQUENCE.getAndIncrement() & 0x7FFFFFFF));
     }
