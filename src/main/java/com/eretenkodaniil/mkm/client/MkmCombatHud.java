@@ -5,6 +5,8 @@ import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
 import com.eretenkodaniil.mkm.client.animation.AnimationController;
 import com.eretenkodaniil.mkm.client.animation.AnimationLibrary;
 import com.eretenkodaniil.mkm.client.animation.AnimationProfile;
+import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.engine.NativeDemoLibrary;
 import net.fabricmc.loader.api.FabricLoader;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
@@ -42,7 +44,8 @@ public final class MkmCombatHud {
         String version = FabricLoader.getInstance().getModContainer("mkm")
                 .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
-        graphics.text(client.font, Component.literal("MKM RPG " + version + "  [C3.8]"),
+        graphics.text(client.font, Component.literal("MKM RPG " + version
+                + (NativeAnimationToggle.enabled() ? " [MNAE M1] F8" : " [C3.8] F8")),
                 x, y - 24, TEXT);
         CombatState combat = client.player.getAttached(CombatAttachments.PLAYER);
         var character = client.player.getAttached(CharacterAttachments.CHARACTER);
@@ -84,6 +87,11 @@ public final class MkmCombatHud {
             String action = AnimationController.actionKey(timeline);
             String expectedClip = profile == null || action == null
                     ? null : profile.clipFor(action);
+            if (NativeAnimationToggle.enabled() && timeline.kind() == ActionTimeline.Kind.LIGHT_COMBO
+                    && timeline.comboStep() == 1) {
+                expectedClip = client.player.getMainHandItem().isEmpty()
+                        ? NativeDemoLibrary.JAB : NativeDemoLibrary.SWORD;
+            }
             graphics.text(client.font,
                     Component.literal(AnimationRenderProbe.status(
                             client.level.getGameTime(), expectedClip)),

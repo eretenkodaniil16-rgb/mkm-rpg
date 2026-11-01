@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
+import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
 import com.eretenkodaniil.mkm.client.animation.HitFeedbackParticles;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
@@ -29,6 +30,8 @@ public final class MkmClient implements ClientModInitializer {
             "key.mkm.dodge", InputConstants.KEY_G, CATEGORY);
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
+    private static final KeyMapping ANIMATION_AB = new KeyMapping(
+            "key.mkm.animation_ab", InputConstants.KEY_F8, CATEGORY);
 
     @Override
     public void onInitializeClient() {
@@ -38,10 +41,19 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(OPEN_SHEET);
         KeyMappingHelper.registerKeyMapping(DODGE);
         KeyMappingHelper.registerKeyMapping(COMBO);
+        KeyMappingHelper.registerKeyMapping(ANIMATION_AB);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (ANIMATION_AB.consumeClick()) {
+                if (client.player != null && client.gui.screen() == null) {
+                    boolean nativeMode = NativeAnimationToggle.flip();
+                    client.player.displayClientMessage(Component.literal(
+                            nativeMode ? "MNAE M1: ON (two demo strikes)"
+                                    : "C3.8: ON (legacy animations)"), true);
+                }
+            }
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();
