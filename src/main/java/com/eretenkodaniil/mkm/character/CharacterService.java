@@ -40,6 +40,8 @@ public final class CharacterService {
         }
 
         CharacterData current = get(player);
+        // Do not let repeatable combat XP rewrite an unknown future save format.
+        if (current.schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION) return current;
         long newExperience = ProgressionRules.experienceAfterReward(current.experience(), amount);
         if (newExperience == current.experience()) return current;
         return setExperience(player, newExperience);
