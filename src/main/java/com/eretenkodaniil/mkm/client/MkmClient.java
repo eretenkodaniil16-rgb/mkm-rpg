@@ -19,7 +19,6 @@ import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.world.InteractionResult;
 
 public final class MkmClient implements ClientModInitializer {
@@ -48,10 +47,7 @@ public final class MkmClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (ANIMATION_AB.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
-                    boolean nativeMode = NativeAnimationToggle.flip();
-                    client.player.displayClientMessage(Component.literal(
-                            nativeMode ? "MNAE M1: ON (two demo strikes)"
-                                    : "C3.8: ON (legacy animations)"), true);
+                    NativeAnimationToggle.flip(); // Visible immediately in C3.8/MNAE HUD.
                 }
             }
             while (OPEN_SHEET.consumeClick()) {
