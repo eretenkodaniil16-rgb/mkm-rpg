@@ -27,21 +27,25 @@ public final class FordDialogueScreen extends Screen {
         super.init();
         int x = panelLeft() + 16, y = panelTop() + 80, w = panelWidth() - 32;
         if (view.stage() == 0) {
-            addChoice("Исследовать следы (PER 12)", FordChoiceRequest.INSPECT, x, y, w);
+            Button inspect = addChoice(view.tracks() ? "Следы уже изучены"
+                    : (view.perception() >= 12 ? "Исследовать следы (PER 12)"
+                       : "Требуется PER 12 (" + view.perception() + ")"),
+                    FordChoiceRequest.INSPECT, x, y, w);
+            inspect.active = !view.tracks() && view.perception() >= 12;
             addChoice("Я помогу каравану", FordChoiceRequest.ACCEPT, x, y + 24, w);
             addChoice("Сейчас не могу", FordChoiceRequest.LEAVE, x, y + 48, w);
         } else if (view.stage() == 1) {
             addChoice("Где искать противника?", FordChoiceRequest.LOCATE, x, y, w);
             addChoice("Я вернусь после боя", FordChoiceRequest.LEAVE, x, y + 24, w);
         } else if (view.stage() == 2) {
-            addChoice("Вернуть найденное и получить награду", FordChoiceRequest.CLAIM, x, y, w);
+            addChoice("Получить награду", FordChoiceRequest.CLAIM, x, y, w);
         }
         addRenderableWidget(Button.builder(Component.literal("Закрыть"), button -> onClose())
                 .size(Math.min(100,w), 20).pos(x, panelTop() + 179).build());
     }
 
-    private void addChoice(String title, byte action, int x, int y, int width) {
-        addRenderableWidget(Button.builder(Component.literal(title), button -> choose(action))
+    private Button addChoice(String title, byte action, int x, int y, int width) {
+        return addRenderableWidget(Button.builder(Component.literal(title), button -> choose(action))
                 .size(width, 20).pos(x,y).build());
     }
 

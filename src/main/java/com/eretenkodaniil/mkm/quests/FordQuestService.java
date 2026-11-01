@@ -69,6 +69,13 @@ public final class FordQuestService {
                 || player.distanceToSqr(npc) > TALK_RANGE_SQUARED) return;
         FordQuestState state = get(player);
         if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
+        // Closing an already-stale screen must NEVER re-open it. Its original
+        // session stage remains sufficient to invalidate the one-shot nonce.
+        if (request.choice() == FordChoiceRequest.CLOSE) {
+            FordDialogueSessions.consume(player, npc.getUUID(), npc.getId(),
+                    request.expectedStage(), request.sessionId(), level.getGameTime());
+            return;
+        }
         if (request.expectedStage() != FordQuestNetworking.stage(state)) {
             showDialogue(player, npc); // stale packet: resync, do not mutate
             return;
@@ -79,7 +86,6 @@ public final class FordQuestService {
                 request.expectedStage(), request.sessionId(), level.getGameTime())) {
             return;
         }
-        if (request.choice() == FordChoiceRequest.CLOSE) return;
         if (!FordDialogueRules.permitted(request.expectedStage(),request.choice())) {
             showDialogue(player, npc);
             return;
@@ -205,10 +211,17 @@ public final class FordQuestService {
     }
 
     public static void leave(ServerPlayer player) {
-        if (requireWarden(player)) {
-            message(player, "[Ильра] Возвращайся, когда решишься. Задание пока не принято.");
-            NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.WAIT);
-        }
+        if (!requireWarden(player)) return;
+        FordQuestState state = get(player);
+        String farewell = switch (state.stage()) {
+            case FordQuestState.NOT_STARTED -> "Возвращайся, когда решишься. Задание пока не принято.";
+            case FordQuestState.ACTIVE -> "Будь осторожен у брода. Я подожду известий.";
+            case FordQuestState.RETURN_TO_WARDEN -> "Награда останется здесь, пока ты не вернёшься.";
+            case FordQuestState.REWARDED -> "Я не забуду твою помощь караванам.";
+            default -> "До встречи.";
+        };
+        message(player, "[Ильра] " + farewell);
+        NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.WAIT);
     }
 
     public static void inspect(ServerPlayer player) {
