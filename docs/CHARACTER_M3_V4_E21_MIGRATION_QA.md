@@ -112,7 +112,7 @@ not extracted real user NBT files. They cover:
 v4 codec save/reload, safe spending of only remaining points, prevention of
 stale request replay, receipt atomicity/duplicate, old XP > cap, physical
 modifiers before/after migration with the **same equipment deltas**, and
-rejection of malformed v3 allocation ledgers and future schema. Existing
+rejection of malformed v3 allocation ledgers and future schema. In malformed v3\nrecords the codec currently throws `IllegalArgumentException` from its\nrecord constructor rather than returning `DataResult.error`; whether the\nFabric playerdata loader retains or resets the attachment on that exception\n**must be checked in a real throwaway world**. Existing
 CharacterRewardRulesTest, CharacterOwnerSyncTest, QuestRewardRecoveryTest,
 RewardReplayFuzzTest cover keyed XP, sync privacy, crash cut, two players.
 
@@ -136,11 +136,12 @@ These are **release blockers**, not optional cosmetic tests.
 | MIG-08 | Run experimental MNAE/build integration with v3 save copy; switch F8/animation but repeat `/mkm stats`, K, quest and relog. | No CharacterData v2 downgrade, no drop of `allocated_points` or receipts; no animation frame/pose fields in CharacterData. |
 | PKG-09 | Inspect final JAR metadata, `gradle.properties`, Windows package, filename, startup banners, modlist; launch matching client + dedicated server. | One clearly identified new version strictly above `0.0.5-fabric.4`; no outdated `0.0.4-fabric.0` PR #39 label and no mixed packet versions. |
 | FAIL-10 | Restore the pre-upgrade world backup onto an old-version isolated instance; compare SHA-256 for the untouched archive. | Original world still loads with its original mod set. **Never** point old mod to an already-upgraded save. |
+| CORRUPT-11 | On a **throwaway** copied test save, remove one v3 `allocated_points` list or shorten it to six entries; attempt loading under the combined build and capture all logs + playerdata hashes. | Constructor/codec rejects the malformed ledger; QA must verify game loader **does not silently initialize/reset the player's progress or overwrite the original playerdata**. Preserve backup and treat any reset as P0. |
 
 The QA team must report for each ID **PASS / FAIL / NOT EXECUTED**,
 build SHA/JAR checksum, Minecraft/Fabric/Java versions, test world backup ID,
 number of real clients, before/after snapshots and any failure logs. Green
-Gradle/JUnit/server/client smoke alone does not satisfy MIG-01–08.
+Gradle/JUnit/server/client smoke alone does not satisfy MIG-01–08 and CORRUPT-11.
 
 ## 6. Cross-workstream merge contract
 
