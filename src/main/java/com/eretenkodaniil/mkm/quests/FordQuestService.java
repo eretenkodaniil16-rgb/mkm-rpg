@@ -3,6 +3,7 @@ package com.eretenkodaniil.mkm.quests;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
 import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
+import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.core.BlockPos;
@@ -54,7 +55,9 @@ public final class FordQuestService {
         if (!(entity instanceof Villager npc) || !requireWarden(player)) return;
         FordQuestState state = get(player);
         if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
-        if (!FordQuestNetworking.showDialogue(player, npc)) talk(player);
+        if (FordQuestNetworking.showDialogue(player, npc)) {
+            NpcVisualSignals.emit(npc, NpcVisualSignals.Cue.GREET);
+        } else talk(player);
     }
 
     public static void handleChoice(ServerPlayer player, FordChoiceRequest request) {
@@ -66,7 +69,14 @@ public final class FordQuestService {
                 || player.distanceToSqr(npc) > TALK_RANGE_SQUARED) return;
         FordQuestState state = get(player);
         if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
-        if (request.expectedStage() != FordQuestNetworking.stage(state)) return;
+        if (request.expectedStage() != FordQuestNetworking.stage(state)) {
+            showDialogue(player, npc); // stale packet: resync, do not mutate
+            return;
+        }
+        if (!FordDialogueRules.permitted(request.expectedStage(),request.choice())) {
+            showDialogue(player, npc);
+            return;
+        }
         switch (request.choice()) {
             case FordChoiceRequest.INSPECT -> { if (request.expectedStage() == 0) inspect(player); else return; }
             case FordChoiceRequest.ACCEPT -> { if (request.expectedStage() == 0) accept(player); else return; }
@@ -90,6 +100,8 @@ public final class FordQuestService {
 
     private static void update(ServerPlayer player, FordQuestState state) {
         player.setAttached(FordQuestAttachments.FORD_QUEST, state);
+        // Optional push; the client shows it only while J is open or explicitly requested.
+        FordQuestNetworking.sendJournal(player);
     }
 
     private static void message(ServerPlayer player, String text) {
@@ -164,6 +176,7 @@ public final class FordQuestService {
             return;
         }
         FordQuestState state = get(player);
+        NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.TALK);
         switch (state.stage()) {
             case FordQuestState.NOT_STARTED -> {
                 message(player, "[Ильра] Караван пропал у старого брода. Сможешь остановить налётчика?");
@@ -187,6 +200,7 @@ public final class FordQuestService {
     public static void leave(ServerPlayer player) {
         if (requireWarden(player)) {
             message(player, "[Ильра] Возвращайся, когда решишься. Задание пока не принято.");
+            NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.WAIT);
         }
     }
 
@@ -199,6 +213,7 @@ public final class FordQuestService {
         FordQuestState result = FordQuestRules.inspect(previous, perception);
         if (result != previous) {
             update(player, result);
+            NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.REACT);
             message(player, "[PER " + perception + " >= 12] Следы выдают хуска: он устойчив к солнцу. При награде +25 MKM XP.");
         } else if (previous.foundTracks()) {
             message(player, "MKM: Ты уже изучил следы.");
@@ -225,6 +240,7 @@ public final class FordQuestService {
         }
         // The UUID is captured from a real, successfully spawned server entity.
         update(player, accepted.withEncounter(raider.getUUID().toString(), npc.getUUID().toString()));
+        NpcVisualSignals.emit(raider, NpcVisualSignals.Cue.THREAT);
         message(player, "[Ильра] Налётчик появился неподалёку. Одолей его и возвращайся!");
     }
 
@@ -335,6 +351,7 @@ public final class FordQuestService {
         }
         if (ownerId == null) return;
         String deadId = entity.getUUID().toString();
+        NpcVisualSignals.emit(entity, NpcVisualSignals.Cue.DEATH);
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
         if (owner != null) {
             applyEncounterDeath(owner, deadId);
@@ -392,6 +409,7 @@ public final class FordQuestService {
             return;
         }
         update(player, rewarded);
+        NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.REWARD);
         message(player, result.creditedExperience() > 0L
                 ? "[Ильра] Получено " + result.creditedExperience() + " MKM XP."
                 : "[Ильра] Твоя награда уже была учтена или достигнут предел опыта.");

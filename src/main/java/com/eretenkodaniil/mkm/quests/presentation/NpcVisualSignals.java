@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.quests.presentation;
 
-import java.util.Locale;
+import java.util.concurrent.atomic.AtomicInteger;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.world.entity.Entity;
 import java.util.Objects;
 import java.util.function.Consumer;
 
@@ -46,6 +48,7 @@ public final class NpcVisualSignals {
 
     /** No-op until MNAE explicitly installs an observer. World NEVER plays animation directly. */
     private static volatile Consumer<Intent> observer = intent -> {};
+    private static final AtomicInteger COSMETIC_SEQUENCE = new AtomicInteger();
 
     private NpcVisualSignals() {}
 
@@ -55,5 +58,13 @@ public final class NpcVisualSignals {
 
     public static void publish(Intent intent) {
         observer.accept(Objects.requireNonNull(intent));
+    }
+
+    /** Logical-server only, with cosmetic ordering scoped to the current server process. */
+    public static void emit(Entity actor, Cue cue) {
+        if (actor == null || !(actor.level() instanceof ServerLevel level)) return;
+        publish(new Intent(actor.getUUID().toString(), HUMANOID, cue,
+                Math.max(0L, level.getGameTime()),
+                COSMETIC_SEQUENCE.getAndIncrement() & 0x7FFFFFFF));
     }
 }
