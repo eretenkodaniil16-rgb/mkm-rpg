@@ -58,39 +58,43 @@ public final class CharacterSheetScreen extends Screen {
     protected void init() {
         super.init();
 
-        int panelLeft = panelLeft();
-        int panelTop = panelTop();
-        int panelWidth = panelWidth();
-        int panelHeight = panelHeight();
+        CharacterSheetLayout layout = layout();
+        int panelLeft = layout.left();
+        int panelTop = layout.top();
+        int panelWidth = layout.width();
+        int panelHeight = layout.height();
 
+        boolean narrow = layout.narrow();
         addRenderableWidget(Button.builder(
                         Component.translatable("screen.mkm.character.close"),
                         button -> onClose())
-                .size(72, 20)
-                .pos(panelLeft + panelWidth - 84, panelTop + panelHeight - 30)
+                .size(narrow ? 52 : 72, 20)
+                .pos(panelLeft + panelWidth - (narrow ? 56 : 84), layout.footerTop())
                 .build());
 
         PrimaryAttribute[] attributes = PrimaryAttribute.values();
-        int statsTop = panelTop + 169;
+        int statsTop = layout.statsTop();
         for (int i = 0; i < attributes.length; i++) {
             final int index = i;
-            int buttonTop = statsTop + 14 + 14 * i;
+            int buttonTop = layout.attributeButtonTop(i);
             minusButtons[i] = addRenderableWidget(Button.builder(Component.literal("-"),
                     button -> stage(index, -1))
-                    .size(18, 14).pos(panelLeft + 91, buttonTop).build());
+                    .size(18, 13).pos(panelLeft + 91, buttonTop).build());
             plusButtons[i] = addRenderableWidget(Button.builder(Component.literal("+"),
                     button -> stage(index, 1))
-                    .size(18, 14).pos(panelLeft + 113, buttonTop).build());
+                    .size(18, 13).pos(panelLeft + 113, buttonTop).build());
         }
         applyButton = addRenderableWidget(Button.builder(
                         Component.translatable("screen.mkm.character.apply"),
                         button -> submitAllocation())
-                .size(90, 20).pos(panelLeft + panelWidth - 276, panelTop + panelHeight - 30)
+                .size(narrow ? 70 : 90, 20).pos(
+                        panelLeft + panelWidth - (narrow ? 188 : 276), layout.footerTop())
                 .build());
         resetButton = addRenderableWidget(Button.builder(
                         Component.translatable("screen.mkm.character.reset"),
                         button -> { Arrays.fill(pending, 0); statusMessage = null; refreshButtons(); })
-                .size(82, 20).pos(panelLeft + panelWidth - 180, panelTop + panelHeight - 30)
+                .size(narrow ? 58 : 82, 20).pos(
+                        panelLeft + panelWidth - (narrow ? 114 : 180), layout.footerTop())
                 .build());
         refreshButtons();
     }
@@ -198,10 +202,11 @@ public final class CharacterSheetScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        int left = panelLeft();
-        int top = panelTop();
-        int panelWidth = panelWidth();
-        int panelHeight = panelHeight();
+        CharacterSheetLayout layout = layout();
+        int left = layout.left();
+        int top = layout.top();
+        int panelWidth = layout.width();
+        int panelHeight = layout.height();
         int right = left + panelWidth;
         int bottom = top + panelHeight;
 
@@ -213,15 +218,13 @@ public final class CharacterSheetScreen extends Screen {
         graphics.fill(left, top, left + 2, bottom, BORDER);
         graphics.fill(right - 2, top, right, bottom, BORDER);
 
-        graphics.centeredText(font, title, width / 2, top + 12, TEXT);
-        graphics.centeredText(
-                font,
-                Component.translatable("screen.mkm.character.runtime", modVersion()),
-                width / 2,
-                top + 27,
-                MUTED);
-
-        drawTabs(graphics, left, top, panelWidth);
+        graphics.centeredText(font, title, width / 2, top + (layout.compact() ? 7 : 12), TEXT);
+        if (!layout.compact()) {
+            graphics.centeredText(font,
+                    Component.translatable("screen.mkm.character.runtime", modVersion()),
+                    width / 2, top + 27, MUTED);
+            drawTabs(graphics, left, top, panelWidth);
+        }
         drawCharacterContent(graphics, left, top, panelWidth);
 
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
@@ -268,7 +271,8 @@ public final class CharacterSheetScreen extends Screen {
         }
 
         CharacterData data = minecraft.player.getAttached(CharacterAttachments.CHARACTER);
-        int contentTop = top + 75;
+        CharacterSheetLayout layout = layout();
+        int contentTop = layout.contentTop();
         int contentLeft = left + 22;
 
         graphics.text(
@@ -294,43 +298,38 @@ public final class CharacterSheetScreen extends Screen {
             return;
         }
 
-        graphics.text(
-                font,
-                Component.translatable("screen.mkm.character.synced"),
-                contentLeft,
-                contentTop + 16,
-                GOOD);
-        graphics.text(
-                font,
-                Component.translatable("screen.mkm.character.level", data.level()),
-                contentLeft,
-                contentTop + 36,
-                TEXT);
-        graphics.text(
-                font,
-                Component.translatable("screen.mkm.character.xp", data.experience()),
-                contentLeft,
-                contentTop + 50,
-                TEXT);
+        if (!layout.compact()) {
+            graphics.text(font, Component.translatable("screen.mkm.character.synced"),
+                    contentLeft, contentTop + 16, GOOD);
+        }
+        graphics.text(font, Component.translatable("screen.mkm.character.level", data.level()),
+                contentLeft, contentTop + (layout.micro() ? 12 : layout.compact() ? 14 : 36), TEXT);
+        if (!layout.micro()) {
+            graphics.text(font,
+                    Component.translatable("screen.mkm.character.xp", data.experience()),
+                    contentLeft, contentTop + (layout.compact() ? 27 : 50), TEXT);
+            drawExperienceBar(graphics, data, contentLeft,
+                    contentTop + (layout.compact() ? 40 : 66), panelWidth - 44);
+        }
 
-        drawExperienceBar(graphics, data, contentLeft, contentTop + 66, panelWidth - 44);
+        Component points = Component.translatable("screen.mkm.character.points",
+                data.availablePoints(), pendingTotal());
+        graphics.text(font, layout.compact() && statusMessage != null ? statusMessage : points,
+                contentLeft, contentTop + (layout.micro() ? 25 : layout.compact() ? 53 : 81),
+                statusMessage != null && layout.compact() ? WARNING
+                        : pendingTotal() > 0 ? GOOD : TEXT);
 
-        graphics.text(font,
-                Component.translatable("screen.mkm.character.points",
-                        data.availablePoints(), pendingTotal()),
-                contentLeft, contentTop + 81, pendingTotal() > 0 ? GOOD : TEXT);
-
-        int statsTop = contentTop + 94;
+        int statsTop = layout.statsTop();
         int split = left + panelWidth / 2 + 8;
 
         graphics.text(font, Component.translatable("screen.mkm.character.attributes"), contentLeft, statsTop, BORDER);
-        graphics.text(font, Component.translatable("screen.mkm.character.str", previewAttribute(data, PrimaryAttribute.STRENGTH)), contentLeft, statsTop + 17, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.dex", previewAttribute(data, PrimaryAttribute.DEXTERITY)), contentLeft, statsTop + 31, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.vit", previewAttribute(data, PrimaryAttribute.VITALITY)), contentLeft, statsTop + 45, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.end", previewAttribute(data, PrimaryAttribute.ENDURANCE)), contentLeft, statsTop + 59, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.int", previewAttribute(data, PrimaryAttribute.INTELLIGENCE)), contentLeft, statsTop + 73, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.wil", previewAttribute(data, PrimaryAttribute.WILLPOWER)), contentLeft, statsTop + 87, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.per", previewAttribute(data, PrimaryAttribute.PERCEPTION)), contentLeft, statsTop + 101, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.str", previewAttribute(data, PrimaryAttribute.STRENGTH)), contentLeft, layout.attributeTextTop(0), TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.dex", previewAttribute(data, PrimaryAttribute.DEXTERITY)), contentLeft, layout.attributeTextTop(1), TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.vit", previewAttribute(data, PrimaryAttribute.VITALITY)), contentLeft, layout.attributeTextTop(2), TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.end", previewAttribute(data, PrimaryAttribute.ENDURANCE)), contentLeft, layout.attributeTextTop(3), TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.int", previewAttribute(data, PrimaryAttribute.INTELLIGENCE)), contentLeft, layout.attributeTextTop(4), TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.wil", previewAttribute(data, PrimaryAttribute.WILLPOWER)), contentLeft, layout.attributeTextTop(5), TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.per", previewAttribute(data, PrimaryAttribute.PERCEPTION)), contentLeft, layout.attributeTextTop(6), TEXT);
 
         CharacterData previewData = data;
         for (PrimaryAttribute attribute : PrimaryAttribute.values()) {
@@ -344,58 +343,70 @@ public final class CharacterSheetScreen extends Screen {
                 ? "? / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA)
                 : Math.round(combat.stamina()) + " / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA);
 
-        graphics.text(font, Component.translatable(pendingTotal() > 0
-                ? "screen.mkm.character.derived_preview" : "screen.mkm.character.derived"), split, statsTop, BORDER);
+        if (!layout.narrow()) {
+            graphics.text(font, Component.translatable(pendingTotal() > 0
+                    ? "screen.mkm.character.derived_preview" : "screen.mkm.character.derived"),
+                    split, statsTop, BORDER);
+        }
+        if (!layout.narrow()) {
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_health", modifiers.formatted(PlayerModifierId.MAX_HEALTH)),
+                Component.translatable(layout.compact()
+                        ? "screen.mkm.character.compact_max_health" : "screen.mkm.character.max_health", modifiers.formatted(PlayerModifierId.MAX_HEALTH)),
                 split,
-                statsTop + 17,
+                layout.attributeTextTop(0),
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.physical_power", modifiers.formatted(PlayerModifierId.PHYSICAL_POWER)),
+                Component.translatable(layout.compact()
+                        ? "screen.mkm.character.compact_physical_power" : "screen.mkm.character.physical_power", modifiers.formatted(PlayerModifierId.PHYSICAL_POWER)),
                 split,
-                statsTop + 31,
+                layout.attributeTextTop(1),
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.attack_speed", modifiers.formatted(PlayerModifierId.ATTACK_SPEED)),
+                Component.translatable(layout.compact()
+                        ? "screen.mkm.character.compact_attack_speed" : "screen.mkm.character.attack_speed", modifiers.formatted(PlayerModifierId.ATTACK_SPEED)),
                 split,
-                statsTop + 45,
+                layout.attributeTextTop(2),
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_stamina", stamina),
+                Component.translatable(layout.compact()
+                        ? "screen.mkm.character.compact_max_stamina" : "screen.mkm.character.max_stamina", stamina),
                 split,
-                statsTop + 59,
+                layout.attributeTextTop(3),
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.magic_power", modifiers.formatted(PlayerModifierId.MAGIC_POWER)),
+                Component.translatable(layout.compact()
+                        ? "screen.mkm.character.compact_magic_power" : "screen.mkm.character.magic_power", modifiers.formatted(PlayerModifierId.MAGIC_POWER)),
                 split,
-                statsTop + 73,
+                layout.attributeTextTop(4),
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.max_mana", modifiers.formatted(PlayerModifierId.MAX_MANA)),
+                Component.translatable(layout.compact()
+                        ? "screen.mkm.character.compact_max_mana" : "screen.mkm.character.max_mana", modifiers.formatted(PlayerModifierId.MAX_MANA)),
                 split,
-                statsTop + 87,
+                layout.attributeTextTop(5),
                 TEXT);
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.weak_point_damage", modifiers.formatted(PlayerModifierId.WEAK_POINT_DAMAGE)),
+                Component.translatable(layout.compact()
+                        ? "screen.mkm.character.compact_weak_point_damage" : "screen.mkm.character.weak_point_damage", modifiers.formatted(PlayerModifierId.WEAK_POINT_DAMAGE)),
                 split,
-                statsTop + 101,
+                layout.attributeTextTop(6),
                 TEXT);
 
-        graphics.text(
-                font,
-                statusMessage == null
-                        ? Component.translatable("screen.mkm.character.derived_note") : statusMessage,
-                contentLeft,
-                top + panelHeight() - 48,
-                statusMessage == null ? MUTED : WARNING);
+        }
+        if (!layout.compact()) {
+            graphics.text(font,
+                    statusMessage == null
+                            ? Component.translatable("screen.mkm.character.derived_note") : statusMessage,
+                    contentLeft, top + panelHeight - 48,
+                    statusMessage == null ? MUTED : WARNING);
+        }
     }
 
     private void drawExperienceBar(GuiGraphicsExtractor graphics, CharacterData data, int x, int y, int barWidth) {
@@ -421,21 +432,14 @@ public final class CharacterSheetScreen extends Screen {
         graphics.centeredText(font, label, x + barWidth / 2, y + 1, TEXT);
     }
 
-    private int panelWidth() {
-        return Math.min(460, Math.max(280, width - 32));
+    private CharacterSheetLayout layout() {
+        return CharacterSheetLayout.forViewport(width, height);
     }
 
-    private int panelHeight() {
-        return Math.min(330, Math.max(300, height - 32));
-    }
-
-    private int panelLeft() {
-        return (width - panelWidth()) / 2;
-    }
-
-    private int panelTop() {
-        return (height - panelHeight()) / 2;
-    }
+    private int panelWidth() { return layout().width(); }
+    private int panelHeight() { return layout().height(); }
+    private int panelLeft() { return layout().left(); }
+    private int panelTop() { return layout().top(); }
 
     private static String modVersion() {
         return FabricLoader.getInstance()
