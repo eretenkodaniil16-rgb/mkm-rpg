@@ -158,6 +158,41 @@ respec must not erase claimed quest XP. MNAE receives a *cosmetic action ID* onl
 AFTER the Combat/Ability server authorizes an action; it never validates unlocks.
 Do not implement class trees, granted spell effects or new cast timelines here.
 
+## Safe operator audit for ambiguous legacy World E2 saves
+
+Character M3 adds a **read-only**, gamemaster-only `/mkm rewards` command. It
+reports the player's current CharacterData schema, receipt count, XP, earned
+points and whether the fixed `mkm:ford_warden/complete` receipt is present.
+It cannot mutate XP or mark quests complete and exposes no full private
+receipt list. Compare with the existing World `/mkmworld status` command:
+
+- Quest `return_to_warden`, receipt `ABSENT`: new keyed payout is eligible after
+  normal server validation and World E2's repair mechanism is removed.
+- Quest `return_to_warden`, receipt `PAID`: only finalize stage; do not pay.
+- Quest `rewarded`, receipt `PAID`: already settled; do not top up XP.
+- Quest `rewarded`, receipt `ABSENT`: **historically ambiguous**. Back up the
+  player's world/playerdata and server logs and audit manually. Neither the
+  XP floor nor current XP proves whether prior payment happened. Never execute
+  an automatic compensation, and never silently delete a claimed receipt.
+
+Note: since v4 reward receipt lists are authoritative server data, downgrading
+to a pre-v4 build or editing `claimed_reward_ids` in an NBT editor may cause
+duplicate payouts; versioned world backup and migration validation are required.
+The command is restricted to the executing gamemaster/player, not arbitrary
+offline UUIDs or the chat client.
+
+### Additional reproducible automated checks
+
+- `CharacterOwnerSyncTest`: actual `RegistryFriendlyByteBuf` encode/decode
+  must transmit level, XP and allocated build counters while **redacting** all
+  server-private reward receipts. The on-server object must retain them.
+- `RewardReplayFuzzTest`: 3,500 seeded events across two independent players:
+  kills, 340 quest IDs, random replay amounts, save/reload, and administrative
+  XP decreases. No receipt can pay twice, no owner can consume another owner's
+  claim and no earned-credit regression is permitted.
+- The existing `CharacterPersistenceBoundaryTest` validates all v4 fields
+  without introducing frame/pose/cosmetic persistence.
+
 ## Verification and mandatory manual gates
 
 - Unit tests: E2 stage/receipt crash matrix, legacy floor ambiguity, per-player
