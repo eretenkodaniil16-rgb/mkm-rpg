@@ -7,7 +7,7 @@ package com.eretenkodaniil.mkm.combat;
 public final class ActionTimelineRules {
     public static final int MAX_COMBO_STEP = 3;
     public static final long COMBO_WINDOW_TICKS = 16L;
-    public static final long DODGE_ACTIVE_TICKS = 8L;
+    public static final long DODGE_ACTIVE_TICKS = 10L;
     private static final long ACTIVE_TICKS = 1L;
 
     private ActionTimelineRules() {}
@@ -50,18 +50,18 @@ public final class ActionTimelineRules {
 
     public static long windupTicks(int step) {
         return switch (step) {
-            case 1 -> 4L;
-            case 2 -> 3L;
-            case 3 -> 5L;
+            case 1 -> 5L;
+            case 2 -> 4L;
+            case 3 -> 6L;
             default -> throw new IllegalArgumentException("Invalid combo stage");
         };
     }
 
     public static long recoveryTicks(int step) {
         return switch (step) {
-            case 1 -> 6L;
-            case 2 -> 6L;
-            case 3 -> 10L;
+            case 1 -> 8L;
+            case 2 -> 7L;
+            case 3 -> 11L;
             default -> throw new IllegalArgumentException("Invalid combo stage");
         };
     }
