@@ -49,8 +49,12 @@ public final class CombatEvents {
         // Computing an offensive bow bonus at impact would permit a weapon-swap exploit.
         if (target instanceof ServerPlayer defender) {
             if (source.is(DamageTypes.MOB_ATTACK)) {
+                PhysicalDamageType type = source.getEntity() instanceof LivingEntity attacker
+                        && source.getDirectEntity() == attacker
+                        ? EquipmentSnapshots.heldPhysicalType(attacker)
+                        : PhysicalDamageType.BLUNT;
                 return PhysicalMitigationRules.apply(
-                        amount, 0.0D, stats(defender), PhysicalDamageType.BLUNT);
+                        amount, 0.0D, stats(defender), type);
             }
             if (source.is(DamageTypes.ARROW) || source.is(DamageTypes.TRIDENT)) {
                 return PhysicalMitigationRules.apply(
