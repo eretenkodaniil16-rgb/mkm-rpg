@@ -31,6 +31,19 @@ final class CharacterProgressionTest {
     }
 
     @Test
+    void ordinaryRewardsStopAtLevelCapWithoutOverflow() {
+        long cap = ProgressionRules.experienceForLevel(100);
+        assertEquals(cap, ProgressionRules.experienceAfterReward(cap - 1, 25));
+        assertEquals(cap, ProgressionRules.experienceAfterReward(cap, 25));
+        assertEquals(Long.MAX_VALUE, ProgressionRules.experienceAfterReward(Long.MAX_VALUE, 100));
+        assertEquals(100, ProgressionRules.experienceAfterReward(0, 100));
+        assertEquals(0, ProgressionRules.experienceAfterReward(0, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> ProgressionRules.experienceAfterReward(0, -1));
+        assertEquals(cap, ProgressionRules.experienceAfterReward(cap - 100, Long.MAX_VALUE));
+    }
+
+    @Test
     void xpGrantsCreditsExactlyOnceEvenAfterAdministrativeDecrease() {
         CharacterData novice = new CharacterData();
         assertEquals(0, novice.availablePoints());
