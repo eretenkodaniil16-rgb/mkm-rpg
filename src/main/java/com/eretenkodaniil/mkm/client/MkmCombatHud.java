@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
+import net.fabricmc.loader.api.FabricLoader;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
@@ -32,20 +34,25 @@ public final class MkmCombatHud {
                 || client.player.isSpectator()) {
             return;
         }
+        int x = 12;
+        int y = Math.max(48, client.getWindow().getGuiScaledHeight() - 70);
+        String version = FabricLoader.getInstance().getModContainer("mkm")
+                .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
+                .orElse("unknown");
+        graphics.text(client.font, Component.literal("MKM RPG " + version + "  [C3.7]"),
+                x, y - 24, TEXT);
         CombatState combat = client.player.getAttached(CombatAttachments.PLAYER);
         var character = client.player.getAttached(CharacterAttachments.CHARACTER);
-        if (combat == null || character == null) return;
+        if (combat == null || character == null) {
+            graphics.text(client.font, Component.literal("NO SYNCED COMBAT DATA"),
+                    x, y - 12, STAMINA_LOW);
+            return;
+        }
 
         double max = PlayerModifierCalculator.calculate(character).get(PlayerModifierId.MAX_STAMINA);
         if (!Double.isFinite(max) || max <= 0) return;
         float ratio = (float) Math.clamp(combat.stamina() / max, 0D, 1D);
-        int width = client.getWindow().getGuiScaledWidth();
-        int height = client.getWindow().getGuiScaledHeight();
-        // In F5 front-facing views, the old centered bar obscured the
-        // character's hips and the entire strike/roll silhouette.
-        // Anchor to bottom-left so recorded third-person combat is readable.
-        int x = 12;
-        int y = Math.max(18, height - 64);
+        // Keep the model unobscured in F5; diagnostics stay at bottom left.
 
         graphics.fill(x - 1, y - 1, x + BAR_WIDTH + 1, y + BAR_HEIGHT + 1, 0xC8000000);
         graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, STAMINA_BG);
@@ -67,5 +74,10 @@ public final class MkmCombatHud {
                 };
         graphics.text(client.font, Component.literal(description), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
+        if (timeline != null && !timeline.idle() && client.level != null) {
+            graphics.text(client.font,
+                    Component.literal(AnimationRenderProbe.status(client.level.getGameTime())),
+                    x, y + 24, TEXT);
+        }
     }
 }
