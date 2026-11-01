@@ -28,9 +28,17 @@ Fabric baseline; Progression #15, Equipment #16/#22/#23 and C3.7 #25 are concurr
 - `AbilityAccessRules` describes grant composition and keeps **separate** grant
   eligibility vs executable-handler registration. Renewal remains freely accessible for M1;
   having an ID in a learned or equipment set **does not** make an unimplemented spell executable.
-- `ArcaneBoltTargetRules` is a pure defensive predicate. It does **not** perform Minecraft
-  raycasting, activate the spell, charge mana or deal damage. Its facts must be computed
-  server-side by a later platform adapter after the damage contract is signed off.
+- `ArcaneBoltTargetRules` is a pure defensive predicate.
+- `ArcaneBoltTargetProbe.acquire(caster, stats, combatPermission)` is a **read-only server-side**
+  raycast preparation using the player's current eye/look vector, the `SPELL_RANGE`
+  snapshot modifier, block collider ray clip, first intersected living entity and
+  an obligatory Combat-owned permission predicate. An excluded entity blocks the
+  projectile rather than allowing an enemy behind it to be selected. Nothing
+  calls this probe from `AbilityService` yet: there is **no registered damage
+  or spell activation path**, no mana debit, no cast timeline and no hit VFX.
+  In the combined Combat integration branch the permission predicate must
+  implement real PvP configuration, team/faction protection, target immunity and
+  PvE permissions; until approved it must never default to allow-all.
 
 ## Proposed Character Progression contract (requires B-owner approval)
 
