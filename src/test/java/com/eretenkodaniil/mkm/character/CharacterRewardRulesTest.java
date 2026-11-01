@@ -96,6 +96,51 @@ final class CharacterRewardRulesTest {
     }
 
     @Test
+    void legacyExplicitV2MigrationPreservesAllSevenStatsAndExperience() {
+        JsonObject old = new JsonObject();
+        old.addProperty("schema_version", 2);
+        old.addProperty("experience", 4500);
+        old.addProperty("strength", 21);
+        old.addProperty("dexterity", 11);
+        old.addProperty("vitality", 19);
+        old.addProperty("endurance", 13);
+        old.addProperty("intelligence", 14);
+        old.addProperty("willpower", 18);
+        old.addProperty("perception", 16);
+        CharacterData migrated = CharacterData.CODEC.codec()
+                .parse(JsonOps.INSTANCE, old).result().orElseThrow();
+        assertEquals(4, migrated.schemaVersion());
+        assertEquals(4500, migrated.experience());
+        assertEquals(21, migrated.strength());
+        assertEquals(11, migrated.dexterity());
+        assertEquals(19, migrated.vitality());
+        assertEquals(13, migrated.endurance());
+        assertEquals(14, migrated.intelligence());
+        assertEquals(18, migrated.willpower());
+        assertEquals(16, migrated.perception());
+        assertEquals(18, migrated.earnedPoints());
+        assertEquals(0, migrated.spentPoints());
+        assertTrue(migrated.claimedRewardIds().isEmpty());
+        assertEquals(migrated, reload(migrated));
+    }
+
+    @Test
+    void futureSchemaFailsClosedAndCorruptReceiptsAreNotSilentlyDiscarded() {
+        CharacterData future = new CharacterData(5, 300,
+                10, 10, 10, 10, 10, 10, 10, 4,
+                List.of(0,0,0,0,0,0,0), List.of(FORD));
+        assertEquals(5, future.schemaVersion());
+        assertEquals(Status.INVALID_REQUEST,
+                CharacterRewardRules.grantOnce(future, "mkm:another", 50).status());
+        assertThrows(IllegalArgumentException.class, () -> new CharacterData(
+                4, 300, 10, 10, 10, 10, 10, 10, 10, 4,
+                List.of(0,0,0,0,0,0,0), List.of(FORD, FORD)));
+        assertThrows(IllegalArgumentException.class, () -> new CharacterData(
+                4, 300, 10, 10, 10, 10, 10, 10, 10, 4,
+                List.of(0,0,0,0,0,0,0), List.of("not namespaced")));
+    }
+
+    @Test
     void doesNotDropReceiptsOnAttributeOrXpOperations() {
         CharacterData granted = CharacterRewardRules.grantOnce(
                 new CharacterData().withExperience(100), FORD, 75).character();
