@@ -13,6 +13,7 @@ on:
       - 'fix/c3-forward-roll-animation-qa'
       - 'feature/c3-2-animation-pacing-unarmed-combos'
       - 'feature/c3-3-continuous-motion-curves'
+      - 'feature/c3-4-grounded-combat-stance'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -25,6 +26,7 @@ on:
       - 'feature/animation-foundation-c3'
       - 'fix/c3-forward-roll-animation-qa'
       - 'feature/c3-2-animation-pacing-unarmed-combos'
+      - 'feature/c3-3-continuous-motion-curves'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
