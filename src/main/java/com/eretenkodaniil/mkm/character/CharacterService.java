@@ -40,11 +40,9 @@ public final class CharacterService {
         }
 
         CharacterData current = get(player);
-        long currentExperience = current.experience();
-        long updatedExperience = amount > Long.MAX_VALUE - currentExperience
-                ? Long.MAX_VALUE
-                : currentExperience + amount;
-        return setExperience(player, updatedExperience);
+        long newExperience = ProgressionRules.experienceAfterReward(current.experience(), amount);
+        if (newExperience == current.experience()) return current;
+        return setExperience(player, newExperience);
     }
 
     /**
@@ -70,5 +68,17 @@ public final class CharacterService {
             safeValue = (int) candidate;
         }
         return setAttribute(player, attribute, safeValue);
+    }
+    /**
+     * Runs on the logical server. No other player's state, credits or total attributes are
+     * controlled by an incoming packet. A duplicate absolute request is a strict no-op.
+     */
+    public static boolean allocate(ServerPlayer player, int[] requestedTotals, int expectedSpent) {
+        if (!player.isAlive() || player.isSpectator()) return false;
+        CharacterData current = get(player);
+        CharacterData updated = AllocationRules.tryAllocate(current, requestedTotals, expectedSpent);
+        if (updated == null) return false;
+        player.setAttached(CharacterAttachments.CHARACTER, updated);
+        return true;
     }
 }
