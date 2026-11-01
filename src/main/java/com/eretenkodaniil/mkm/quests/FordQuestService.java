@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.character.QuestRewardRecovery;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
 import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
 import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
@@ -494,20 +495,35 @@ public final class FordQuestService {
             message(player, "MKM: Награда пока недоступна или уже получена.");
             return;
         }
-        // The M2 receipt, XP and build credits are ONE immutable character write.
-        // A crash after this write but before the quest stage update is safely retryable.
-        var result = CharacterService.grantExperienceOnce(
-                player, "mkm:ford_warden/complete", FordQuestRules.rewardExperience(previous));
-        if (!result.confirmed()) {
-            message(player, "MKM: Награда недоступна (" + result.status()
-                    + "), квест остаётся готовым к выдаче.");
+        // Character M3 decides recovery from the durable v4 receipt, never
+        // from obsolete reward_xp_floor or a client-supplied XP amount.
+        String rewardId = "mkm:ford_warden/complete";
+        var decision = QuestRewardRecovery.decide(
+                CharacterService.get(player), rewardId, true, false, previous.rewardXpFloor());
+        if (decision == QuestRewardRecovery.Decision.REJECT
+                || decision == QuestRewardRecovery.Decision.MANUAL_REVIEW) {
+            message(player, "MKM: Награда требует проверки сохранения. Задание не изменено.");
             return;
         }
+        long credited = 0L;
+        if (decision == QuestRewardRecovery.Decision.GRANT_ONCE) {
+            var result = CharacterService.grantExperienceOnce(
+                    player, rewardId, FordQuestRules.rewardExperience(previous));
+            if (!result.confirmed()) {
+                message(player, "MKM: Награда недоступна (" + result.status()
+                        + "), квест остаётся готовым к выдаче.");
+                return;
+            }
+            credited = result.creditedExperience();
+        } else if (decision != QuestRewardRecovery.Decision.FINALIZE_QUEST) {
+            return; // fail closed for unrecognized recovery states
+        }
+        // Only a confirmed/previously committed Character receipt advances World.
         update(player, rewarded);
         NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.REWARD);
-        message(player, result.creditedExperience() > 0L
-                ? "[Ильра] Получено " + result.creditedExperience() + " MKM XP."
-                : "[Ильра] Твоя награда уже была учтена или достигнут предел опыта.");
+        message(player, credited > 0L
+                ? "[Ильра] Получено " + credited + " MKM XP."
+                : "[Ильра] Награда уже учтена или достигнут предел опыта.");
     }
 
     public static void onLogin(ServerPlayer player) {
