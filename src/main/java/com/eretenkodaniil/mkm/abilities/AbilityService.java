@@ -1,8 +1,6 @@
 package com.eretenkodaniil.mkm.abilities;
 
-import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
-import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatState;
@@ -60,37 +58,28 @@ public final class AbilityService {
         if (!actorValid || !actionIdle || !injured) return false;
 
         PlayerModifierSnapshot stats = stats(player);
-        double amount = AbilityCatalog.RENEWAL.baseMagnitude()
-                * stats.get(PlayerModifierId.HEALING_POWER)
-                * stats.get(PlayerModifierId.HEALING_RECEIVED);
-        if (!Double.isFinite(amount) || amount <= 0.0D
-                || amount > Float.MAX_VALUE) return false;
-
-        double cost = AbilityRules.scaledCost(AbilityCatalog.RENEWAL.baseCost(),
-                stats.get(PlayerModifierId.MANA_COST));
+        RenewalParameters parameters = RenewalParameters.from(stats);
         ManaLedger previous = player.getAttachedOrCreate(AbilityAttachments.PLAYER);
         ManaLedger current = AbilityRules.regenerate(previous, now,
-                stats.get(PlayerModifierId.MAX_MANA),
-                stats.get(PlayerModifierId.MANA_REGENERATION));
-        if (RenewalEligibility.check(actorValid, actionIdle, injured, current, now, cost)
+                parameters.maximumMana(), parameters.manaRegeneration());
+        if (RenewalEligibility.check(actorValid, actionIdle, injured, current, now,
+                parameters.cost())
                 != RenewalEligibility.Result.READY) return false;
 
         ManaLedger paid = AbilityRules.spend(
-                current, AbilityCatalog.RENEWAL, now, cost,
-                AbilityRules.scaledCooldown(AbilityCatalog.RENEWAL.cooldownTicks(),
-                        stats.get(PlayerModifierId.COOLDOWN_RECOVERY)),
-                AbilityRules.regenDelayTicks(stats.get(PlayerModifierId.MANA_REGEN_DELAY)));
+                current, AbilityCatalog.RENEWAL, now, parameters.cost(),
+                parameters.cooldownTicks(), parameters.regenerationDelayTicks());
         if (paid == null) return false;
 
         // Commit exactly once before the native healing effect. Retransmitted
         // packets see the updated cooldown on the next server-side invocation.
         player.setAttached(AbilityAttachments.PLAYER, paid);
-        player.heal((float) amount);
+        player.heal(parameters.healing());
         player.sendOverlayMessage(Component.translatable("message.mkm.renewal.cast"));
         return true;
     }
 
     private static PlayerModifierSnapshot stats(ServerPlayer player) {
-        return PlayerModifierCalculator.calculate(CharacterService.get(player));
+        return AbilityModifierAccess.snapshot(player);
     }
 }
