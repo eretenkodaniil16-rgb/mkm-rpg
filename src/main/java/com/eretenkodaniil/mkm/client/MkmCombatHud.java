@@ -101,11 +101,7 @@ public final class MkmCombatHud {
                     Component.literal(AnimationRenderProbe.diagnostic(client.level.getGameTime())),
                     x,y+35,TEXT);
             graphics.text(client.font,
-                    Component.literal("main="+selection.mainFamily()
-                            +" off="+selection.offFamily()
-                            +" active="+selection.activeHand()+"/"+selection.activeArm()
-                            +" step="+selection.comboStep()
-                            +" reason="+selection.reason()),
+                    Component.literal(AnimationRenderProbe.context(client.level.getGameTime())),
                     x,y+46,MUTED);
         }
     }
