@@ -1,5 +1,6 @@
 package com.eretenkodaniil.mkm.abilities.net;
 
+import com.eretenkodaniil.mkm.abilities.AbilityIds;
 import io.netty.buffer.ByteBuf;
 import java.nio.charset.StandardCharsets;
 
@@ -23,7 +24,7 @@ public final class AbilityIntentCodec {
     }
 
     public static void encode(ByteBuf buf, String id) {
-        if (id == null || !id.matches("mkm:[a-z0-9_./-]{1,54}")) {
+        if (!AbilityIds.valid(id)) {
             throw new IllegalArgumentException("Invalid ability ID");
         }
         byte[] raw = id.getBytes(StandardCharsets.US_ASCII);
