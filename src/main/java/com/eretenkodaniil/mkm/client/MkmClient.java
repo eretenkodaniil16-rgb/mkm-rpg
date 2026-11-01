@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
 import com.eretenkodaniil.mkm.combat.DodgeDirection;
 import com.eretenkodaniil.mkm.registry.MkmItems;
+import com.eretenkodaniil.mkm.quests.net.FordJournalRequest;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -25,6 +26,8 @@ public final class MkmClient implements ClientModInitializer {
             "key.mkm.open_character_sheet", InputConstants.KEY_K, CATEGORY);
     private static final KeyMapping DODGE = new KeyMapping(
             "key.mkm.dodge", InputConstants.KEY_G, CATEGORY);
+    private static final KeyMapping JOURNAL = new KeyMapping(
+            "key.mkm.quest_journal", InputConstants.KEY_J, CATEGORY);
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
 
@@ -33,6 +36,8 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(OPEN_SHEET);
         KeyMappingHelper.registerKeyMapping(DODGE);
         KeyMappingHelper.registerKeyMapping(COMBO);
+        KeyMappingHelper.registerKeyMapping(JOURNAL);
+        FordClientNetworking.initialize();
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
 
@@ -40,6 +45,12 @@ public final class MkmClient implements ClientModInitializer {
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();
+                }
+            }
+            while (JOURNAL.consumeClick()) {
+                if (client.player != null && client.gui.screen() == null
+                        && ClientPlayNetworking.canSend(FordJournalRequest.TYPE)) {
+                    ClientPlayNetworking.send(new FordJournalRequest((byte) 1));
                 }
             }
             while (COMBO.consumeClick()) {

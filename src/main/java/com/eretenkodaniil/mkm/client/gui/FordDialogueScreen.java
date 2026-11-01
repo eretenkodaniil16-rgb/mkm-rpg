@@ -1,0 +1,81 @@
+package com.eretenkodaniil.mkm.client.gui;
+
+import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
+import com.eretenkodaniil.mkm.quests.net.FordDialogueView;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+/** Lightweight single-NPC scene; stage and PER arrive from the server. */
+public final class FordDialogueScreen extends Screen {
+    private final FordDialogueView view;
+    private boolean submitted;
+    private static final int TEXT = 0xFFE8DDC5, MUTED = 0xFFB7B4A6;
+    public FordDialogueScreen(FordDialogueView view) {
+        super(Component.literal("Ильра — смотрительница брода"));
+        this.view = view;
+    }
+
+    private int panelWidth() { return Math.min(420, Math.max(220, width - 18)); }
+    private int panelLeft() { return (width - panelWidth()) / 2; }
+    private int panelTop() { return Math.max(8, (height - 218) / 2); }
+
+    @Override protected void init() {
+        super.init();
+        int x = panelLeft() + 16, y = panelTop() + 80, w = panelWidth() - 32;
+        if (view.stage() == 0) {
+            addChoice("Исследовать следы (PER 12)", FordChoiceRequest.INSPECT, x, y, w);
+            addChoice("Я помогу каравану", FordChoiceRequest.ACCEPT, x, y + 24, w);
+            addChoice("Сейчас не могу", FordChoiceRequest.LEAVE, x, y + 48, w);
+        } else if (view.stage() == 1) {
+            addChoice("Где искать противника?", FordChoiceRequest.LOCATE, x, y, w);
+            addChoice("Я вернусь после боя", FordChoiceRequest.LEAVE, x, y + 24, w);
+        } else if (view.stage() == 2) {
+            addChoice("Вернуть найденное и получить награду", FordChoiceRequest.CLAIM, x, y, w);
+        }
+        addRenderableWidget(Button.builder(Component.literal("Закрыть"), button -> onClose())
+                .size(Math.min(100,w), 20).pos(x, panelTop() + 179).build());
+    }
+
+    private void addChoice(String title, byte action, int x, int y, int width) {
+        addRenderableWidget(Button.builder(Component.literal(title), button -> choose(action))
+                .size(width, 20).pos(x,y).build());
+    }
+
+    private void choose(byte action) {
+        if (submitted || !ClientPlayNetworking.canSend(FordChoiceRequest.TYPE)) return;
+        submitted = true;
+        ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(), action));
+        if (action == FordChoiceRequest.LEAVE) onClose();
+    }
+
+    @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+        int left=panelLeft(), top=panelTop(), right=left+panelWidth();
+        graphics.fill(0,0,width,height,0x88000000);
+        graphics.fill(left,top,right,top+218,0xEE19202A);
+        graphics.fill(left,top,right,top+2,0xFFD4A45C);
+        graphics.centeredText(font,title,width/2,top+12,TEXT);
+        String line1 = switch (view.stage()) {
+            case 0 -> "У старого брода исчез караван.";
+            case 1 -> "Налётчик прячется у брода.";
+            case 2 -> "Путь свободен. Ты сдержал слово.";
+            case 3 -> "Брод снова открыт благодаря тебе.";
+            default -> "Состояние задания требует проверки.";
+        };
+        String line2 = switch (view.stage()) {
+            case 0 -> "Ты поможешь нам разобраться?";
+            case 1 -> view.tracks() ? "Следы подтверждают: это иссушённый мертвец." : "Победи налётчика и возвращайся.";
+            case 2 -> "Я приготовила награду за помощь.";
+            case 3 -> view.tracks() ? "Я помню твою внимательность к следам." : "Караваны вновь могут ходить здесь.";
+            default -> "Попробуйте переподключиться или сообщите администратору.";
+        };
+        graphics.centeredText(font,Component.literal(line1),width/2,top+37,TEXT);
+        graphics.centeredText(font,Component.literal(line2),width/2,top+52,MUTED);
+        if (view.stage() == 0) graphics.centeredText(font,Component.literal(
+                "Восприятие: " + view.perception() + " / 12" + (view.tracks() ? " · следы найдены" : "")
+        ), width/2,top+66,view.perception()>=12?0xFF88D7A3:0xFFFFC17E);
+        super.extractRenderState(graphics,mouseX,mouseY,partialTick);
+    }
+}

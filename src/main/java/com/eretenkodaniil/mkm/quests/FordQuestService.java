@@ -2,6 +2,8 @@ package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
+import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
+import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.core.BlockPos;
@@ -40,11 +42,45 @@ public final class FordQuestService {
             // Consume on both sides to prevent vanilla villager trading or spectator bypass.
             if (hand == InteractionHand.MAIN_HAND && player instanceof ServerPlayer serverPlayer) {
                 if (!serverPlayer.isSpectator() && serverPlayer.distanceToSqr(entity) <= TALK_RANGE_SQUARED) {
-                    talk(serverPlayer);
+                    showDialogue(serverPlayer, entity);
                 }
             }
             return InteractionResult.SUCCESS;
         });
+    }
+
+    private static void showDialogue(ServerPlayer player, Entity entity) {
+        if (!(entity instanceof Villager npc) || !requireWarden(player)) return;
+        FordQuestState state = get(player);
+        if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
+        if (!FordQuestNetworking.showDialogue(player, npc)) talk(player);
+    }
+
+    public static void handleChoice(ServerPlayer player, FordChoiceRequest request) {
+        if (player.isSpectator() || !player.isAlive()
+                || !(player.level() instanceof ServerLevel level)) return;
+        Entity entity = level.getEntity(request.entityId());
+        if (!(entity instanceof Villager npc) || !npc.isAlive()
+                || !npc.entityTags().contains(NPC_TAG)
+                || player.distanceToSqr(npc) > TALK_RANGE_SQUARED) return;
+        FordQuestState state = get(player);
+        if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
+        if (request.expectedStage() != FordQuestNetworking.stage(state)) return;
+        switch (request.choice()) {
+            case FordChoiceRequest.INSPECT -> { if (request.expectedStage() == 0) inspect(player); else return; }
+            case FordChoiceRequest.ACCEPT -> { if (request.expectedStage() == 0) accept(player); else return; }
+            case FordChoiceRequest.LEAVE -> { leave(player); return; }
+            case FordChoiceRequest.CLAIM -> { if (request.expectedStage() == 2) claim(player); else return; }
+            case FordChoiceRequest.LOCATE -> { if (request.expectedStage() == 1) recover(player); else return; }
+            default -> { return; }
+        }
+        showDialogue(player, npc);
+    }
+
+    public static boolean isEncounterLoaded(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return false;
+        Entity e = findEncounter(player, get(player), level);
+        return e != null && e.isAlive();
     }
 
     public static FordQuestState get(ServerPlayer player) {
@@ -107,7 +143,9 @@ public final class FordQuestService {
         List<Villager> nearby = level.getEntitiesOfClass(
                 Villager.class, player.getBoundingBox().inflate(6.0),
                 npc -> npc.isAlive() && npc.entityTags().contains(NPC_TAG)
-                        && player.distanceToSqr(npc) <= TALK_RANGE_SQUARED);
+                        && player.distanceToSqr(npc) <= TALK_RANGE_SQUARED
+                        && (get(player).wardenId().isBlank()
+                            || get(player).wardenId().equals(npc.getUUID().toString())));
         return nearby.isEmpty() ? null : nearby.getFirst();
     }
 
