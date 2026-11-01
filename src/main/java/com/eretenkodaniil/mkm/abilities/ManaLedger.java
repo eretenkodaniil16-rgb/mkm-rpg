@@ -20,7 +20,7 @@ public record ManaLedger(
             throw new IllegalArgumentException("Invalid mana ledger");
         }
         for (var entry : cooldowns.entrySet()) {
-            if (entry.getKey() == null || !entry.getKey().matches("mkm:[a-z0-9_./-]{1,54}")
+            if (!AbilityIds.valid(entry.getKey())
                     || entry.getValue() == null || entry.getValue() < 0) {
                 throw new IllegalArgumentException("Invalid cooldown entry");
             }
