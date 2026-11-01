@@ -67,6 +67,22 @@ final class WeaponPresentationResolverTest {
         assertEquals(Arm.RIGHT,right.leadingArm());
         assertEquals(Arm.LEFT,left.leadingArm());
     }
+    @Test void actualF8ToggleChangesOnlyNativeFirstHitSelection() {
+        // Save and restore static toggle to avoid leaking state to unrelated tests.
+        boolean initial=NativeAnimationToggle.enabled();
+        try {
+            var a=choose(Family.SWORD,Family.EMPTY,1,NativeAnimationToggle.enabled());
+            NativeAnimationToggle.flip();
+            var b=choose(Family.SWORD,Family.EMPTY,1,NativeAnimationToggle.enabled());
+            assertNotEquals(a.nativeClip(),b.nativeClip());
+            assertEquals(a.c3Profile(),b.c3Profile());
+            assertEquals(Reason.NOT_FIRST_COMBO,
+                    choose(Family.SWORD,Family.EMPTY,2,true).reason());
+        } finally {
+            if(NativeAnimationToggle.enabled()!=initial) NativeAnimationToggle.flip();
+        }
+    }
+
     @Test void dodgeIsExplicitLegacyRegardlessF8AndHeldItems() {
         for(Family main:Family.values())for(boolean mode:new boolean[]{false,true}) {
             Choice choice=WeaponPresentationResolver.resolve(main,Family.SWORD,

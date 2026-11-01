@@ -92,21 +92,26 @@ public final class MkmCombatHud {
             String expectedClip = profile == null || action == null
                     ? null : profile.clipFor(action);
             if (selection.nativeClip() != null) expectedClip = selection.nativeClip();
-            String active = selection.nativeClip() == null ? "C3.8/fallback" : "MNAE";
-            String diagnostics = String.format(java.util.Locale.ROOT,
-                    "renderer=%s main=%s off=%s reason=%s",
-                    active,
-                    com.eretenkodaniil.mkm.client.animation.MinecraftWeaponPresentation.family(
-                            client.player.getMainHandItem()),
-                    com.eretenkodaniil.mkm.client.animation.MinecraftWeaponPresentation.family(
-                            client.player.getOffhandItem()), selection.reason());
-            graphics.text(client.font, Component.literal(diagnostics), x, y + 24, MUTED);
+            String selectedRoute = selection.nativeClip() != null ? "MNAE"
+                    : selection.c3Profile() != null ? "C3.8" : "NO_POSE";
+            // This reports the intended route; the probe below only proves
+            // setupAnim changed ModelParts, NOT actual pixels/grip quality.
+            String families = "route=" + selectedRoute
+                    + " M:" + com.eretenkodaniil.mkm.client.animation.MinecraftWeaponPresentation.family(
+                            client.player.getMainHandItem())
+                    + " O:" + com.eretenkodaniil.mkm.client.animation.MinecraftWeaponPresentation.family(
+                            client.player.getOffhandItem());
+            String reason = "why=" + selection.reason()
+                    + " arm=" + selection.leadingArm()
+                    + " step=" + timeline.comboStep();
+            graphics.text(client.font, Component.literal(families), x, y + 24, MUTED);
+            graphics.text(client.font, Component.literal(reason), x, y + 35, MUTED);
             graphics.text(client.font,
                     Component.literal(expectedClip == null
                             ? "NO SAFE COMBAT CLIP"
                             : AnimationRenderProbe.status(
                                     client.level.getGameTime(), expectedClip)),
-                    x, y + 36, TEXT);
+                    x, y + 46, TEXT);
         }
     }
 }
