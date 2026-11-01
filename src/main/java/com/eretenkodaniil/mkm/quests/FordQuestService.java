@@ -69,21 +69,15 @@ public final class FordQuestService {
                 || player.distanceToSqr(npc) > TALK_RANGE_SQUARED) return;
         FordQuestState state = get(player);
         if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
-        // Closing an already-stale screen must NEVER re-open it. Its original
-        // session stage remains sufficient to invalidate the one-shot nonce.
-        if (request.choice() == FordChoiceRequest.CLOSE) {
-            FordDialogueSessions.consume(player, npc.getUUID(), npc.getId(),
-                    request.expectedStage(), request.sessionId(), level.getGameTime());
-            return;
-        }
-        if (request.expectedStage() != FordQuestNetworking.stage(state)) {
-            showDialogue(player, npc); // stale packet: resync, do not mutate
-            return;
-        }
-        // Reject stale, forged and replayed choices. A valid session is consumed
-        // BEFORE any quest, XP or encounter mutation, even if the action fails.
+        // Consume a valid one-shot session BEFORE any response or state mutation.
+        // Forged stage mismatch packets must not spam greeting UI or cosmetic cues.
+        // The session compares the stage *as opened*, so CLOSE remains valid even
+        // if the server quest progressed while the screen was still visible.
         if (!FordDialogueSessions.consume(player, npc.getUUID(), npc.getId(),
-                request.expectedStage(), request.sessionId(), level.getGameTime())) {
+                request.expectedStage(), request.sessionId(), level.getGameTime())) return;
+        if (request.choice() == FordChoiceRequest.CLOSE) return;
+        if (request.expectedStage() != FordQuestNetworking.stage(state)) {
+            showDialogue(player, npc); // authenticated stale response: resync only
             return;
         }
         if (!FordDialogueRules.permitted(request.expectedStage(),request.choice())) {
