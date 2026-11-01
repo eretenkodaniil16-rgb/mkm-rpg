@@ -33,7 +33,8 @@ final class FordEpisodeContractTest {
         assertFalse(FordQuestRules.matchesEncounter(b,"raider-a"));
         assertEquals(2,registry.removeIfMatch("owner-a","raider-b").byOwner().size());
 
-        assertSame(a,FordQuestRules.onOwnedRaiderDefeated(a.withStage(FordQuestState.RETURN_TO_WARDEN)));
+        FordQuestState alreadyComplete = a.withStage(FordQuestState.RETURN_TO_WARDEN);
+        assertSame(alreadyComplete, FordQuestRules.onOwnedRaiderDefeated(alreadyComplete));
         a = FordQuestRules.onOwnedRaiderDefeated(a);
         assertEquals(FordQuestState.RETURN_TO_WARDEN,a.stage());
         assertEquals(FordQuestState.ACTIVE,b.stage());
