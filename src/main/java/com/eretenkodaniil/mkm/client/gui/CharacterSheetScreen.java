@@ -4,11 +4,16 @@ import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
+import com.eretenkodaniil.mkm.character.attribute.PrimaryAttribute;
+import com.eretenkodaniil.mkm.character.net.AllocationRequest;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatState;
+import java.util.Arrays;
+import java.util.List;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -18,8 +23,8 @@ import net.fabricmc.loader.api.FabricLoader;
 /**
  * First player-facing MKM RPG screen.
  *
- * <p>The screen is intentionally read-only. Character state is owned by the server and arrives on
- * the client through the synchronized player attachment.</p>
+ * <p>Staged build increments are a local preview only; an absolute allocation intent must be
+ * validated by the server. The character attachment is the sole source of authoritative state.</p>
  */
 public final class CharacterSheetScreen extends Screen {
     private static final int PANEL = 0xEE11151D;
@@ -31,6 +36,13 @@ public final class CharacterSheetScreen extends Screen {
     private static final int WARNING = 0xFFE0B36C;
     private static final int BAR_BG = 0xFF282F3D;
     private static final int BAR_FILL = 0xFF9A7742;
+
+    private final int[] pending = new int[CharacterData.ATTRIBUTE_COUNT];
+    private final Button[] plusButtons = new Button[CharacterData.ATTRIBUTE_COUNT];
+    private final Button[] minusButtons = new Button[CharacterData.ATTRIBUTE_COUNT];
+    private Button applyButton;
+    private Button resetButton;
+    private List<Integer> observedLedger;
 
     public CharacterSheetScreen() {
         super(Component.translatable("screen.mkm.character.title"));
@@ -51,6 +63,101 @@ public final class CharacterSheetScreen extends Screen {
                 .size(72, 20)
                 .pos(panelLeft + panelWidth - 84, panelTop + panelHeight - 30)
                 .build());
+
+        PrimaryAttribute[] attributes = PrimaryAttribute.values();
+        int statsTop = panelTop + 169;
+        for (int i = 0; i < attributes.length; i++) {
+            final int index = i;
+            int buttonTop = statsTop + 14 + 14 * i;
+            minusButtons[i] = addRenderableWidget(Button.builder(Component.literal("-"),
+                    button -> stage(index, -1))
+                    .size(18, 14).pos(panelLeft + 91, buttonTop).build());
+            plusButtons[i] = addRenderableWidget(Button.builder(Component.literal("+"),
+                    button -> stage(index, 1))
+                    .size(18, 14).pos(panelLeft + 113, buttonTop).build());
+        }
+        applyButton = addRenderableWidget(Button.builder(
+                        Component.translatable("screen.mkm.character.apply"),
+                        button -> submitAllocation())
+                .size(90, 20).pos(panelLeft + panelWidth - 276, panelTop + panelHeight - 30)
+                .build());
+        resetButton = addRenderableWidget(Button.builder(
+                        Component.translatable("screen.mkm.character.reset"),
+                        button -> { Arrays.fill(pending, 0); refreshButtons(); })
+                .size(82, 20).pos(panelLeft + panelWidth - 180, panelTop + panelHeight - 30)
+                .build());
+        refreshButtons();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        CharacterData data = currentCharacter();
+        if (data != null) {
+            if (observedLedger != null && !observedLedger.equals(data.allocatedPoints())) {
+                Arrays.fill(pending, 0);
+            }
+            observedLedger = data.allocatedPoints();
+        }
+        refreshButtons();
+    }
+
+    private CharacterData currentCharacter() {
+        return minecraft == null || minecraft.player == null
+                ? null : minecraft.player.getAttached(CharacterAttachments.CHARACTER);
+    }
+
+    private int pendingTotal() {
+        int sum = 0;
+        for (int value : pending) sum += value;
+        return sum;
+    }
+
+    private void stage(int index, int increment) {
+        CharacterData data = currentCharacter();
+        if (data == null || index < 0 || index >= pending.length) return;
+        int next = pending[index] + increment;
+        if (next < 0 || next + data.attribute(PrimaryAttribute.values()[index])
+                > ProgressionRules.ALLOCATION_ATTRIBUTE_CAP
+                || pendingTotal() + increment > data.availablePoints()) return;
+        pending[index] = next;
+        refreshButtons();
+    }
+
+    private void refreshButtons() {
+        CharacterData data = currentCharacter();
+        int total = pendingTotal();
+        for (int i = 0; i < plusButtons.length; i++) {
+            if (plusButtons[i] == null || minusButtons[i] == null) continue;
+            plusButtons[i].active = data != null && data.schemaVersion() == CharacterData.CURRENT_SCHEMA_VERSION
+                    && total < data.availablePoints()
+                    && data.attribute(PrimaryAttribute.values()[i]) + pending[i]
+                            < ProgressionRules.ALLOCATION_ATTRIBUTE_CAP;
+            minusButtons[i].active = pending[i] > 0;
+        }
+        if (applyButton != null) {
+            applyButton.active = data != null && total > 0 && total <= data.availablePoints()
+                    && ClientPlayNetworking.canSend(AllocationRequest.TYPE);
+        }
+        if (resetButton != null) resetButton.active = total > 0;
+    }
+
+    private void submitAllocation() {
+        CharacterData data = currentCharacter();
+        if (data == null || pendingTotal() == 0 || pendingTotal() > data.availablePoints()
+                || !ClientPlayNetworking.canSend(AllocationRequest.TYPE)) return;
+        int[] allocations = new int[pending.length];
+        for (int i = 0; i < allocations.length; i++) {
+            allocations[i] = data.allocatedPoints().get(i) + pending[i];
+        }
+        // The server validates against its current attachment, never the client preview.
+        ClientPlayNetworking.send(new AllocationRequest(
+                allocations[0], allocations[1], allocations[2], allocations[3],
+                allocations[4], allocations[5], allocations[6]));
+    }
+
+    private int previewAttribute(CharacterData data, PrimaryAttribute attribute) {
+        return data.attribute(attribute) + pending[attribute.ordinal()];
     }
 
     @Override
@@ -172,25 +279,37 @@ public final class CharacterSheetScreen extends Screen {
 
         drawExperienceBar(graphics, data, contentLeft, contentTop + 66, panelWidth - 44);
 
+        graphics.text(font,
+                Component.translatable("screen.mkm.character.points",
+                        data.availablePoints(), pendingTotal()),
+                contentLeft, contentTop + 81, pendingTotal() > 0 ? GOOD : TEXT);
+
         int statsTop = contentTop + 94;
         int split = left + panelWidth / 2 + 8;
 
         graphics.text(font, Component.translatable("screen.mkm.character.attributes"), contentLeft, statsTop, BORDER);
-        graphics.text(font, Component.translatable("screen.mkm.character.str", data.strength()), contentLeft, statsTop + 17, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.dex", data.dexterity()), contentLeft, statsTop + 31, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.vit", data.vitality()), contentLeft, statsTop + 45, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.end", data.endurance()), contentLeft, statsTop + 59, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.int", data.intelligence()), contentLeft, statsTop + 73, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.wil", data.willpower()), contentLeft, statsTop + 87, TEXT);
-        graphics.text(font, Component.translatable("screen.mkm.character.per", data.perception()), contentLeft, statsTop + 101, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.str", previewAttribute(data, PrimaryAttribute.STRENGTH)), contentLeft, statsTop + 17, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.dex", previewAttribute(data, PrimaryAttribute.DEXTERITY)), contentLeft, statsTop + 31, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.vit", previewAttribute(data, PrimaryAttribute.VITALITY)), contentLeft, statsTop + 45, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.end", previewAttribute(data, PrimaryAttribute.ENDURANCE)), contentLeft, statsTop + 59, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.int", previewAttribute(data, PrimaryAttribute.INTELLIGENCE)), contentLeft, statsTop + 73, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.wil", previewAttribute(data, PrimaryAttribute.WILLPOWER)), contentLeft, statsTop + 87, TEXT);
+        graphics.text(font, Component.translatable("screen.mkm.character.per", previewAttribute(data, PrimaryAttribute.PERCEPTION)), contentLeft, statsTop + 101, TEXT);
 
-        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(data);
+        CharacterData previewData = data;
+        for (PrimaryAttribute attribute : PrimaryAttribute.values()) {
+            if (pending[attribute.ordinal()] > 0) {
+                previewData = previewData.withAttribute(attribute, previewAttribute(data, attribute));
+            }
+        }
+        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(previewData);
         CombatState combat = minecraft.player.getAttached(CombatAttachments.PLAYER);
         String stamina = combat == null
                 ? "? / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA)
                 : Math.round(combat.stamina()) + " / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA);
 
-        graphics.text(font, Component.translatable("screen.mkm.character.derived"), split, statsTop, BORDER);
+        graphics.text(font, Component.translatable(pendingTotal() > 0
+                ? "screen.mkm.character.derived_preview" : "screen.mkm.character.derived"), split, statsTop, BORDER);
         graphics.text(
                 font,
                 Component.translatable("screen.mkm.character.max_health", modifiers.formatted(PlayerModifierId.MAX_HEALTH)),
