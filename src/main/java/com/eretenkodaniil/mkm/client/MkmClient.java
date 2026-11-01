@@ -29,7 +29,7 @@ public final class MkmClient implements ClientModInitializer {
             "key.mkm.dodge", InputConstants.KEY_G, CATEGORY);
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
-    private static final KeyMapping RENEWAL = new KeyMapping(
+    static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
 
     @Override
