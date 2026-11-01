@@ -3,6 +3,7 @@ package com.eretenkodaniil.mkm.combat;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
+import com.eretenkodaniil.mkm.equipment.PhysicalDamageType;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -25,56 +26,92 @@ public final class CombatEvents {
     private CombatEvents() {}
 
     public static float modifyIncoming(LivingEntity target, DamageSource source, float amount) {
-        if (!source.is(DamageTypes.PLAYER_ATTACK)
-                || !(source.getEntity() instanceof ServerPlayer attacker)
-                || source.getDirectEntity() != attacker
-                || amount <= 0F) {
-            return amount;
+        if (!Float.isFinite(amount) || amount <= 0.0F) return amount;
+
+        if (source.is(DamageTypes.PLAYER_ATTACK)
+                && source.getEntity() instanceof ServerPlayer attacker
+                && source.getDirectEntity() == attacker) {
+            PlayerModifierSnapshot offense = stats(attacker);
+            boolean heavy = attacker.isShiftKeyDown() && CombatService.tryHeavy(attacker);
+            if (heavy) PENDING_HEAVY.put(target, Boolean.TRUE);
+            float scaled = CombatRules.scaleIncomingMelee(
+                    amount, offense.get(PlayerModifierId.PHYSICAL_POWER),
+                    offense.get(PlayerModifierId.MELEE_DAMAGE), heavy);
+            if (target instanceof ServerPlayer defender) {
+                return PhysicalMitigationRules.apply(
+                        scaled, offense, stats(defender),
+                        EquipmentSnapshots.heldPhysicalType(attacker));
+            }
+            return scaled;
         }
 
-        PlayerModifierSnapshot modifiers = EquipmentSnapshots.snapshot(
-                attacker, attacker.getAttachedOrCreate(CharacterAttachments.CHARACTER));
-        boolean heavy = attacker.isShiftKeyDown() && CombatService.tryHeavy(attacker);
-        if (heavy) {
-            PENDING_HEAVY.put(target, Boolean.TRUE);
-        }
-        float scaled = CombatRules.scaleIncomingMelee(
-                amount,
-                modifiers.get(PlayerModifierId.PHYSICAL_POWER),
-                modifiers.get(PlayerModifierId.MELEE_DAMAGE),
-                heavy);
-        // Separate MKM resistance before Minecraft handles shields and armor.
-        // No duplicate vanilla armor calculation and no secret hit roll.
+        // Defense only: preserve vanilla ranged attack attribution and damage.
+        // Computing an offensive bow bonus at impact would permit a weapon-swap exploit.
         if (target instanceof ServerPlayer defender) {
-            PlayerModifierSnapshot defense = EquipmentSnapshots.snapshot(
-                    defender, defender.getAttachedOrCreate(CharacterAttachments.CHARACTER));
-            return PhysicalMitigationRules.apply(
-                    scaled, modifiers, defense, EquipmentSnapshots.heldPhysicalType(attacker));
+            if (source.is(DamageTypes.MOB_ATTACK)) {
+                PhysicalDamageType type = source.getEntity() instanceof LivingEntity attacker
+                        && source.getDirectEntity() == attacker
+                        ? EquipmentSnapshots.heldPhysicalType(attacker)
+                        : PhysicalDamageType.BLUNT;
+                return PhysicalMitigationRules.apply(
+                        amount, 0.0D, stats(defender), type);
+            }
+            if (source.is(DamageTypes.ARROW) || source.is(DamageTypes.TRIDENT)) {
+                return PhysicalMitigationRules.apply(
+                        amount, 0.0D, stats(defender), PhysicalDamageType.PIERCING);
+            }
         }
-        return scaled;
+        return amount;
     }
 
     public static void afterDamage(
             LivingEntity entity, DamageSource source, float baseDamage, float damageTaken, boolean blocked) {
         boolean heavy = PENDING_HEAVY.remove(entity) != null;
-        if (blocked || damageTaken <= 0F || !(entity instanceof Mob mob)
-                || !(source.getEntity() instanceof ServerPlayer player)
-                || source.getDirectEntity() != player
-                || !source.is(DamageTypes.PLAYER_ATTACK)) {
+        if (blocked) {
+            if (entity instanceof ServerPlayer defender) {
+                ShieldGuardService.onBlocked(defender, baseDamage);
+            }
+            return;
+        }
+        if (!Float.isFinite(damageTaken) || damageTaken <= 0.0F
+                || !(entity instanceof Mob || entity instanceof ServerPlayer)) {
             return;
         }
 
-        PlayerModifierSnapshot modifiers = EquipmentSnapshots.snapshot(
-                player, player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
-        long tick = player.level().getGameTime();
+        boolean playerMelee = source.is(DamageTypes.PLAYER_ATTACK)
+                && source.getEntity() instanceof ServerPlayer
+                && source.getDirectEntity() == source.getEntity();
+        boolean mobMelee = source.is(DamageTypes.MOB_ATTACK)
+                && source.getEntity() instanceof Mob
+                && source.getDirectEntity() == source.getEntity();
+        if (!playerMelee && !(mobMelee && entity instanceof ServerPlayer)) return;
+
+        double staggerPower = playerMelee
+                ? stats((ServerPlayer) source.getEntity()).get(PlayerModifierId.STAGGER_POWER)
+                : 1.0D;
+        double staggerResistance = entity instanceof ServerPlayer defender
+                ? stats(defender).get(PlayerModifierId.STAGGER_RESISTANCE)
+                : 1.0D;
+
+        long tick = entity.level().getGameTime();
         PoiseRules.Result result = PoiseRules.onHit(
-                mob.getAttachedOrCreate(CombatAttachments.POISE), tick,
-                damageTaken, modifiers.get(PlayerModifierId.STAGGER_POWER), heavy);
-        mob.setAttached(CombatAttachments.POISE, result.state());
+                entity.getAttachedOrCreate(CombatAttachments.POISE), tick,
+                damageTaken, staggerPower, staggerResistance, heavy && playerMelee);
+        entity.setAttached(CombatAttachments.POISE, result.state());
         if (result.staggered()) {
-            mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 25, 3));
-            player.sendOverlayMessage(Component.literal("MKM  STAGGER!"));
+            // A soft stagger, not a server-side attack interrupt or cinematic hit animation.
+            entity.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 25, 3));
+            if (source.getEntity() instanceof ServerPlayer attacker) {
+                attacker.sendOverlayMessage(Component.literal("MKM  STAGGER!"));
+            } else if (entity instanceof ServerPlayer defender) {
+                defender.sendOverlayMessage(Component.literal("MKM  STAGGERED"));
+            }
         }
+    }
+
+    private static PlayerModifierSnapshot stats(ServerPlayer player) {
+        return EquipmentSnapshots.snapshot(
+                player, player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
     }
 
     public static void afterDeath(LivingEntity entity, DamageSource source) {

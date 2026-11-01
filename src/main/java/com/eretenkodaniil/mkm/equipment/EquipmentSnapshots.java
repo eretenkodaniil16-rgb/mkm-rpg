@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import java.util.EnumMap;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 
@@ -24,7 +25,7 @@ public final class EquipmentSnapshots {
         return PlayerModifierCalculator.calculate(character, EquipmentRules.aggregate(equipped));
     }
 
-    public static PhysicalDamageType heldPhysicalType(Player player) {
+    public static PhysicalDamageType heldPhysicalType(LivingEntity player) {
         return EquipmentRules.profile(id(player.getMainHandItem()), EquipmentRules.Slot.MAIN_HAND).damageType();
     }
 

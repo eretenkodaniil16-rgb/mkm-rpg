@@ -44,6 +44,19 @@ final class PhysicalMitigationRulesTest {
     }
 
     @Test
+    void neutralNonPlayerAttackSourceUsesNoPenetration() {
+        var shielded = stats(Map.of(
+                PlayerModifierId.PHYSICAL_RESISTANCE, 0.25D,
+                PlayerModifierId.PIERCING_RESISTANCE, 0.15D));
+        assertEquals(6F, PhysicalMitigationRules.apply(
+                10F, 0.0D, shielded, PhysicalDamageType.PIERCING), 0.0001F);
+        assertEquals(6F, PhysicalMitigationRules.apply(
+                10F, Double.NaN, shielded, PhysicalDamageType.PIERCING), 0.0001F);
+        assertEquals(9F, PhysicalMitigationRules.apply(
+                10F, 0.75D, shielded, PhysicalDamageType.PIERCING), 0.0001F);
+    }
+
+    @Test
     void invalidAndBoundaryDamageIsSafe() {
         var neutral = stats(Map.of());
         assertEquals(0F, PhysicalMitigationRules.apply(Float.NaN, neutral, neutral,
