@@ -4,11 +4,11 @@
 
 ## 1. Ordinary vanilla LMB integration — what is actually wired
 
-`client.VanillaAttackPresentationMixin` injects at the **HEAD** of client `Minecraft.startAttack`, runs a read-only observer and **never cancels** vanilla attack processing, breaks a block, changes the attack cooldown, performs target selection, invokes `player.attack` or transmits a server attack request. This is the native method responsible for vanilla attack attempts, including air swings. The actual Minecraft client/server action remains unchanged.
+`client.VanillaAttackPresentationMixin` injects at **RETURN** of client `Minecraft.startAttack` and observes only `true` return (vanilla accepted processing), runs a read-only observer and **never cancels** vanilla attack processing, breaks a block, changes the attack cooldown, performs target selection, invokes `player.attack` or transmits a server attack request. This is the native method responsible for vanilla attack attempts, including air swings. The actual Minecraft client/server action remains unchanged.
 
 `VanillaAttackPresentationFeed` creates a bounded (16 event) local queue of immutable `AttackPresentationEvent` values: action kind, `EquipmentRules.Family`, hand, leading arm, stage, `mkm:*` clip ID, client start game tick, local sequence ID and explicit **LOCAL_PREDICTED** status. It excludes Minecraft block hit-results, GUI, spectator and using item/shield, and suppresses extra cosmetic signals while C2 action timeline is non-idle. For nonempty/unknown items use a generic profile, not a fake sword. Right/left dominant main arm uses Minecraft's actual player setting. `drain()` is the future first-party MNAE read boundary; the existing C3 renderer is intentionally untouched.
 
-**Do not mistake this for server hit confirmation.** LMB misses have no damage, and the observed native method can still reject attacks later. This signal is **cosmetic input prediction**, not proof of server acceptance or damage. Existing server `CombatEvents`, `LivingEntityCombatMixin`, `PendingHitProvenance`, confirmed combo `HitConfirm` and vanilla damage remain the sole authorities. MNAE must distinguish `LOCAL_PREDICTED` from any future server-confirmed status and must not replay a second attack from this queue.
+**Do not mistake this for server hit confirmation.** LMB misses have no damage, and the observed native method can still reject attacks later. This signal is **cosmetic input prediction**, not proof of server acceptance or damage. The `true` native return prevents predictions from a locally rejected attack attempt but is not a network acknowledgement. Existing server `CombatEvents`, `LivingEntityCombatMixin`, `PendingHitProvenance`, confirmed combo `HitConfirm` and vanilla damage remain the sole authorities. MNAE must distinguish `LOCAL_PREDICTED` from any future server-confirmed status and must not replay a second attack from this queue.
 
 **No visual changes are claimed in this PR**: MNAE bridge/renderer integration belongs to Animation team, and first-person and observer replication remain separate tasks.
 
@@ -30,7 +30,7 @@
 | PvP, enchanted armor, different attack speed | Native server damage/eligibility | same cosmetic event | No change to damage, attack cooldown or reach |
 | High latency/reconnect | Server handles attack legality | local prediction may be stale | Reset local queue on relog; no client damage authority |
 
-**Other mods:** the mixin only reads/captures at `HEAD`, never cancels, but coexistence with other mods that overwrite `startAttack` still requires client QA. Method name/injection must pass 26.3 boot smoke; alternate hook needed if another mod owns the method.
+**Other mods:** the mixin only reads/captures at `RETURN` for native-accepted invocations, never cancels, but coexistence with other mods that overwrite `startAttack` still requires client QA. Method name/injection must pass 26.3 boot smoke; alternate hook needed if another mod owns the method.
 
 ## 3. Two architectures for LMB combination
 

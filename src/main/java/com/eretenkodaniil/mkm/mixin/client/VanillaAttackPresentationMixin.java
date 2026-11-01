@@ -13,8 +13,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  */
 @Mixin(Minecraft.class)
 abstract class VanillaAttackPresentationMixin {
-    @Inject(method = "startAttack", at = @At("HEAD"))
+    @Inject(method = "startAttack", at = @At("RETURN"))
     private void mkm$observeLmb(CallbackInfoReturnable<Boolean> cir) {
-        VanillaAttackPresentationFeed.observeNativeAttack((Minecraft) (Object) this);
+        if (Boolean.TRUE.equals(cir.getReturnValue())) {
+            VanillaAttackPresentationFeed.observeNativeAttack((Minecraft) (Object) this);
+        }
     }
 }

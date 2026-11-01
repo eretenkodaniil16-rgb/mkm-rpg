@@ -15,7 +15,7 @@ import net.minecraft.world.entity.HumanoidArm;
 
 /**
  * Owner-local, cosmetic-only feed for the future MNAE bridge.
- * Called from vanilla Minecraft.startAttack BEFORE vanilla executes its logic,
+ * Called after vanilla Minecraft.startAttack returned true,
  * without cancelling or replacing the vanilla method.
  */
 public final class VanillaAttackPresentationFeed {
