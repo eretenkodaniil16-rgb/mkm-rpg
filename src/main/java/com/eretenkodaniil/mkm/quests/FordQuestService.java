@@ -1,6 +1,10 @@
 package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
+import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
+import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
+import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
@@ -35,14 +39,69 @@ public final class FordQuestService {
             if (!entity.entityTags().contains(NPC_TAG)) {
                 return InteractionResult.PASS;
             }
-            // Consume on both sides to prevent vanilla villager trading or spectator bypass.
-            if (hand == InteractionHand.MAIN_HAND && player instanceof ServerPlayer serverPlayer) {
-                if (!serverPlayer.isSpectator() && serverPlayer.distanceToSqr(entity) <= TALK_RANGE_SQUARED) {
-                    talk(serverPlayer);
-                }
+            // On the client let the normal interact packet reach the server.
+            // Only the server consumes the tagged villager interaction, preventing trading.
+            if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
+            if (hand == InteractionHand.MAIN_HAND
+                    && !serverPlayer.isSpectator() && serverPlayer.isAlive()
+                    && serverPlayer.distanceToSqr(entity) <= TALK_RANGE_SQUARED) {
+                showDialogue(serverPlayer, entity);
             }
             return InteractionResult.SUCCESS;
         });
+    }
+
+    private static void showDialogue(ServerPlayer player, Entity entity) {
+        if (!(entity instanceof Villager npc) || !requireWarden(player)) return;
+        FordQuestState state = get(player);
+        if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
+        if (FordQuestNetworking.showDialogue(player, npc)) {
+            NpcVisualSignals.emit(npc, NpcVisualSignals.Cue.GREET);
+        } else talk(player);
+    }
+
+    public static void handleChoice(ServerPlayer player, FordChoiceRequest request) {
+        if (player.isSpectator() || !player.isAlive()
+                || !(player.level() instanceof ServerLevel level)) return;
+        Entity entity = level.getEntity(request.entityId());
+        if (!(entity instanceof Villager npc) || !npc.isAlive()
+                || !npc.entityTags().contains(NPC_TAG)
+                || player.distanceToSqr(npc) > TALK_RANGE_SQUARED) return;
+        FordQuestState state = get(player);
+        if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
+        // Consume a valid one-shot session BEFORE any response or state mutation.
+        // Forged stage mismatch packets must not spam greeting UI or cosmetic cues.
+        // The session compares the stage *as opened*, so CLOSE remains valid even
+        // if the server quest progressed while the screen was still visible.
+        if (!FordDialogueSessions.consume(player, npc.getUUID(), npc.getId(),
+                request.expectedStage(), request.sessionId(), level.getGameTime())) return;
+        if (request.choice() == FordChoiceRequest.CLOSE) return;
+        if (request.expectedStage() != FordQuestNetworking.stage(state)) {
+            showDialogue(player, npc); // authenticated stale response: resync only
+            return;
+        }
+        if (!FordDialogueRules.permitted(request.expectedStage(),request.choice())) {
+            showDialogue(player, npc);
+            return;
+        }
+        switch (request.choice()) {
+            case FordChoiceRequest.INSPECT -> {
+                if (request.expectedStage() == 0 || request.expectedStage() == 1) inspect(player);
+                else return;
+            }
+            case FordChoiceRequest.ACCEPT -> { if (request.expectedStage() == 0) accept(player); else return; }
+            case FordChoiceRequest.LEAVE -> { leave(player); return; }
+            case FordChoiceRequest.CLAIM -> { if (request.expectedStage() == 2) claim(player); else return; }
+            case FordChoiceRequest.LOCATE -> { if (request.expectedStage() == 1) recover(player); else return; }
+            default -> { return; }
+        }
+        showDialogue(player, npc);
+    }
+
+    public static boolean isEncounterLoaded(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return false;
+        Entity e = findEncounter(player, get(player), level);
+        return e != null && e.isAlive();
     }
 
     public static FordQuestState get(ServerPlayer player) {
@@ -51,6 +110,8 @@ public final class FordQuestService {
 
     private static void update(ServerPlayer player, FordQuestState state) {
         player.setAttached(FordQuestAttachments.FORD_QUEST, state);
+        // Optional push; the client shows it only while J is open or explicitly requested.
+        FordQuestNetworking.sendJournal(player);
     }
 
     private static void message(ServerPlayer player, String text) {
@@ -105,7 +166,9 @@ public final class FordQuestService {
         List<Villager> nearby = level.getEntitiesOfClass(
                 Villager.class, player.getBoundingBox().inflate(6.0),
                 npc -> npc.isAlive() && npc.entityTags().contains(NPC_TAG)
-                        && player.distanceToSqr(npc) <= TALK_RANGE_SQUARED);
+                        && player.distanceToSqr(npc) <= TALK_RANGE_SQUARED
+                        && (get(player).wardenId().isBlank()
+                            || get(player).wardenId().equals(npc.getUUID().toString())));
         return nearby.isEmpty() ? null : nearby.getFirst();
     }
 
@@ -123,6 +186,7 @@ public final class FordQuestService {
             return;
         }
         FordQuestState state = get(player);
+        NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.TALK);
         switch (state.stage()) {
             case FordQuestState.NOT_STARTED -> {
                 message(player, "[Ильра] Караван пропал у старого брода. Сможешь остановить налётчика?");
@@ -144,9 +208,17 @@ public final class FordQuestService {
     }
 
     public static void leave(ServerPlayer player) {
-        if (requireWarden(player)) {
-            message(player, "[Ильра] Возвращайся, когда решишься. Задание пока не принято.");
-        }
+        if (!requireWarden(player)) return;
+        FordQuestState state = get(player);
+        String farewell = switch (state.stage()) {
+            case FordQuestState.NOT_STARTED -> "Возвращайся, когда решишься. Задание пока не принято.";
+            case FordQuestState.ACTIVE -> "Будь осторожен у брода. Я подожду известий.";
+            case FordQuestState.RETURN_TO_WARDEN -> "Награда останется здесь, пока ты не вернёшься.";
+            case FordQuestState.REWARDED -> "Я не забуду твою помощь караванам.";
+            default -> "До встречи.";
+        };
+        message(player, "[Ильра] " + farewell);
+        NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.WAIT);
     }
 
     public static void inspect(ServerPlayer player) {
@@ -158,6 +230,7 @@ public final class FordQuestService {
         FordQuestState result = FordQuestRules.inspect(previous, perception);
         if (result != previous) {
             update(player, result);
+            NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.REACT);
             message(player, "[PER " + perception + " >= 12] Следы выдают хуска: он устойчив к солнцу. При награде +25 MKM XP.");
         } else if (previous.foundTracks()) {
             message(player, "MKM: Ты уже изучил следы.");
@@ -177,21 +250,82 @@ public final class FordQuestService {
             return;
         }
         Villager npc = nearbyWarden(player);
-        if (npc == null || !spawnRaider(player, npc)) {
-            message(player, "MKM: Нужны мирная сложность ОТКЛ и свободная ровная площадка в пределах 8 блоков от NPC.");
+        if (npc == null || !(player.level() instanceof ServerLevel level)) return;
+
+        // Reconcile a saved world encounter with a quest stage that rolled back
+        // during a partial server save. NEVER create a duplicate on unloaded chunks.
+        ActiveEncounter reserved = findReservedEncounter(player);
+        if (reserved != null) {
+            var saved = reserved.entry();
+            if (reserved.level() != level || !saved.wardenUuid().equals(npc.getUUID().toString())) {
+                message(player, "MKM: Для вас уже зарезервирована встреча у другой смотрительницы. "
+                        + "Новая не создаётся.");
+                return;
+            }
+            Entity original = null;
+            try { original = level.getEntity(UUID.fromString(saved.raiderUuid())); }
+            catch (IllegalArgumentException malformed) {
+                message(player, "MKM: Повреждён UUID встречи; требуется вмешательство администратора.");
+                return;
+            }
+            if (original instanceof Husk husk && husk.isAlive()
+                    && husk.entityTags().contains(RAIDER_TAG)
+                    && husk.entityTags().contains(ownerTag(player))) {
+                update(player, accepted.withEncounter(saved.raiderUuid(), saved.wardenUuid()));
+                message(player, "[Ильра] Уже появившийся налётчик найден. "
+                        + "Задание восстановлено без создания второго врага.");
+            } else {
+                message(player, "MKM: Противник зарезервирован рядом с "
+                        + saved.x() + ", " + saved.y() + ", " + saved.z()
+                        + ", но не загружен или исчез. Посетите район встречи и повторите "
+                        + "принятие; новая сущность НЕ создаётся.");
+            }
             return;
         }
-        update(player, accepted);
+
+        FordEncounterRegistry registry = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_REGISTRY);
+        if (!registry.canRegister(player.getUUID().toString())) {
+            message(player, "MKM: Реестр встреч заполнен или уже содержит вашу запись. "
+                    + "Новый противник не создан.");
+            return;
+        }
+        Husk raider = spawnRaider(player, npc);
+        if (raider == null) {
+            message(player, "MKM: Нужна сложность выше Peaceful и безопасная площадка в пределах 8 блоков.");
+            return;
+        }
+        // World reservation precedes player quest stage. A crash may still split
+        // distinct world/player save files, but retry will fail closed, not respawn.
+        BlockPos home = raider.blockPosition();
+        level.setAttached(FordQuestAttachments.ENCOUNTER_REGISTRY,
+                registry.register(player.getUUID().toString(), new FordEncounterRegistry.Entry(
+                        raider.getUUID().toString(), npc.getUUID().toString(),
+                        home.getX(), home.getY(), home.getZ())));
+        update(player, accepted.withEncounter(raider.getUUID().toString(), npc.getUUID().toString()));
+        NpcVisualSignals.emit(raider, NpcVisualSignals.Cue.THREAT);
         message(player, "[Ильра] Налётчик появился неподалёку. Одолей его и возвращайся!");
+    }
+
+    private record ActiveEncounter(ServerLevel level, FordEncounterRegistry.Entry entry) {}
+
+    private static ActiveEncounter findReservedEncounter(ServerPlayer player) {
+        String owner = player.getUUID().toString();
+        for (ServerLevel level : player.level().getServer().getAllLevels()) {
+            FordEncounterRegistry.Entry entry = level
+                    .getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_REGISTRY)
+                    .byOwner().get(owner);
+            if (entry != null) return new ActiveEncounter(level, entry);
+        }
+        return null;
     }
 
     private static String ownerTag(ServerPlayer player) {
         return OWNER_PREFIX + player.getUUID();
     }
 
-    private static boolean spawnRaider(ServerPlayer player, Villager npc) {
+    private static Husk spawnRaider(ServerPlayer player, Villager npc) {
         if (!(player.level() instanceof ServerLevel level) || level.getDifficulty() == Difficulty.PEACEFUL) {
-            return false;
+            return null;
         }
         // Deterministic local positions. Only checked on player interaction, never every tick.
         int[][] offsets = {{7,0},{-7,0},{0,7},{0,-7},{6,5},{-6,5},{6,-5},{-6,-5}};
@@ -213,61 +347,143 @@ public final class FordQuestService {
             raider.setPersistenceRequired();
             raider.setCustomName(Component.literal("Разоритель брода"));
             raider.setCustomNameVisible(true);
+            // Initial authored AI intent: pursue the accepting player, then fall back
+            // to the vanilla Husk goal scheduler (no alternate combat system).
+            raider.setTarget(player);
             if (level.addFreshEntity(raider)) {
-                return true;
+                return raider;
             }
         }
-        return false;
+        return null;
     }
 
+    /**
+     * Safely locate the exact server-owned encounter entity. Never infer that an
+     * unloaded entity is dead; never create a replacement merely because a search
+     * within 48 blocks returned empty. This intentionally fails closed.
+     */
     public static void recover(ServerPlayer player) {
-        if (!requireWarden(player)) {
-            return;
-        }
+        if (!requireWarden(player)) return;
         FordQuestState quest = get(player);
         if (!quest.stage().equals(FordQuestState.ACTIVE)) {
-            message(player, "MKM: Восстановление встречи доступно только при активном задании.");
+            message(player, "MKM: Встреча уже не активна.");
             return;
         }
-        if (!FordQuestRules.canRecover(quest)) {
-            message(player, "MKM: Лимит восстановления встречи исчерпан (2). Обратитесь к администратору тестового мира.");
+        if (!(player.level() instanceof ServerLevel level)) return;
+        Entity raider = findEncounter(player, quest, level);
+        if (raider != null && raider.isAlive()) {
+            message(player, "MKM: Разоритель существует: X " + raider.blockPosition().getX()
+                    + ", Y " + raider.blockPosition().getY()
+                    + ", Z " + raider.blockPosition().getZ()
+                    + ". Противник НЕ создан повторно.");
             return;
         }
-        Villager npc = nearbyWarden(player);
-        if (!(player.level() instanceof ServerLevel level) || npc == null) {
-            return;
-        }
-        // Local safety check: never spawn another owned raider if the original is nearby.
-        boolean exists = !level.getEntitiesOfClass(Husk.class, npc.getBoundingBox().inflate(48.0),
-                husk -> husk.isAlive() && husk.entityTags().contains(RAIDER_TAG)
-                        && husk.entityTags().contains(ownerTag(player))).isEmpty();
-        if (exists) {
-            message(player, "MKM: Твой противник ещё существует поблизости. Новый не создаётся.");
-        } else if (spawnRaider(player, npc)) {
-            update(player, FordQuestRules.onRecoveredRaiderSpawned(quest));
-            message(player, "MKM: Потерянная встреча восстановлена ("
-                    + (quest.recoveryCount() + 1) + "/" + FordQuestRules.MAX_RECOVERIES + ").");
+        ActiveEncounter reserved = findReservedEncounter(player);
+        if (reserved != null) {
+            FordEncounterRegistry.Entry anchor = reserved.entry();
+            message(player, "MKM: Противник не загружен. Место встречи: "
+                    + anchor.x() + ", " + anchor.y() + ", " + anchor.z()
+                    + "; измерение: " + reserved.level().dimension()
+                    + ". Посетите это место, чтобы Minecraft загрузил чанк. "
+                    + "Новая сущность автоматически НЕ создаётся.");
         } else {
-            message(player, "MKM: Не удалось создать противника. Проверьте сложность и окружающую площадку.");
+            message(player, "MKM: Встреча не найдена в загруженных сущностях или реестре. "
+                    + "Это возможно для старого сохранения E1/E2. "
+                    + "Проверьте первоначальное место появления или обратитесь к администратору; "
+                    + "безопасное автоматическое возрождение запрещено.");
         }
     }
 
-    /** Combat is vanilla + MKM CombatService. This listener only consumes confirmed deaths. */
+    private static Entity findEncounter(ServerPlayer player, FordQuestState quest, ServerLevel level) {
+        if (!quest.encounterId().isBlank()) {
+            try {
+                Entity matching = level.getEntity(UUID.fromString(quest.encounterId()));
+                return matching instanceof Husk && matching.entityTags().contains(RAIDER_TAG)
+                        && matching.entityTags().contains(ownerTag(player)) ? matching : null;
+            } catch (IllegalArgumentException badId) {
+                return null;
+            }
+        }
+        // Only for pre-v3 saves with no tracked entity UUID: bind a *single* loaded
+        // tagged raider rather than synthesizing another one.
+        Villager npc = nearbyWarden(player);
+        if (npc == null) return null;
+        List<Husk> matches = level.getEntitiesOfClass(Husk.class, npc.getBoundingBox().inflate(48.0),
+                husk -> husk.isAlive() && husk.entityTags().contains(RAIDER_TAG)
+                        && husk.entityTags().contains(ownerTag(player)));
+        if (matches.size() != 1) return null;
+        Entity found = matches.getFirst();
+        update(player, quest.withEncounter(found.getUUID().toString(), npc.getUUID().toString()));
+        return found;
+    }
+
+    /**
+     * The authored objective is that the owned raider is eliminated, not that
+     * the owner must deal the final hit. Other players/environment can help.
+     * Offline owners receive a world-persistent death tombstone on login.
+     */
     public static void onDeath(LivingEntity entity, DamageSource source) {
         if (!(entity instanceof Husk) || !entity.entityTags().contains(RAIDER_TAG)
-                || !(source.getEntity() instanceof ServerPlayer killer)
-                || !entity.entityTags().contains(ownerTag(killer))) {
-            return;
+                || !(entity.level() instanceof ServerLevel level)) return;
+        UUID ownerId = null;
+        for (String tag : entity.entityTags()) {
+            if (!tag.startsWith(OWNER_PREFIX)) continue;
+            try {
+                ownerId = UUID.fromString(tag.substring(OWNER_PREFIX.length()));
+                break;
+            } catch (IllegalArgumentException ignored) {
+                return; // malformed ownership: fail closed
+            }
         }
-        FordQuestState previous = get(killer);
+        if (ownerId == null) return;
+        String deadId = entity.getUUID().toString();
+        // Release only the matching registered encounter, not other players'
+        // raiders and not an unrelated tagged entity with a different UUID.
+        FordEncounterRegistry registry = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_REGISTRY);
+        FordEncounterRegistry after = registry.removeIfMatch(ownerId.toString(), deadId);
+        if (after != registry) level.setAttached(FordQuestAttachments.ENCOUNTER_REGISTRY, after);
+        NpcVisualSignals.emit(entity, NpcVisualSignals.Cue.DEATH);
+        // Preserve verified death proof irrespective of whether the owner is online.
+        // A player-data save cut must not erase a previously witnessed death.
+        var existing = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_OUTCOMES);
+        var recorded = existing.recordDeath(deadId, ownerId.toString());
+        if (recorded != existing) {
+            level.setAttached(FordQuestAttachments.ENCOUNTER_OUTCOMES, recorded);
+        } else if (!existing.deadRaiders().containsKey(deadId)) {
+            com.eretenkodaniil.mkm.MkmMod.LOGGER.error(
+                    "Ford death tombstone ledger full for owner {} raider {}", ownerId, deadId);
+        }
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        if (owner != null) applyEncounterDeath(owner, deadId);
+    }
+
+    private static boolean applyEncounterDeath(ServerPlayer owner, String deadId) {
+        FordQuestState previous = get(owner);
+        if (!FordQuestRules.matchesEncounter(previous, deadId)) return false;
         FordQuestState result = FordQuestRules.onOwnedRaiderDefeated(previous);
-        if (result != previous) {
-            update(killer, result);
-            message(killer, "MKM: Налётчик побеждён. Вернись к Ильре за наградой.");
+        if (result == previous) return false;
+        update(owner, result);
+        message(owner, "MKM: Разоритель брода устранён. Вернись к Ильре.");
+        return true;
+    }
+
+    private static void replayPersistedDeaths(ServerPlayer owner) {
+        String ownerId = owner.getUUID().toString();
+        for (ServerLevel level : owner.level().getServer().getAllLevels()) {
+            FordEncounterOutcomes pending = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_OUTCOMES);
+            for (var entry : pending.deadRaiders().entrySet()) {
+                if (entry.getValue().equals(ownerId) && applyEncounterDeath(owner, entry.getKey())) {
+                    // Retain proof through a possible second player/world save cut.
+                    return;
+                }
+            }
         }
     }
 
-    /** Mark claimed first: repeated requests/relog cannot mint extra XP. See crash-window limitation. */
+    /**
+     * Character M2 authoritative keyed receipt is recorded BEFORE the quest stage.
+     * The old E2 reward floor is legacy-only and NEVER auto-redeemed.
+     */
     public static void claim(ServerPlayer player) {
         if (!requireWarden(player)) {
             return;
@@ -278,10 +494,27 @@ public final class FordQuestService {
             message(player, "MKM: Награда пока недоступна или уже получена.");
             return;
         }
-        long xp = FordQuestRules.rewardExperience(previous);
+        // The M2 receipt, XP and build credits are ONE immutable character write.
+        // A crash after this write but before the quest stage update is safely retryable.
+        var result = CharacterService.grantExperienceOnce(
+                player, "mkm:ford_warden/complete", FordQuestRules.rewardExperience(previous));
+        if (!result.confirmed()) {
+            message(player, "MKM: Награда недоступна (" + result.status()
+                    + "), квест остаётся готовым к выдаче.");
+            return;
+        }
         update(player, rewarded);
-        CharacterService.addExperience(player, xp);
-        message(player, "[Ильра] Спасибо! Получено " + xp + " MKM XP (не vanilla XP).");
+        NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.REWARD);
+        message(player, result.creditedExperience() > 0L
+                ? "[Ильра] Получено " + result.creditedExperience() + " MKM XP."
+                : "[Ильра] Твоя награда уже была учтена или достигнут предел опыта.");
+    }
+
+    public static void onLogin(ServerPlayer player) {
+        FordDialogueSessions.invalidate(player);
+        replayPersistedDeaths(player);
+        // Legacy completed saves without a Character M2 receipt are ambiguous.
+        // Do not invent historical XP by interpreting an obsolete reward floor.
     }
 
     public static void status(ServerPlayer player) {
@@ -289,6 +522,8 @@ public final class FordQuestService {
         message(player, "MKM Ford Quest | stage=" + quest.stage()
                 + " | tracks=" + quest.foundTracks()
                 + " | recoveries=" + quest.recoveryCount() + "/" + FordQuestRules.MAX_RECOVERIES
+                + " | encounter=" + (quest.encounterId().isBlank() ? "legacy/none" : quest.encounterId())
+                + " | xp_floor=" + quest.rewardXpFloor()
                 + " | version=" + quest.schemaVersion());
     }
 }
