@@ -7,6 +7,9 @@ import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
+import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
+import com.eretenkodaniil.mkm.quests.FordQuestCommands;
+import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.fabricmc.api.ModInitializer;
@@ -28,12 +31,13 @@ public final class MkmMod implements ModInitializer {
 
     @Override
     public void onInitialize() {
-        // Explicit static initialization registers Fabric attachments before player data is read.
         CharacterAttachments.initialize();
         CombatAttachments.initialize();
+        FordQuestAttachments.initialize();
         MkmItems.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
+        FordQuestService.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
@@ -46,7 +50,9 @@ public final class MkmMod implements ModInitializer {
         });
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);
+        ServerLivingEntityEvents.AFTER_DEATH.register(FordQuestService::onDeath);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
         LOGGER.info("MKM Fabric 26.3 initialized");
     }
 }
