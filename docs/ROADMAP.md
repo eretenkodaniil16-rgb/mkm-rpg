@@ -1,5 +1,7 @@
 # Roadmap
 
+> **Historical milestone record (NeoForge 26.2 period).** The running gameplay branch now targets **Minecraft 26.3 / Fabric Loader 0.20.1** and already includes Combat C2. See [FABRIC_RPG_WORKSTREAMS.md](FABRIC_RPG_WORKSTREAMS.md) for current implementation status, parallel workstreams and the recommended progression → abilities → quest loop. Preserve this older roadmap as milestone history, not an authoritative platform specification.
+
 This roadmap is ordered by architectural risk and integration value, not by content volume. Each milestone should leave the repository in a buildable state.
 
 ## 0.0.1 — Foundation

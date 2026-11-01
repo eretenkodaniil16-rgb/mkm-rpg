@@ -8,14 +8,15 @@ Before implementing a non-trivial feature, read the relevant parts of:
 
 - `docs/GAME_DESIGN.md`
 - `docs/ARCHITECTURE.md`
-- `docs/ROADMAP.md`
+- `docs/ROADMAP.md` (historical milestones; see current plan below)
+- `docs/FABRIC_RPG_WORKSTREAMS.md` (current runtime and next systems)
 - `docs/TECHNICAL_DECISIONS.md`
 
 Inspect the existing implementation before proposing a replacement. Do not create parallel frameworks for capabilities the project already has.
 
 ## Core constraints
 
-1. Target Minecraft 26.2, NeoForge 26.2.x and Java 25 unless a deliberate technical decision changes the baseline.
+1. The active gameplay baseline is Minecraft 26.3, Fabric Loader 0.20.1, Java 25 and Fabric Loom. The NeoForge 26.2 documentation describes an earlier branch; do not introduce NeoForge APIs into active Fabric code.
 2. Preserve dedicated-server compatibility. Common/server code must not import or reference client-only Minecraft classes.
 3. The server is authoritative for RPG state, combat outcomes, progression, quests, inventory-affecting actions and other gameplay decisions.
 4. Treat network messages as untrusted input. Validate sender state, permissions, ranges, identifiers and requested actions on the server.
@@ -23,12 +24,13 @@ Inspect the existing implementation before proposing a replacement. Do not creat
 6. Prefer composition and explicit domain services over large inheritance hierarchies.
 7. Keep registry/bootstrap classes small. Domain logic does not belong in the mod entry point.
 8. Prefer data-driven definitions for content and balance values when that improves iteration, datapackability or compatibility.
-9. Do not add Mixins or Access Transformers merely for convenience. Use public NeoForge/Minecraft APIs first. Any invasive hook requires documented justification.
+9. Do not add Mixins or Access Transformers merely for convenience. Use public Fabric/Minecraft APIs first. Any invasive hook requires documented justification.
 10. Do not silently break save formats, registry identifiers, network protocol assumptions or public data schemas. Add migration/versioning strategy when those become persistent contracts.
 
 ## Change discipline
 
 - Keep each PR focused on one milestone or coherent subsystem.
+- Do not branch new gameplay features from the template `main`. Use a reviewed Fabric gameplay base and document its branch ancestry; keep C3 animation changes separate until acceptance.
 - Avoid unrelated refactors while implementing a feature.
 - Do not mass-create empty packages/classes for hypothetical future systems.
 - Add the smallest stable extension point that current requirements justify.

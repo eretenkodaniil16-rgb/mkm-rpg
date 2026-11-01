@@ -4,7 +4,7 @@ This file records durable architectural choices. It is not a changelog. Decision
 
 ## TD-001 — Technology baseline
 
-**Status:** Accepted
+**Status:** Superseded by TD-013 for the active Fabric runtime; retained as history
 
 MKM targets Minecraft 26.2, NeoForge 26.2.x, Java 25 and ModDevGradle for the foundation milestone.
 
@@ -74,7 +74,7 @@ The project will grow through vertical slices. Empty package trees, universal ma
 
 ## TD-008 — Player RPG persistence uses NeoForge data attachments
 
-**Status:** Accepted
+**Status:** Superseded by TD-014 for Fabric data attachments
 
 Player-specific RPG state is stored in a registered NeoForge `AttachmentType` on the player entity. The schema uses a `MapCodec`, and the attachment opts into copy-on-death behavior.
 
@@ -84,7 +84,7 @@ Player-specific RPG state is stored in a registered NeoForge `AttachmentType` on
 
 ## TD-009 — Character state uses owner-only attachment synchronization
 
-**Status:** Accepted
+**Status:** Superseded by TD-014 for Fabric data attachments
 
 Server-to-client Character Core synchronization uses NeoForge attachment synchronization and sends the player attachment only to its owning player.
 
@@ -136,3 +136,23 @@ The following still require implementation research/prototyping before acceptanc
 - quest/dialogue data representation;
 - whether social/reward systems justify additional persistent attributes such as Presence or Luck;
 - compatibility/migration policy for the first public release.
+
+## TD-013 — Active runtime moved to Minecraft 26.3 and Fabric
+
+**Status:** Accepted for active gameplay development
+
+**Decision:** Minecraft 26.3, Fabric Loader 0.20.1, Fabric Loom and Java 25 replace the initial NeoForge 26.2/ModDevGradle baseline (TD-001). The mod ID `mkm` and Java package namespace stay unchanged.
+
+**Evidence:** `port/fabric-26.3` and descendant Fabric branches compile, run dedicated-server and virtual-client CI smoke checks, and distribute nested Fabric API in the mod JAR. The repository's default `main` still contains the original NeoForge template and is not the source of the current gameplay build.
+
+**Consequence:** New gameplay features must use Fabric APIs and a reviewed Fabric branch. Legacy NeoForge documents are historical. Integrate stacked draft PRs in dependency order after review, not via forced replacement of `main`.
+
+## TD-014 — Fabric data attachments preserve the Character Core authority contract
+
+**Status:** Accepted for active gameplay development
+
+**Decision:** `CharacterAttachments.CHARACTER` uses `net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry`, persistent `CharacterData.CODEC.codec()`, `copyOnDeath()` and owner-only `syncWith(CharacterData.STREAM_CODEC, AttachmentSyncPredicate.targetOnly())`. Authoritative mutations replace immutable values with `player.setAttached(...)`. The seven-stat saved schema remains v2.
+
+**Rationale:** The Fabric port retains lifecycle and anti-desynchronization requirements from TD-008 and TD-009 without retaining their platform-specific code. Transient combat stamina/timeline is separately attached and owner-synced, not stored in persistent CharacterData.
+
+**Consequence:** Future rewards, allocation, abilities, equipment and quest systems must not edit owner-only state directly on clients. Changes to CharacterData require explicit migration. Persistent quest/world state belongs to the owning scope.
