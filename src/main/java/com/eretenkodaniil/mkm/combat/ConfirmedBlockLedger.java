@@ -1,72 +1,47 @@
 package com.eretenkodaniil.mkm.combat;
 
-import java.util.ArrayDeque;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Objects;
 import java.util.WeakHashMap;
 
 /**
- * Server-thread-only receipt ledger for actual Fabric damage attempts.
+ * A one-shot, server-thread-only receipt for Fabric damage events.
  *
- * Every ALLOW_DAMAGE invocation mints a receipt, including when Minecraft reuses
- * the SAME DamageSource instance. AFTER_DAMAGE can consume one matching receipt
- * once when the attempted damage was blocked by a vanilla shield.
+ * Fabric invokes ALLOW_DAMAGE and AFTER_DAMAGE inside the same synchronous
+ * LivingEntity.hurtServer call. A new attempt REPLACES any stale receipt:
+ * cancellations, repeated DamageSource instances or nested callbacks cannot
+ * leave old receipts that may be incorrectly charged later.
  *
- * Source identity alone is NOT a hit identity.
+ * If a nested damage attempt interleaves with an outer one, the superseded
+ * attempt is deliberately ignored (fail closed) rather than charged twice.
  */
 public final class ConfirmedBlockLedger<P, S> {
-    private static final int MAX_PENDING_PER_PLAYER = 64;
     private static final long MAX_CALLBACK_DELAY_TICKS = 1L;
-    private final Map<P, ArrayDeque<Attempt<S>>> pending = new WeakHashMap<>();
+    private final Map<P, Attempt<S>> latest = new WeakHashMap<>();
 
-    /** Called once per Fabric ALLOW_DAMAGE event, before damage resolution. */
+    /** Called once per ALLOW_DAMAGE invocation, whether or not it later blocks. */
     public void begin(P player, S source, long tick) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(source, "source");
-        if (tick < 0L) return;
-        ArrayDeque<Attempt<S>> attempts = pending.computeIfAbsent(
-                player, ignored -> new ArrayDeque<>());
-        purge(attempts, tick);
-        if (attempts.size() >= MAX_PENDING_PER_PLAYER) {
-            // Bound memory under malicious/cancelled damage spam; keep newest
-            // receipts, rather than allowing a stale source to veto new blocks.
-            attempts.removeFirst();
+        if (tick < 0L) {
+            latest.remove(player);
+            return;
         }
-        attempts.addLast(new Attempt<>(source, tick));
+        latest.put(player, new Attempt<>(source, tick));
     }
 
-    /**
-     * Consume exactly one pending damage attempt; never consumes a second
-     * callback for the same attempt. A new begin() permits a NEW legitimate hit
-     * with the same DamageSource at the same tick.
-     */
+    /** The one matching AFTER_DAMAGE callback consumes the receipt permanently. */
     public boolean consume(P player, S source, long tick) {
         Objects.requireNonNull(player, "player");
         Objects.requireNonNull(source, "source");
-        if (tick < 0L) return false;
-        ArrayDeque<Attempt<S>> attempts = pending.get(player);
-        if (attempts == null) return false;
-        purge(attempts, tick);
-        for (Iterator<Attempt<S>> it = attempts.descendingIterator(); it.hasNext();) {
-            Attempt<S> attempt = it.next();
-            if (attempt.source() == source) {
-                it.remove();
-                if (attempts.isEmpty()) pending.remove(player);
-                return true;
-            }
-        }
-        if (attempts.isEmpty()) pending.remove(player);
-        return false;
+        Attempt<S> attempt = latest.remove(player);
+        return attempt != null && attempt.source() == source
+                && tick >= attempt.tick()
+                && tick - attempt.tick() <= MAX_CALLBACK_DELAY_TICKS;
     }
 
     public void clear(P player) {
-        pending.remove(player);
-    }
-
-    private static <S> void purge(ArrayDeque<Attempt<S>> attempts, long tick) {
-        attempts.removeIf(attempt -> tick < attempt.tick()
-                || tick - attempt.tick() > MAX_CALLBACK_DELAY_TICKS);
+        latest.remove(player);
     }
 
     private record Attempt<S>(S source, long tick) {}
