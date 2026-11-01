@@ -240,15 +240,73 @@ public final class FordQuestService {
             return;
         }
         Villager npc = nearbyWarden(player);
-        Husk raider = npc == null ? null : spawnRaider(player, npc);
+        if (npc == null || !(player.level() instanceof ServerLevel level)) return;
+
+        // Reconcile a saved world encounter with a quest stage that rolled back
+        // during a partial server save. NEVER create a duplicate on unloaded chunks.
+        ActiveEncounter reserved = findReservedEncounter(player);
+        if (reserved != null) {
+            var saved = reserved.entry();
+            if (reserved.level() != level || !saved.wardenUuid().equals(npc.getUUID().toString())) {
+                message(player, "MKM: Для вас уже зарезервирована встреча у другой смотрительницы. "
+                        + "Новая не создаётся.");
+                return;
+            }
+            Entity original = null;
+            try { original = level.getEntity(UUID.fromString(saved.raiderUuid())); }
+            catch (IllegalArgumentException malformed) {
+                message(player, "MKM: Повреждён UUID встречи; требуется вмешательство администратора.");
+                return;
+            }
+            if (original instanceof Husk husk && husk.isAlive()
+                    && husk.entityTags().contains(RAIDER_TAG)
+                    && husk.entityTags().contains(ownerTag(player))) {
+                update(player, accepted.withEncounter(saved.raiderUuid(), saved.wardenUuid()));
+                message(player, "[Ильра] Уже появившийся налётчик найден. "
+                        + "Задание восстановлено без создания второго врага.");
+            } else {
+                message(player, "MKM: Противник зарезервирован рядом с "
+                        + saved.x() + ", " + saved.y() + ", " + saved.z()
+                        + ", но не загружен или исчез. Посетите район встречи и повторите "
+                        + "принятие; новая сущность НЕ создаётся.");
+            }
+            return;
+        }
+
+        FordEncounterRegistry registry = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_REGISTRY);
+        if (!registry.canRegister(player.getUUID().toString())) {
+            message(player, "MKM: Реестр встреч заполнен или уже содержит вашу запись. "
+                    + "Новый противник не создан.");
+            return;
+        }
+        Husk raider = spawnRaider(player, npc);
         if (raider == null) {
             message(player, "MKM: Нужна сложность выше Peaceful и безопасная площадка в пределах 8 блоков.");
             return;
         }
-        // The UUID is captured from a real, successfully spawned server entity.
+        // World reservation precedes player quest stage. A crash may still split
+        // distinct world/player save files, but retry will fail closed, not respawn.
+        BlockPos home = raider.blockPosition();
+        level.setAttached(FordQuestAttachments.ENCOUNTER_REGISTRY,
+                registry.register(player.getUUID().toString(), new FordEncounterRegistry.Entry(
+                        raider.getUUID().toString(), npc.getUUID().toString(),
+                        home.getX(), home.getY(), home.getZ())));
         update(player, accepted.withEncounter(raider.getUUID().toString(), npc.getUUID().toString()));
         NpcVisualSignals.emit(raider, NpcVisualSignals.Cue.THREAT);
         message(player, "[Ильра] Налётчик появился неподалёку. Одолей его и возвращайся!");
+    }
+
+    private record ActiveEncounter(ServerLevel level, FordEncounterRegistry.Entry entry) {}
+
+    private static ActiveEncounter findReservedEncounter(ServerPlayer player) {
+        String owner = player.getUUID().toString();
+        for (ServerLevel level : player.level().getServer().getAllLevels()) {
+            FordEncounterRegistry.Entry entry = level
+                    .getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_REGISTRY)
+                    .byOwner().get(owner);
+            if (entry != null) return new ActiveEncounter(level, entry);
+        }
+        return null;
     }
 
     private static String ownerTag(ServerPlayer player) {
@@ -358,6 +416,11 @@ public final class FordQuestService {
         }
         if (ownerId == null) return;
         String deadId = entity.getUUID().toString();
+        // Release only the matching registered encounter, not other players'
+        // raiders and not an unrelated tagged entity with a different UUID.
+        FordEncounterRegistry registry = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_REGISTRY);
+        FordEncounterRegistry after = registry.removeIfMatch(ownerId.toString(), deadId);
+        if (after != registry) level.setAttached(FordQuestAttachments.ENCOUNTER_REGISTRY, after);
         NpcVisualSignals.emit(entity, NpcVisualSignals.Cue.DEATH);
         ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
         if (owner != null) {
