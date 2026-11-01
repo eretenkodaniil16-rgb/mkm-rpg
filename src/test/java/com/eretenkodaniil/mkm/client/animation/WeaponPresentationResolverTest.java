@@ -7,8 +7,14 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeAll;
 
 class WeaponPresentationResolverTest {
+    @BeforeAll static void bootstrapRegistries() {
+        // Pure JUnit does not launch Minecraft; item/tag registries need bootstrap
+        // before touching the static Items class in deterministic fixtures.
+        net.minecraft.server.Bootstrap.bootStrap();
+    }
     private static ActionTimeline combo(int stage) {
         return new ActionTimeline(ActionTimeline.Kind.LIGHT_COMBO,
                 ActionTimeline.Phase.WINDUP,stage,500,550);
