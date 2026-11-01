@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.client;
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
 import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
+import com.eretenkodaniil.mkm.abilities.net.AbilityVisualPacket;
+import com.eretenkodaniil.mkm.client.abilities.AbilityVisualInbox;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
@@ -13,6 +15,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -34,6 +37,13 @@ public final class MkmClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ClientPlayNetworking.registerGlobalReceiver(AbilityVisualPacket.TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> AbilityVisualInbox.onServerEvent(context.client(), packet.event())));
+        ClientPlayConnectionEvents.JOIN.register(
+                (handler, sender, client) -> AbilityVisualInbox.reset());
+        ClientPlayConnectionEvents.DISCONNECT.register(
+                (handler, client) -> AbilityVisualInbox.reset());
         KeyMappingHelper.registerKeyMapping(OPEN_SHEET);
         KeyMappingHelper.registerKeyMapping(DODGE);
         KeyMappingHelper.registerKeyMapping(COMBO);
@@ -44,6 +54,7 @@ public final class MkmClient implements ClientModInitializer {
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            AbilityVisualInbox.onClientTick(client);
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();

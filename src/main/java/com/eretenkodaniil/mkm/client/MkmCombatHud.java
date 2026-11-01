@@ -16,7 +16,6 @@ import net.minecraft.network.chat.Component;
  * Uses 26.3's GUI extraction API; no persistent client-side game state.
  */
 public final class MkmCombatHud {
-    private static final int BAR_WIDTH = 176;
     private static final int BAR_HEIGHT = 7;
     private static final int STAMINA_BG = 0xCC19202A;
     private static final int STAMINA_FILL = 0xFF57B38C;
@@ -39,18 +38,21 @@ public final class MkmCombatHud {
         double max = PlayerModifierCalculator.calculate(character).get(PlayerModifierId.MAX_STAMINA);
         if (!Double.isFinite(max) || max <= 0) return;
         float ratio = (float) Math.clamp(combat.stamina() / max, 0D, 1D);
-        int width = client.getWindow().getGuiScaledWidth();
-        int height = client.getWindow().getGuiScaledHeight();
-        int x = (width - BAR_WIDTH) / 2;
-        int y = Math.max(18, height - 76);
+        int viewportWidth = client.getWindow().getGuiScaledWidth();
+        int viewportHeight = client.getWindow().getGuiScaledHeight();
+        if (viewportWidth < 120 || viewportHeight < 140) return;
+        ResourceHudLayout layout = ResourceHudLayout.forViewport(viewportWidth, viewportHeight);
+        int x = layout.x(), y = layout.staminaY(), barWidth = layout.width();
 
-        graphics.fill(x - 1, y - 1, x + BAR_WIDTH + 1, y + BAR_HEIGHT + 1, 0xC8000000);
-        graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, STAMINA_BG);
-        graphics.fill(x, y, x + Math.round(BAR_WIDTH * ratio), y + BAR_HEIGHT,
+        graphics.fill(x - 1, y - 1, x + barWidth + 1, y + BAR_HEIGHT + 1, 0xC8000000);
+        graphics.fill(x, y, x + barWidth, y + BAR_HEIGHT, STAMINA_BG);
+        graphics.fill(x, y, x + Math.round(barWidth * ratio), y + BAR_HEIGHT,
                 ratio >= 0.25F ? STAMINA_FILL : STAMINA_LOW);
 
-        graphics.text(client.font, Component.literal("MKM  " + Math.round(combat.stamina())
-                + " / " + Math.round(max)), x, y - 12, TEXT);
+        String staminaLabel = (layout.narrow() ? "SP " : "MKM  ")
+                + Math.round(combat.stamina()) + " / " + Math.round(max);
+        graphics.text(client.font, Component.literal(ResourceHudText.fit(
+                staminaLabel, barWidth, client.font::width)), x, y - 12, TEXT);
 
         ActionTimeline timeline = client.player.getAttached(CombatAttachments.TIMELINE);
         String description = timeline == null || timeline.idle()
@@ -62,7 +64,13 @@ public final class MkmCombatHud {
                     case DODGING -> "DODGE   RECOVERY";
                     case IDLE -> "R: Combo     G: Dodge";
                 };
-        graphics.text(client.font, Component.literal(description), x, y + 12,
+        if (layout.narrow()) {
+            description = timeline == null || timeline.idle()
+                    ? "R / G" : "ACT " + timeline.phase().name();
+            if (description.length() > 12) description = "BUSY";
+        }
+        graphics.text(client.font, Component.literal(ResourceHudText.fit(
+                description, barWidth, client.font::width)), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
     }
 }
