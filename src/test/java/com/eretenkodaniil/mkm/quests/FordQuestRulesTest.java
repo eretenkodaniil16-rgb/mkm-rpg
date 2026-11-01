@@ -133,7 +133,7 @@ final class FordQuestRulesTest {
     void oldOrEmptyCodecDefaultsSafely() {
         FordQuestState restored = FordQuestState.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("{}")).getOrThrow();
         assertEquals(new FordQuestState(), restored);
-        var corrupted = JsonParser.parseString("{\"schema_version\":3,\"stage\":\"active\"}");
+        var corrupted = JsonParser.parseString("{\"schema_version\":4,\"stage\":\"active\"}");
         FordQuestState future = FordQuestState.CODEC.parse(JsonOps.INSTANCE, corrupted).getOrThrow();
         assertFalse(FordQuestRules.canRecover(future));
         assertSame(future, FordQuestRules.accept(future));
