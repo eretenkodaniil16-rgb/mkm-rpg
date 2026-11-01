@@ -33,6 +33,18 @@ public final class ProgressionRules {
         return (Math.max(MIN_LEVEL, Math.min(MAX_LEVEL, level)) - 1) * POINTS_PER_LEVEL;
     }
 
+    /**
+     * Normal gameplay rewards stop at level cap; legacy/admin totals already above the
+     * threshold are preserved. No overflow or unnecessary attachment synchronization.
+     */
+    public static long experienceAfterReward(long currentExperience, long reward) {
+        if (reward < 0L) throw new IllegalArgumentException("Reward must not be negative");
+        long current = Math.max(0L, currentExperience);
+        long cap = experienceForLevel(MAX_LEVEL);
+        if (current >= cap) return current;
+        return reward >= cap - current ? cap : current + reward;
+    }
+
     public static long experienceForNextLevel(long experience) {
         int level = levelForExperience(experience);
         return level >= MAX_LEVEL ? experienceForLevel(MAX_LEVEL) : experienceForLevel(level + 1);
