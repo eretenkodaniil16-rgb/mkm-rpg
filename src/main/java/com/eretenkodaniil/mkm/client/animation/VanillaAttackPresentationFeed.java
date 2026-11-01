@@ -54,7 +54,8 @@ public final class VanillaAttackPresentationFeed {
         WeaponCombatProfiles.Profile profile = WeaponCombatProfiles.forItem(weaponId);
         long tick = Math.max(0L, client.level.getGameTime());
         AttackSequenceRules.Selection selection = AttackSequenceRules.next(
-                lastSequence, profile.family(), tick, profile.maxSequenceSteps());
+                lastSequence, profile.family(), tick, profile.maxSequenceSteps(),
+                profile.fastChainWindowTicks(), profile.alternatePauseWindowTicks());
         lastSequence = selection.state();
         String animationId = WeaponCombatProfiles.animationFor(
                 profile, selection.state().step(), selection.alternatePause(), selection.finisher());

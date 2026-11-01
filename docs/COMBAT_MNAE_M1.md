@@ -36,7 +36,7 @@
 
 **A. Full server action timeline for every normal LMB:** strict ordering, server-confirmed phases, easiest cross-player deterministic pose timings, but would hijack vanilla combat cadence/held mining and potentially break attack speed and input compatibility. It would force all weapon categories into C2 action scheduler and require joint gameplay/animation timing changes. **Rejected for M1.**
 
-**B. Vanilla attacks with separate deterministic cosmetic cadence (chosen):** each genuine vanilla `startAttack` remains vanilla; `AttackSequenceRules` only chooses 1/2/3/4, a reset after >11 ticks, or an alternate after 5–11 ticks. It NEVER authorizes damage, attack speed, reach, stamina, input repetition or recovery. A finisher visual at maximum stage is **not yet a stronger actual hit**. R remains server special. To add a stronger finisher later, Combat Core would need a separately authenticated hit provenance/authorization and test of vanilla cooldown. This preserves Minecraft behavior at the cost of local prediction and future observer S2C reconciliation.
+**B. Vanilla attacks with separate deterministic cosmetic cadence (chosen):** each genuine vanilla `startAttack` remains vanilla; `AttackSequenceRules` only chooses 1/2/3/4, reset/alternate windows per weapon family (e.g. sword fast ≤14 ticks and alternate 15–20; axe fast ≤21 and alternate 22–30). It NEVER authorizes damage, attack speed, reach, stamina, input repetition or recovery. A finisher visual at maximum stage is **not yet a stronger actual hit**. R remains server special. To add a stronger finisher later, Combat Core would need a separately authenticated hit provenance/authorization and test of vanilla cooldown. This preserves Minecraft behavior at the cost of local prediction and future observer S2C reconciliation.
 
 ## 4. Charged hold-to-release LMB — NOT ACTIVE
 
@@ -86,3 +86,7 @@ These are costs in MKM stamina units, **not** observed live PvP results.
 - Do not claim true 2-player or client visual QA based on server boot. Current native mixin may require retargeting if 26.3 mappings disagree.
 - Animation: consume `VanillaAttackPresentationFeed.drain()` in the new native MNAE adapter *only after visual A/B test*, avoid simultaneously driving old and new renderer. Never trigger damage from animation.
 - Main/control: coordinate semantic changes to input/release and real server-modified finishers only after stage A's review. Keep PR draft and never merge into legacy NeoForge `main`.
+
+### Cadence vs vanilla attack cooldown
+
+Cosmetic cadence windows intentionally differ by weapon: sword up to 14 ticks and alternate pause 15–20, axe 21/22–30, mace 35/36–46, spear 14/15–23, unarmed 7/8–12. This allows players who wait for normal vanilla weapon cooldowns to still receive stage-2/3 animation metadata. It **does not change Minecraft attack speed**, nor does it force an attack during any window.

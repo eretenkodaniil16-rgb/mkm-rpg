@@ -14,6 +14,8 @@ public final class WeaponCombatProfiles {
             double presentationSpeed,
             double proposedStaminaCostFactor,
             int maxSequenceSteps,
+            long fastChainWindowTicks,
+            long alternatePauseWindowTicks,
             double proposedPoiseEmphasis,
             String lightAnimationId,
             String alternateAnimationId,
@@ -25,7 +27,10 @@ public final class WeaponCombatProfiles {
             if (!Double.isFinite(presentationSpeed) || presentationSpeed <= 0D
                     || !Double.isFinite(proposedStaminaCostFactor) || proposedStaminaCostFactor <= 0D
                     || !Double.isFinite(proposedPoiseEmphasis) || proposedPoiseEmphasis < 0D
-                    || maxSequenceSteps < 1 || maxSequenceSteps > 4) {
+                    || maxSequenceSteps < 1 || maxSequenceSteps > 4
+                    || fastChainWindowTicks < 1 || fastChainWindowTicks > 40
+                    || alternatePauseWindowTicks <= fastChainWindowTicks
+                    || alternatePauseWindowTicks > 60) {
                 throw new IllegalArgumentException("Invalid weapon archetype profile");
             }
             for (String id : new String[]{lightAnimationId, alternateAnimationId,
@@ -57,7 +62,23 @@ public final class WeaponCombatProfiles {
     private static Profile make(Archetype archetype, EquipmentRules.Family family,
                                 double speed, double cost, int stages, double poise, String key) {
         String prefix = "mkm:attack/" + key + "/";
-        return new Profile(archetype, family, speed, cost, stages, poise,
+        long fastWindow = switch (archetype) {
+            case UNARMED -> 7L;
+            case SWORD, SPEAR -> 14L;
+            case AXE -> 21L;
+            case MACE -> 35L;
+            case OTHER -> 12L;
+        };
+        long pauseWindow = switch (archetype) {
+            case UNARMED -> 12L;
+            case SWORD -> 20L;
+            case AXE -> 30L;
+            case MACE -> 46L;
+            case SPEAR -> 23L;
+            case OTHER -> 19L;
+        };
+        return new Profile(archetype, family, speed, cost, stages,
+                fastWindow, pauseWindow, poise,
                 prefix + "light", prefix + "alternate", prefix + "finisher",
                 "mkm:special/" + key);
     }

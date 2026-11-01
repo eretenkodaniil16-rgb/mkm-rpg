@@ -48,6 +48,30 @@ final class AttackPresentationContractTest {
                 rest.state(), EquipmentRules.Family.AXE, 10, 2).state().step());
     }
 
+    @Test void weaponSpecificCadenceAllowsFullyCooledVanillaSwings() {
+        var sword = WeaponCombatProfiles.forItem("minecraft:iron_sword");
+        var axe = WeaponCombatProfiles.forItem("minecraft:iron_axe");
+        var s1 = AttackSequenceRules.next(null, sword.family(), 100,
+                sword.maxSequenceSteps(), sword.fastChainWindowTicks(),
+                sword.alternatePauseWindowTicks());
+        var s2 = AttackSequenceRules.next(s1.state(), sword.family(), 112,
+                sword.maxSequenceSteps(), sword.fastChainWindowTicks(),
+                sword.alternatePauseWindowTicks());
+        assertEquals(2, s2.state().step()); // ~12 vanilla ticks for sword cooldown
+        var a1 = AttackSequenceRules.next(null, axe.family(), 100,
+                axe.maxSequenceSteps(), axe.fastChainWindowTicks(),
+                axe.alternatePauseWindowTicks());
+        var a2 = AttackSequenceRules.next(a1.state(), axe.family(), 120,
+                axe.maxSequenceSteps(), axe.fastChainWindowTicks(),
+                axe.alternatePauseWindowTicks());
+        assertEquals(2, a2.state().step());
+        assertTrue(a2.finisher());
+        var a3 = AttackSequenceRules.next(a2.state(), axe.family(), 125,
+                axe.maxSequenceSteps(), axe.fastChainWindowTicks(),
+                axe.alternatePauseWindowTicks());
+        assertTrue(a3.alternatePause());
+    }
+
     @Test void miningAndUseAlwaysTakePrecedence() {
         var base = new AttackInputPriority.Context(false, false, false, false, false);
         assertEquals(AttackInputPriority.Decision.VANILLA_SWING,

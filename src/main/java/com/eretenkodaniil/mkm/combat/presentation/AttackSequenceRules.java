@@ -26,8 +26,18 @@ public final class AttackSequenceRules {
 
     public static Selection next(State previous, EquipmentRules.Family family,
                                  long tick, int maxSteps) {
+        return next(previous, family, tick, maxSteps,
+                FAST_CHAIN_MAX_GAP_TICKS, ALTERNATE_PAUSE_MAX_GAP_TICKS);
+    }
+
+    public static Selection next(State previous, EquipmentRules.Family family,
+                                 long tick, int maxSteps,
+                                 long fastChainWindowTicks, long alternatePauseWindowTicks) {
         Objects.requireNonNull(family, "family");
-        if (tick < 0L || maxSteps < 1 || maxSteps > 4) {
+        if (tick < 0L || maxSteps < 1 || maxSteps > 4
+                || fastChainWindowTicks < 1L || fastChainWindowTicks > 40L
+                || alternatePauseWindowTicks <= fastChainWindowTicks
+                || alternatePauseWindowTicks > 60L) {
             throw new IllegalArgumentException("Invalid attack cadence input");
         }
         if (previous == null || family != previous.family() || tick < previous.lastTick()) {
@@ -35,11 +45,11 @@ public final class AttackSequenceRules {
                     : nextId(previous.sequenceId())), false, false);
         }
         long gap = tick - previous.lastTick();
-        if (gap > ALTERNATE_PAUSE_MAX_GAP_TICKS) {
+        if (gap > alternatePauseWindowTicks) {
             return new Selection(new State(family, 1, tick, nextId(previous.sequenceId())),
                     false, false);
         }
-        if (gap > FAST_CHAIN_MAX_GAP_TICKS) {
+        if (gap > fastChainWindowTicks) {
             return new Selection(new State(family, 1, tick, nextId(previous.sequenceId())),
                     true, false);
         }
