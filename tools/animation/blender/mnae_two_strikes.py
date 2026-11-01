@@ -68,11 +68,58 @@ def create_blender_source(render):
     for bone,(_,_,parent) in placements.items():
         if parent: arm.edit_bones[bone].parent=arm.edit_bones[parent]
     bpy.ops.object.mode_set(mode='OBJECT')
+
+    # Visible six-part Minecraft-like mesh: bone constraints keep each cube
+    # attached to the editable armature so PNG renders are not empty.
+    palette={
+        "body":(.23,.34,.46,1),"head":(.76,.70,.61,1),
+        "left_arm":(.17,.60,.62,1),"right_arm":(.79,.40,.25,1),
+        "left_leg":(.17,.60,.62,1),"right_leg":(.79,.40,.25,1)}
+    for bone,(head,tail,_) in placements.items():
+        length=(Vector(tail)-Vector(head)).length
+        bpy.ops.mesh.primitive_cube_add(size=1)
+        obj=bpy.context.object
+        obj.name="VISIBLE_"+bone
+        obj.dimensions=(.46 if bone in ("body","head") else .23,
+                        length, .34 if bone in ("body","head") else .23)
+        bpy.ops.object.transform_apply(location=False,rotation=False,scale=True)
+        # Bone local Y runs head-to-tail; center the cube along that segment.
+        for vertex in obj.data.vertices:
+            vertex.co.y += length/2
+        material=bpy.data.materials.new(name="MNAE_MAT_"+bone)
+        material.diffuse_color=palette[bone]
+        obj.data.materials.append(material)
+        follow=obj.constraints.new(type='COPY_TRANSFORMS')
+        follow.target=rig
+        follow.subtarget=bone
+
+    # Ground, camera and lighting are saved INSIDE the editable .blend.
+    bpy.ops.mesh.primitive_plane_add(size=4,location=(0,0,.08))
+    floor=bpy.context.object
+    floor.name="GROUND_REFERENCE_NOT_COLLISION"
+    mat=bpy.data.materials.new(name="MNAE_FLOOR")
+    mat.diffuse_color=(.12,.14,.18,1)
+    floor.data.materials.append(mat)
+    bpy.ops.object.camera_add(location=(3,-4,2.2))
+    cam=bpy.context.object
+    direction=Vector((0,0,1.0))-cam.location
+    cam.rotation_euler=direction.to_track_quat("-Z","Y").to_euler()
+    cam.data.type="ORTHO"
+    cam.data.ortho_scale=3.5
+    bpy.context.scene.camera=cam
+    bpy.ops.object.light_add(type="AREA",location=(2,-3,4))
+    bpy.context.object.data.energy=900
+    bpy.context.object.data.size=5
     for name,motion in POSES.items():
         act=bpy.data.actions.new("MNAE_"+name)
         rig.animation_data_create()
         # Legacy Blender API authoring keys; sample at 60fps review frames.
         rig.animation_data.action=act
+        # Blender 4.4+ uses slotted actions. Assign the slot explicitly so a
+        # saved/loaded .blend animates even if slot auto-detection would fail.
+        if bpy.app.version >= (4,4,0):
+            slot=act.slots.new(id_type='OBJECT',name=rig.name)
+            rig.animation_data.action_slot=slot
         for i,t in enumerate(FRAMES):
             bpy.context.scene.frame_set(1+int(round(t*60)))
             for bone,channels in motion.items():
@@ -86,28 +133,27 @@ def create_blender_source(render):
                     p=channels["p"][i]
                     pb.location=Vector((p[0],-p[2],-p[1]))/16
                     pb.keyframe_insert(data_path="location",group=bone)
-        for fc in act.fcurves:
+        if bpy.app.version >= (5,0,0):
+            curves=act.layers[0].strips[0].channelbag(act.slots[0]).fcurves
+        else:
+            curves=act.fcurves
+        for fc in curves:
             for key in fc.keyframe_points:
                 key.interpolation="BEZIER"
     saved=ROOT/"tools/animation/blender/mnae_m1_source.blend"
     saved.parent.mkdir(parents=True,exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(saved))
     if render:
-        # Render 2D proxy contact frames, if actual Blender executable exists.
-        bpy.ops.object.camera_add(location=(3,-4,2.2))
-        cam=bpy.context.object
-        direction=Vector((0,0,1.0))-cam.location
-        cam.rotation_euler=direction.to_track_quat("-Z","Y").to_euler()
-        cam.data.type="ORTHO";cam.data.ortho_scale=3.5
-        bpy.context.scene.camera=cam
-        bpy.ops.object.light_add(type="AREA",location=(2,-3,4))
-        bpy.context.object.data.energy=900
+        # Real Blender frames of our editable six-cube proxy, not Minecraft.
         scene=bpy.context.scene
         scene.render.engine="CYCLES";scene.cycles.samples=12
         scene.render.resolution_x=384;scene.render.resolution_y=384
         scene.render.resolution_percentage=100
         for name in POSES:
-            rig.animation_data.action=bpy.data.actions["MNAE_"+name]
+            action=bpy.data.actions["MNAE_"+name]
+            rig.animation_data.action=action
+            if bpy.app.version >= (4,4,0):
+                rig.animation_data.action_slot=action.slots[0]
             for k,t in enumerate([0,.25,.357143,.52,1]):
                 scene.frame_set(1+int(t*60))
                 scene.render.filepath=str((ROOT/"build/reports/mnae-blender"/f"{name}_{k}.png").resolve())
