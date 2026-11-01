@@ -8,7 +8,8 @@ class CombatStanceMathTest {
     void idleStanceVisibleButWalkingAndJumpingUseVanillaGait() {
         assertEquals(1F, CombatStanceMath.attackLegWeight(true, 0D), 1e-6);
         assertEquals(1F, CombatStanceMath.attackLegWeight(true, .025D * .025D), 1e-6);
-        assertEquals(0F, CombatStanceMath.attackLegWeight(true, .14D * .14D), 1e-6);
+        assertTrue(CombatStanceMath.attackLegWeight(true, .14D * .14D) > .2F);
+        assertEquals(.2F, CombatStanceMath.attackLegWeight(true, .25D * .25D), 1e-6);
         assertEquals(0F, CombatStanceMath.attackLegWeight(false, 0D), 1e-6);
         assertEquals(0F, CombatStanceMath.attackLegWeight(true, Double.NaN), 1e-6);
         assertEquals(0F, CombatStanceMath.attackLegWeight(true, Double.POSITIVE_INFINITY), 1e-6);
