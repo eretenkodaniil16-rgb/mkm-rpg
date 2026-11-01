@@ -9,6 +9,8 @@ public final class AbilityNetworking {
     private AbilityNetworking() {}
 
     public static void initialize() {
+        PayloadTypeRegistry.clientboundPlay().register(
+                AbilityVisualPacket.TYPE, AbilityVisualPacket.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(
                 CastAbilityRequest.TYPE, CastAbilityRequest.STREAM_CODEC);
         ServerPlayNetworking.registerGlobalReceiver(CastAbilityRequest.TYPE,
