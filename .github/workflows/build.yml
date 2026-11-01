@@ -9,6 +9,7 @@ on:
       - 'fix/fabric-dodge-direction-input'
       - 'feature/action-combat-c2-state-hud'
       - 'feature/abilities-m1-renewal'
+      - 'feature/abilities-m2-crosscore-contracts'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -19,6 +20,7 @@ on:
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'feature/action-combat-c2-state-hud'
+      - 'feature/abilities-m1-renewal'
       - 'main'
 jobs:
   build:
