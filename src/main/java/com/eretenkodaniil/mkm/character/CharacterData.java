@@ -5,6 +5,7 @@ import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
@@ -21,9 +22,11 @@ public record CharacterData(
         int willpower,
         int perception,
         int earnedPoints,
-        List<Integer> allocatedPoints) {
+        List<Integer> allocatedPoints,
+        List<String> claimedRewardIds) {
 
-    public static final int CURRENT_SCHEMA_VERSION = 3;
+    public static final int CURRENT_SCHEMA_VERSION = 4;
+    public static final int ALLOCATION_SCHEMA_VERSION = 3;
     public static final int DEFAULT_ATTRIBUTE = 10;
     public static final int MIN_ATTRIBUTE = 1;
     public static final int MAX_ATTRIBUTE = 100;
@@ -49,7 +52,8 @@ public record CharacterData(
             Codec.INT.optionalFieldOf("willpower", DEFAULT_ATTRIBUTE).forGetter(CharacterData::willpower),
             Codec.INT.optionalFieldOf("perception", DEFAULT_ATTRIBUTE).forGetter(CharacterData::perception),
             Codec.INT.optionalFieldOf("earned_points", 0).forGetter(CharacterData::earnedPoints),
-            Codec.INT.listOf().optionalFieldOf("allocated_points", List.of()).forGetter(CharacterData::allocatedPoints)
+            Codec.INT.listOf().optionalFieldOf("allocated_points", List.of()).forGetter(CharacterData::allocatedPoints),
+            Codec.STRING.listOf().optionalFieldOf("claimed_reward_ids", List.of()).forGetter(CharacterData::claimedRewardIds)
     ).apply(instance, CharacterData::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CharacterData> STREAM_CODEC = new StreamCodec<>() {
@@ -63,7 +67,10 @@ public record CharacterData(
             int earned = buf.readVarInt();
             List<Integer> spent = new ArrayList<>(ATTRIBUTE_COUNT);
             for (int i = 0; i < ATTRIBUTE_COUNT; i++) spent.add(buf.readVarInt());
-            return new CharacterData(schema, xp, str, dex, vit, end, intelligence, wil, per, earned, spent);
+            // The claim ledger is deliberately SERVER-PRIVATE and never copied into owner sync.
+            // Clients still receive full level, XP, allocation and derived-stat inputs.
+            return new CharacterData(schema, xp, str, dex, vit, end, intelligence, wil, per,
+                    earned, spent, List.of());
         }
 
         @Override
@@ -93,7 +100,7 @@ public record CharacterData(
         intelligence = clampAttribute(intelligence);
         willpower = clampAttribute(willpower);
         perception = clampAttribute(perception);
-        if (sourceVersion < CURRENT_SCHEMA_VERSION) {
+        if (sourceVersion < ALLOCATION_SCHEMA_VERSION) {
             allocatedPoints = ZERO_ALLOCATIONS;
             earnedPoints = ProgressionRules.earnedPointsForLevel(
                     ProgressionRules.levelForExperience(experience));
@@ -112,12 +119,42 @@ public record CharacterData(
                 throw new IllegalArgumentException("Invalid earned-point ledger");
             }
         }
+        if (sourceVersion < CURRENT_SCHEMA_VERSION) {
+            // v1/v2/v3 had no keyed receipts. Do not fabricate them from XP or attributes.
+            claimedRewardIds = List.of();
+        } else {
+            claimedRewardIds = List.copyOf(claimedRewardIds);
+            if (claimedRewardIds.size() > CharacterRewardRules.MAX_CLAIMED_REWARDS
+                    || new HashSet<>(claimedRewardIds).size() != claimedRewardIds.size()) {
+                throw new IllegalArgumentException("Oversized or duplicate reward ledger");
+            }
+            for (String rewardId : claimedRewardIds) {
+                if (!CharacterRewardRules.validRewardId(rewardId)) {
+                    throw new IllegalArgumentException("Malformed saved reward ID");
+                }
+            }
+        }
     }
 
     public CharacterData() {
         this(CURRENT_SCHEMA_VERSION, 0L, DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE,
                 DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE,
-                DEFAULT_ATTRIBUTE, 0, ZERO_ALLOCATIONS);
+                DEFAULT_ATTRIBUTE, 0, ZERO_ALLOCATIONS, List.of());
+    }
+
+    /**
+     * Compatibility constructor for schema-v1/v2/v3 fixtures and callers that do not track
+     * persistent reward receipts. Prior v3 allocation balances are preserved on v4 migration.
+     */
+    public CharacterData(int schemaVersion, long experience,
+            int strength, int dexterity, int vitality, int endurance, int intelligence,
+            int willpower, int perception, int earnedPoints, List<Integer> allocatedPoints) {
+        this(schemaVersion, experience, strength, dexterity, vitality, endurance, intelligence,
+                willpower, perception, earnedPoints, allocatedPoints, List.of());
+    }
+
+    public boolean hasClaimedReward(String id) {
+        return claimedRewardIds.contains(id);
     }
 
     public int level() {
@@ -151,7 +188,7 @@ public record CharacterData(
         int credits = Math.max(earnedPoints, ProgressionRules.earnedPointsForLevel(
                 ProgressionRules.levelForExperience(safeXp)));
         return new CharacterData(schemaVersion, safeXp, strength, dexterity, vitality, endurance,
-                intelligence, willpower, perception, credits, allocatedPoints);
+                intelligence, willpower, perception, credits, allocatedPoints, claimedRewardIds);
     }
 
     /** Administrative baseline adjustment only, never used to spend build credits. */
@@ -164,13 +201,21 @@ public record CharacterData(
                 attribute == PrimaryAttribute.INTELLIGENCE ? newValue : intelligence,
                 attribute == PrimaryAttribute.WILLPOWER ? newValue : willpower,
                 attribute == PrimaryAttribute.PERCEPTION ? newValue : perception,
-                earnedPoints, allocatedPoints);
+                earnedPoints, allocatedPoints, claimedRewardIds);
     }
 
     /** Package-local: allocation rules are the sole runtime caller. */
     CharacterData withAllocatedPoints(List<Integer> newAllocations) {
         return new CharacterData(schemaVersion, experience, strength, dexterity, vitality,
-                endurance, intelligence, willpower, perception, earnedPoints, newAllocations);
+                endurance, intelligence, willpower, perception, earnedPoints, newAllocations,
+                claimedRewardIds);
+    }
+
+    /** Package-local atomic receipt replacement, called only by CharacterRewardRules. */
+    CharacterData withClaimedRewardIds(List<String> rewardIds) {
+        return new CharacterData(schemaVersion, experience, strength, dexterity, vitality,
+                endurance, intelligence, willpower, perception, earnedPoints, allocatedPoints,
+                rewardIds);
     }
 
     private static int clampAttribute(int value) {
