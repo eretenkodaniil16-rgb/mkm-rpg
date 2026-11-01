@@ -81,4 +81,31 @@ public final class CharacterService {
         player.setAttached(CharacterAttachments.CHARACTER, updated);
         return true;
     }
+    /**
+     * Authorized SERVER-ONLY quest / encounter reward. Always call before marking a quest
+     * rewarded in its separate attachment. Duplicate receipts return ALREADY_GRANTED with
+     * no setAttached, preserving already credited XP and points.
+     *
+     * For a future async quest system callers must marshal back onto the logical server
+     * thread first; Fabric callbacks and command handlers already run on that thread.
+     */
+    public static CharacterRewardRules.Result grantExperienceOnce(
+            ServerPlayer player, String rewardId, long amount) {
+        if (player == null || !player.isAlive() || player.isSpectator()) {
+            throw new IllegalArgumentException("Reward recipient must be a living non-spectator");
+        }
+        CharacterData current = get(player);
+        CharacterRewardRules.Result result = CharacterRewardRules.grantOnce(current, rewardId, amount);
+        if (result.status() == CharacterRewardRules.Status.GRANTED) {
+            player.setAttached(CharacterAttachments.CHARACTER, result.character());
+        }
+        return result;
+    }
+
+    /** Receipt presence is server-only; the client does not receive redemption history. */
+    public static boolean hasExperienceReward(ServerPlayer player, String rewardId) {
+        if (!CharacterRewardRules.validRewardId(rewardId)) return false;
+        return get(player).hasClaimedReward(rewardId);
+    }
+
 }
