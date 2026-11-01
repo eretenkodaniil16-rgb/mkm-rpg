@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.MkmMod;
+import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
+import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
@@ -27,20 +29,30 @@ public final class MkmClient implements ClientModInitializer {
             "key.mkm.dodge", InputConstants.KEY_G, CATEGORY);
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
+    private static final KeyMapping RENEWAL = new KeyMapping(
+            "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
 
     @Override
     public void onInitializeClient() {
         KeyMappingHelper.registerKeyMapping(OPEN_SHEET);
         KeyMappingHelper.registerKeyMapping(DODGE);
         KeyMappingHelper.registerKeyMapping(COMBO);
+        KeyMappingHelper.registerKeyMapping(RENEWAL);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
+                MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();
                 }
+            }
+            while (RENEWAL.consumeClick()) {
+                if (client.player == null || client.gui.screen() != null
+                        || !ClientPlayNetworking.canSend(CastAbilityRequest.TYPE)) continue;
+                ClientPlayNetworking.send(new CastAbilityRequest(AbilityCatalog.RENEWAL.id()));
             }
             while (COMBO.consumeClick()) {
                 if (client.player == null || client.gui.screen() != null
