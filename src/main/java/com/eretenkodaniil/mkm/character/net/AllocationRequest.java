@@ -18,7 +18,7 @@ public record AllocationRequest(
     public static final StreamCodec<ByteBuf, AllocationRequest> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public AllocationRequest decode(ByteBuf buf) {
-            return new AllocationRequest(buf.readInt(), buf.readVarInt(),
+            return new AllocationRequest(buf.readInt(), buf.readInt(),
                     buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte(),
                     buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte(),
                     buf.readUnsignedByte());
@@ -27,7 +27,7 @@ public record AllocationRequest(
         @Override
         public void encode(ByteBuf buf, AllocationRequest packet) {
             buf.writeInt(packet.requestId());
-            buf.writeVarInt(packet.expectedSpent());
+            buf.writeInt(packet.expectedSpent());
             for (int count : packet.totals()) {
                 if (count < 0 || count > 255) {
                     throw new IllegalArgumentException("Allocation counter out of wire range");
