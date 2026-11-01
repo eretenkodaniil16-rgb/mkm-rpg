@@ -1,12 +1,19 @@
 package com.eretenkodaniil.mkm;
 
+import com.eretenkodaniil.mkm.abilities.AbilityAttachments;
+import com.eretenkodaniil.mkm.abilities.AbilityService;
+import com.eretenkodaniil.mkm.abilities.net.AbilityNetworking;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.character.net.CharacterNetworking;
 import com.eretenkodaniil.mkm.character.CharacterEvents;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
+import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
+import com.eretenkodaniil.mkm.quests.FordQuestCommands;
+import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.fabricmc.api.ModInitializer;
@@ -30,23 +37,33 @@ public final class MkmMod implements ModInitializer {
     public void onInitialize() {
         // Explicit static initialization registers Fabric attachments before player data is read.
         CharacterAttachments.initialize();
+        AbilityAttachments.initialize();
         CombatAttachments.initialize();
+        FordQuestAttachments.initialize();
         MkmItems.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
+        CharacterNetworking.initialize();
+        AbilityNetworking.initialize();
+        FordQuestService.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
             CombatService.onLogin(handler.player);
+            AbilityService.onLogin(handler.player);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
                 CombatService.onPlayerTick(player);
+                AbilityService.onPlayerTick(player);
             }
         });
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);
+        ServerLivingEntityEvents.AFTER_DEATH.register(CharacterEvents::onEntityDeath);
+        ServerLivingEntityEvents.AFTER_DEATH.register(FordQuestService::onDeath);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
         LOGGER.info("MKM Fabric 26.3 initialized");
     }
 }
