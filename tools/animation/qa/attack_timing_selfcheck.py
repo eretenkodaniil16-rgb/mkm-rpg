@@ -16,16 +16,31 @@ RECOVERY=[8,7,11]
 CLIPS=[("unarmed","unarmed/"+p) for p in ("jab","cross","uppercut")]
 CLIPS += [("sword",f"sword/light_{i}") for i in (1,2,3)]
 
-def smooth(t):
-    x=max(0.0,min(1.0,t));return x*x*(3.0-2*x)
+def slope(keys,index,axis_index):
+    # Match C3.3 Java's shape-preserving harmonic interior tangents.
+    if index==0 or index==len(keys)-1:return 0.0
+    a,b,c=keys[index-1:index+2]
+    h0=b["t"]-a["t"];h1=c["t"]-b["t"]
+    d0=(b["r"][axis_index]-a["r"][axis_index])/h0
+    d1=(c["r"][axis_index]-b["r"][axis_index])/h1
+    if not math.isfinite(d0) or not math.isfinite(d1) or d0==0 or d1==0 or (d0>0)!=(d1>0):
+        return 0.0
+    w0=2*h1+h0;w1=h1+2*h0
+    denom=w0/d0+w1/d1
+    return (w0+w1)/denom if math.isfinite(denom) and denom else 0.0
 
 def axis(keys,t,k):
     if t<=keys[0]["t"]:return keys[0]["r"][k]
     for n in range(1,len(keys)):
         a,b=keys[n-1],keys[n]
         if t<=b["t"]:
-            u=smooth((t-a["t"])/(b["t"]-a["t"]))
-            return a["r"][k]*(1-u)+b["r"][k]*u
+            h=b["t"]-a["t"]
+            u=max(0.0,min(1.0,(t-a["t"])/h))
+            p,q=a["r"][k],b["r"][k]
+            m0=slope(keys,n-1,k);m1=slope(keys,n,k)
+            u2=u*u;u3=u2*u
+            value=(2*u3-3*u2+1)*p+(u3-2*u2+u)*h*m0+(-2*u3+3*u2)*q+(u3-u2)*h*m1
+            return max(min(p,q),min(max(p,q),value))
     return keys[-1]["r"][k]
 
 def check(files):
@@ -37,10 +52,11 @@ def check(files):
         duration=WINDUP[stage]+1+RECOVERY[stage]
         hit=WINDUP[stage]/duration
         assert data["format"]==1 and data["duration_ticks"]==duration,(name,"duration")
-        assert data["layer"]=="upper_body"
+        assert data["layer"]=="full_body", (name,"expected grounded attack layer")
         impacts=[m for m in data["markers"] if m["name"]=="impact"]
         assert len(impacts)==1 and abs(impacts[0]["t"]-hit)<=.000001,(name,"impact marker")
         assert "body" in data["tracks"] and "right_arm" in data["tracks"] and "left_arm" in data["tracks"]
+        assert "left_leg" in data["tracks"] and "right_leg" in data["tracks"],name
         for part,keys in data["tracks"].items():
             assert len(keys)>=2 and keys[0]["t"]==0 and keys[-1]["t"]==1
             assert all(0<=k["t"]<=1 and len(k["r"])==3 and
@@ -48,7 +64,10 @@ def check(files):
             assert all(keys[n]["t"]>keys[n-1]["t"] for n in range(1,len(keys)))
         pose=tuple(round(axis(data["tracks"][part],hit,k),3) for part in ("body","left_arm","right_arm") for k in range(3))
         poses[(profile,stage)]=pose
+        legs=[axis(data["tracks"][part],hit,0) for part in ("left_leg","right_leg")]
+        assert .15 < sum(abs(x) for x in legs) < .50,(name,"weight transfer leg angle")
         report.append({"clip":name,"duration_ticks":duration,"impact_tick":WINDUP[stage],
+                       "leg_pitch_at_impact":[round(x,3) for x in legs],
                        "impact_normalized":round(hit,6),"body_yaw_at_impact":pose[1],
                        "left_arm_x_at_impact":pose[3],"right_arm_x_at_impact":pose[6]})
     for profile in ("unarmed","sword"):
