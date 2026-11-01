@@ -22,13 +22,15 @@ public final class AbilityVisualEmitter {
                 beforeHealth, player.getHealth())) return;
         if (!ServerPlayNetworking.canSend(player, AbilityVisualPacket.TYPE)) return;
 
-        int sequence = SEQUENCES.getOrDefault(player, 0) + 1;
-        if (sequence <= 0) sequence = 1; // avoid wraparound on extremely long sessions
+        int previous = SEQUENCES.getOrDefault(player, 0);
+        if (previous == Integer.MAX_VALUE) return; // fail closed rather than replay after wrap
+        int sequence = previous + 1;
         SEQUENCES.put(player, sequence);
         ServerPlayNetworking.send(player, new AbilityVisualPacket(new AbilityVisualEvent(
                 AbilityCatalog.RENEWAL.id(), AbilityVisualPolicy.RENEWAL_ACTION_ID,
                 player.getId(), sequence, AbilityVisualEvent.Hand.MAIN_HAND,
                 AbilityVisualEvent.Phase.APPLIED, player.level().getGameTime(),
-                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS)));
+                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS,
+                player.level().dimension().identifier().toString())));
     }
 }
