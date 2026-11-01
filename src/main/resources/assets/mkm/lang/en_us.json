@@ -43,5 +43,9 @@
   "attribute.mkm.endurance": "Endurance",
   "attribute.mkm.intelligence": "Intelligence",
   "attribute.mkm.willpower": "Willpower",
-  "attribute.mkm.perception": "Perception"
+  "attribute.mkm.perception": "Perception",
+  "screen.mkm.character.points": "Unspent points: %s · staged: %s",
+  "screen.mkm.character.apply": "Confirm",
+  "screen.mkm.character.reset": "Reset",
+  "screen.mkm.character.derived_preview": "Modifiers · preview"
 }
