@@ -46,26 +46,37 @@ the enum or the seven packet bytes without a migration/protocol change.
   over-spent ledger fails closed on spending rather than generating free credits.
 - Server-to-client: owner-only Fabric attachment sync; all writes replace the immutable
   `CharacterData`. `.copyOnDeath()` preserves XP, stats and points on respawn.
-- Client-to-server `mkm:allocate_attributes`: exactly seven one-byte absolute cumulative
-  allocation counters; no XP, spending balance, player ID or damage. Validate in the
-  server handler: alive, non-spectator, current schema, non-decreasing counters, sufficient
-  server-owned balance and cap 40. Apply as *one* attachment replacement. Replays, stale
-  requests and forged over-spending produce no mutation.
-- The client sheet can stage `+/-` increments, inspect projected stats and derived modifiers,
-  then `Confirm`. Minus removes **staged preview only**. On owner attachment update,
-  clear staged edits. There is no client-authoritative state write.
+- Client-to-server `mkm:allocate_attributes`: one four-byte correlation ID,
+  an expected server spent-point revision (VarInt) and seven one-byte absolute
+  cumulative allocation counters. No XP, claimed credit balance, target player ID
+  or damage are client-controlled. Server verifies alive/non-spectator, schema,
+  **exact spent revision**, monotonic counters, sufficient earned credits and cap 40.
+  Apply all seven changes in **one immutable attachment replacement**. Replays,
+  stale/conflicting requests and forged over-spending produce no mutation.
+- Server-to-client `mkm:allocation_result`: correlation ID and accepted/rejected status
+  **only**. It is not authoritative state. The owner-only attachment sync controls
+  when the UI replaces the preview with committed attributes. A client blocks another
+  submission until reply/sync or a timeout, and displays rejection and delayed-sync states.
+- The client sheet stages `+/-` increments, previews derived modifiers using the existing
+  `PlayerModifierSnapshot`, then confirms. Minus removes **staged changes only**;
+  no respec is implied. On owner attachment update, clear staged edits.
+  The layout has a compact mode for 320×240 scaled GUI viewports and a narrower
+  essentials-only mode for small windows. It does not rewrite Combat or animation.
 
 ## Verification
 
 JUnit tests: threshold and overflow boundaries, repeat earning, legacy JSON without schema,
-v3 codec roundtrip, immutable ledger, debit, replay, rollback, forged over-spend,
-cap vs legacy values, future-schema fail closed and actual modifier changes.
+v3 codec roundtrip, immutable ledger, debit, replay, stale/revision conflicts, forged
+over-spend, legacy over-cap values, future-schema fail closed, modifier changes,
+Netty packet roundtrips and wire counter bounds, compact viewport geometry and
+3,000 deterministic randomized allocation attempts.
 
 Manual acceptance gates still required after CI:
 1. Fresh Fabric 26.3 world: kill four hostile mobs -> level 2, 2 unspent points.
 2. K opens sheet; stage +2 STR, see a higher physical modifier, Confirm.
 3. Re-open, confirm points zero and authoritative stats/snapshot updated.
-4. Repeat the same network request; confirm no change; try negative/too large/stale.
+4. Repeat the same network request; confirm no change; verify visible rejection,
+   delayed response protection, stale revision rejection and too-large counters.
 5. Leave and rejoin; exit and reload world; both allocations and XP stay.
 6. Die and respawn; confirm copy-on-death and owner-only synchronization.
 7. Load a pre-v3 player save and confirm migration *without* changing existing stats.
@@ -76,3 +87,12 @@ Manual acceptance gates still required after CI:
 
 No respec, class trees, skills/ability effects, level-based enemies, quest rewards or UI for
 advanced builds. These belong to subsequent M1 tuning and M2/M3 feature work.
+
+## Out-of-scope safety notes
+
+- The current fixed 25-XP kill reward is deliberately **not anti-farm balanced**;
+  hostile spawner farming and high-level progression cannot be treated as release-ready.
+- Unit tests prove pure rules and Netty codec behavior; a dedicated-server startup smoke
+  does **not** simulate save/reload, client rendering, combat kills or multiplayer.
+- The Fabric v3 attachment and allocation packet require **matching client/server mod
+  versions**. Treat this work as a synchronized mod update, not a drop-in network patch.
