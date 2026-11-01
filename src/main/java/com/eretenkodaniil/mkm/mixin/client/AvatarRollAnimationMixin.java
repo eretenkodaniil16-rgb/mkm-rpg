@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.mixin.client;
 import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import com.eretenkodaniil.mkm.combat.CombatAnimationMath;
+import com.eretenkodaniil.mkm.combat.ForwardRollChoreography;
+import com.eretenkodaniil.mkm.combat.DodgeDirection;
 import com.mojang.blaze3d.vertex.PoseStack;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
@@ -27,13 +29,25 @@ public abstract class AvatarRollAnimationMixin {
         float p = frame.progress();
         if (p <= 0.0001F || p >= 0.9999F) return;
 
+        if (frame.timeline().dodgeDirection() == DodgeDirection.FORWARD) {
+            // Do not flip the character backwards while it moves forward.
+            // A dynamic pivot + ground offset keeps the rotating torso above
+            // the reference ground plane; other directions retain C3 behavior.
+            ForwardRollChoreography.Pose pose = ForwardRollChoreography.sample(p);
+            stack.translate(0F,
+                    ForwardRollChoreography.PIVOT_HEIGHT * entityScale
+                            + pose.visualYOffset() * entityScale, 0F);
+            stack.rotate(new Quaternionf().rotationAxis(
+                    pose.radians(), pose.axisX(), 0F, pose.axisZ()));
+            stack.translate(0F, -ForwardRollChoreography.PIVOT_HEIGHT * entityScale, 0F);
+            return;
+        }
+
+        // Retain previously user-verified backward, sideways and diagonal rolls.
         float axisX = CombatAnimationMath.rollAxisX(frame.timeline().dodgeDirection());
         float axisZ = CombatAnimationMath.rollAxisZ(frame.timeline().dodgeDirection());
         float norm = (float) Math.hypot(axisX, axisZ);
         if (norm < 0.001F) return;
-
-        // Rotate about the avatar's waist rather than the feet to avoid a
-        // huge visual arc. Model animation tucks arms, legs and head in.
         stack.translate(0F, 0.75F * entityScale, 0F);
         stack.rotate(new Quaternionf().rotationAxis(
                 CombatAnimationMath.rollRadians(p), axisX / norm, 0F, axisZ / norm));
