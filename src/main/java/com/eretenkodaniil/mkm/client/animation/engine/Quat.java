@@ -44,4 +44,43 @@ public record Quat(double x,double y,double z,double w) {
         double rz=Math.atan2(2*(w*z+x*y),1-2*(y*y+z*z));
         return new Vec3(rx,ry,rz);
     }
+    public Quat inverse(){return new Quat(-x,-y,-z,w);}
+    /** Shortest-arc quaternion logarithm in axis*half-angle units. */
+    private Vec3 logUnit(){
+        double sign=w<0?-1:1;
+        double vx=x*sign,vy=y*sign,vz=z*sign;
+        double norm=Math.sqrt(vx*vx+vy*vy+vz*vz);
+        if(norm<1e-12)return Vec3.ZERO;
+        double half=Math.atan2(norm,w*sign);
+        return new Vec3(vx*half/norm,vy*half/norm,vz*half/norm);
+    }
+    private static Quat expUnit(Vec3 v){
+        double a=Math.sqrt(v.x()*v.x()+v.y()*v.y()+v.z()*v.z());
+        if(a<1e-12)return IDENTITY;
+        double k=Math.sin(a)/a;
+        return new Quat(v.x()*k,v.y()*k,v.z()*k,Math.cos(a));
+    }
+    private static Quat tangentControl(Quat before,Quat center,Quat after,
+                                        double h0,double h1){
+        if(before==null||after==null)return center;
+        Vec3 back=center.inverse().multiply(before).logUnit();
+        Vec3 forward=center.inverse().multiply(after).logUnit();
+        double den=h0+h1;
+        Vec3 correction=back.times(h1/den).add(forward.times(h0/den)).times(-.5);
+        return center.multiply(expUnit(correction));
+    }
+    /**
+     * C1-inspired SQUAD trajectory. Interior quaternion tangents are derived
+     * from both adjacent authored orientations, not per-segment smoothstep.
+     * Non-uniform key times weight neighboring directions.
+     */
+    public static Quat curve(Quat previous,Quat start,Quat end,Quat next,
+                             double hPrev,double h,double hNext,double t){
+        Quat a=tangentControl(previous,start,end,hPrev,h);
+        Quat b=tangentControl(start,end,next,h,hNext);
+        Quat chord=start.slerp(end,t);
+        Quat handles=a.slerp(b,t);
+        return chord.slerp(handles,2*t*(1-t));
+    }
+
 }
