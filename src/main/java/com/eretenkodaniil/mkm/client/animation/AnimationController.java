@@ -11,6 +11,12 @@ import java.util.Map;
  */
 public final class AnimationController {
     public static final String FIRST_PROFILE = "mkm:one_handed_sword";
+    public static final String UNARMED_PROFILE = "mkm:unarmed";
+
+    /** An empty main hand should not trigger sword slashes. */
+    public static String profileForEmptyMainHand(boolean emptyHand) {
+        return emptyHand ? UNARMED_PROFILE : FIRST_PROFILE;
+    }
 
     private AnimationController() {}
 
