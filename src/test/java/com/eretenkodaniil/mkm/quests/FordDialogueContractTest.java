@@ -13,6 +13,8 @@ final class FordDialogueContractTest {
         assertFalse(FordDialogueRules.permitted((byte)0,(byte)4));
         assertFalse(FordDialogueRules.permitted((byte)0,(byte)5));
         assertTrue(FordDialogueRules.permitted((byte)1,(byte)5));
+        assertTrue(FordDialogueRules.permitted((byte)1,(byte)1)); // tracks still inspectable after accept
+        assertFalse(FordDialogueRules.permitted((byte)2,(byte)1));
         assertFalse(FordDialogueRules.permitted((byte)1,(byte)2));
         assertTrue(FordDialogueRules.permitted((byte)2,(byte)4));
         assertFalse(FordDialogueRules.permitted((byte)2,(byte)1));

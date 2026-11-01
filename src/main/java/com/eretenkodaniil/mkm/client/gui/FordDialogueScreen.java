@@ -35,8 +35,13 @@ public final class FordDialogueScreen extends Screen {
             addChoice("Я помогу каравану", FordChoiceRequest.ACCEPT, x, y + 24, w);
             addChoice("Сейчас не могу", FordChoiceRequest.LEAVE, x, y + 48, w);
         } else if (view.stage() == 1) {
-            addChoice("Где искать противника?", FordChoiceRequest.LOCATE, x, y, w);
-            addChoice("Я вернусь после боя", FordChoiceRequest.LEAVE, x, y + 24, w);
+            Button inspect = addChoice(view.tracks() ? "Следы уже изучены"
+                    : (view.perception() >= 12 ? "Исследовать следы (PER 12)"
+                    : "Требуется PER 12 (" + view.perception() + ")"),
+                    FordChoiceRequest.INSPECT, x, y, w);
+            inspect.active = !view.tracks() && view.perception() >= 12;
+            addChoice("Где искать противника?", FordChoiceRequest.LOCATE, x, y + 24, w);
+            addChoice("Я вернусь после боя", FordChoiceRequest.LEAVE, x, y + 48, w);
         } else if (view.stage() == 2) {
             addChoice("Получить награду", FordChoiceRequest.CLAIM, x, y, w);
         }
@@ -100,7 +105,8 @@ public final class FordDialogueScreen extends Screen {
         };
         graphics.centeredText(font,Component.literal(line1),width/2,top+37,TEXT);
         graphics.centeredText(font,Component.literal(line2),width/2,top+52,MUTED);
-        if (view.stage() == 0) graphics.centeredText(font,Component.literal(
+        if (view.stage() == 0 || view.stage() == 1)
+            graphics.centeredText(font,Component.literal(
                 "Восприятие: " + view.perception() + " / 12" + (view.tracks() ? " · следы найдены" : "")
         ), width/2,top+66,view.perception()>=12?0xFF88D7A3:0xFFFFC17E);
         super.extractRenderState(graphics,mouseX,mouseY,partialTick);

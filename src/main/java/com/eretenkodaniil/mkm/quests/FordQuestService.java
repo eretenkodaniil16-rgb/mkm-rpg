@@ -91,7 +91,10 @@ public final class FordQuestService {
             return;
         }
         switch (request.choice()) {
-            case FordChoiceRequest.INSPECT -> { if (request.expectedStage() == 0) inspect(player); else return; }
+            case FordChoiceRequest.INSPECT -> {
+                if (request.expectedStage() == 0 || request.expectedStage() == 1) inspect(player);
+                else return;
+            }
             case FordChoiceRequest.ACCEPT -> { if (request.expectedStage() == 0) accept(player); else return; }
             case FordChoiceRequest.LEAVE -> { leave(player); return; }
             case FordChoiceRequest.CLAIM -> { if (request.expectedStage() == 2) claim(player); else return; }
