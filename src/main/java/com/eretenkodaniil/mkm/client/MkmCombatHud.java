@@ -16,7 +16,7 @@ import net.minecraft.network.chat.Component;
  * Uses 26.3's GUI extraction API; no persistent client-side game state.
  */
 public final class MkmCombatHud {
-    private static final int BAR_WIDTH = 176;
+    private static final int BAR_WIDTH = 148;
     private static final int BAR_HEIGHT = 7;
     private static final int STAMINA_BG = 0xCC19202A;
     private static final int STAMINA_FILL = 0xFF57B38C;
@@ -41,8 +41,11 @@ public final class MkmCombatHud {
         float ratio = (float) Math.clamp(combat.stamina() / max, 0D, 1D);
         int width = client.getWindow().getGuiScaledWidth();
         int height = client.getWindow().getGuiScaledHeight();
-        int x = (width - BAR_WIDTH) / 2;
-        int y = Math.max(18, height - 76);
+        // In F5 front-facing views, the old centered bar obscured the
+        // character's hips and the entire strike/roll silhouette.
+        // Anchor to bottom-left so recorded third-person combat is readable.
+        int x = 12;
+        int y = Math.max(18, height - 64);
 
         graphics.fill(x - 1, y - 1, x + BAR_WIDTH + 1, y + BAR_HEIGHT + 1, 0xC8000000);
         graphics.fill(x, y, x + BAR_WIDTH, y + BAR_HEIGHT, STAMINA_BG);
