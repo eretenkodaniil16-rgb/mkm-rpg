@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
 import com.eretenkodaniil.mkm.character.net.AllocationResult;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.client.animation.HitFeedbackParticles;
+import com.eretenkodaniil.mkm.client.animation.VanillaAttackPresentationFeed;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
@@ -57,6 +58,9 @@ public final class MkmClient implements ClientModInitializer {
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            if (client.player == null) {
+                VanillaAttackPresentationFeed.reset();
+            }
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();

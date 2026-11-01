@@ -9,6 +9,7 @@ import com.eretenkodaniil.mkm.character.CharacterEvents;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
+import com.eretenkodaniil.mkm.combat.ShieldGuardService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
@@ -52,11 +53,21 @@ public final class MkmMod implements ModInitializer {
             CombatService.onLogin(handler.player);
             AbilityService.onLogin(handler.player);
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                ShieldGuardService.onDisconnect(handler.player));
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
                 CombatService.onPlayerTick(player);
                 AbilityService.onPlayerTick(player);
             }
+        });
+        // A receipt is minted per legitimate damage attempt. Do not deduplicate
+        // by DamageSource identity: vanilla may reuse it for separate hits.
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
+                ShieldGuardService.onDamageAttempt(player, source);
+            }
+            return true;
         });
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);

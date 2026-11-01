@@ -1,0 +1,85 @@
+package com.eretenkodaniil.mkm.client.animation;
+
+import com.eretenkodaniil.mkm.combat.ActionTimeline;
+import com.eretenkodaniil.mkm.combat.CombatAttachments;
+import com.eretenkodaniil.mkm.combat.presentation.AttackInputPriority;
+import com.eretenkodaniil.mkm.combat.presentation.AttackPresentationEvent;
+import com.eretenkodaniil.mkm.combat.presentation.AttackSequenceRules;
+import com.eretenkodaniil.mkm.combat.presentation.WeaponPresentationResolver;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import net.minecraft.client.Minecraft;
+import net.minecraft.world.phys.HitResult;
+import net.minecraft.world.entity.HumanoidArm;
+
+/**
+ * Owner-local, cosmetic-only feed for the future MNAE bridge.
+ * Called after vanilla Minecraft.startAttack returned true,
+ * without cancelling or replacing the vanilla method.
+ */
+public final class VanillaAttackPresentationFeed {
+    private static final int MAX_EVENTS = 16;
+    private static final ArrayDeque<AttackPresentationEvent> EVENTS = new ArrayDeque<>();
+    private static AttackSequenceRules.State lastSequence;
+    private static int lastPlayerId = -1;
+    private static Object lastLevel;
+
+    private VanillaAttackPresentationFeed() {}
+
+    public static void observeNativeAttack(Minecraft client) {
+        if (client.player == null || client.level == null || client.gameMode == null) return;
+        // Native startAttack also handles block breaking; never reinterpret mining as combat.
+        HitResult crosshair = client.hitResult;
+        if (crosshair == null) return;
+        ActionTimeline timeline = client.player.getAttached(CombatAttachments.TIMELINE);
+        var input = client.player.isShiftKeyDown()
+                ? AttackInputPriority.Intent.SHIFT_LMB
+                : AttackInputPriority.Intent.LMB;
+        var context = new AttackInputPriority.Context(
+                client.gui.screen() != null,
+                client.player.isSpectator(),
+                crosshair.getType() == HitResult.Type.BLOCK,
+                client.player.isUsingItem(),
+                timeline != null && !timeline.idle());
+        AttackInputPriority.Decision decision = AttackInputPriority.classify(input, context);
+        if (decision != AttackInputPriority.Decision.VANILLA_SWING
+                && decision != AttackInputPriority.Decision.EXISTING_HEAVY) return;
+
+        if (client.player.getId() != lastPlayerId || client.level != lastLevel) {
+            reset();
+            lastPlayerId = client.player.getId();
+            lastLevel = client.level;
+        }
+        var registry = net.minecraft.core.registries.BuiltInRegistries.ITEM;
+        WeaponPresentationResolver.Hands hands = new WeaponPresentationResolver.Hands(
+                registry.getKey(client.player.getMainHandItem().getItem()).toString(),
+                registry.getKey(client.player.getOffhandItem().getItem()).toString(),
+                client.player.getMainArm() == HumanoidArm.LEFT
+                        ? AttackPresentationEvent.Arm.LEFT : AttackPresentationEvent.Arm.RIGHT);
+        long tick = Math.max(0L, client.level.getGameTime());
+        var resolved = WeaponPresentationResolver.resolveVanillaAttack(
+                hands, decision == AttackInputPriority.Decision.EXISTING_HEAVY
+                        ? AttackPresentationEvent.ActionKind.HEAVY
+                        : AttackPresentationEvent.ActionKind.VANILLA_SWING,
+                lastSequence, tick);
+        lastSequence = resolved.selection().state();
+        AttackPresentationEvent event = resolved.event();
+        if (EVENTS.size() == MAX_EVENTS) EVENTS.removeFirst();
+        EVENTS.addLast(event);
+    }
+
+    /** MNAE can drain once per client render/update; unconsumed events stay bounded. */
+    public static List<AttackPresentationEvent> drain() {
+        List<AttackPresentationEvent> events = new ArrayList<>(EVENTS);
+        EVENTS.clear();
+        return List.copyOf(events);
+    }
+
+    public static void reset() {
+        EVENTS.clear();
+        lastSequence = null;
+        lastPlayerId = -1;
+        lastLevel = null;
+    }
+}
