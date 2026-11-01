@@ -1,7 +1,7 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
-import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import java.util.Locale;
@@ -202,6 +202,7 @@ public final class CombatService {
     }
 
     private static PlayerModifierSnapshot modifiers(ServerPlayer player) {
-        return PlayerModifierCalculator.calculate(player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
+        return EquipmentSnapshots.snapshot(
+                player, player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
     }
 }

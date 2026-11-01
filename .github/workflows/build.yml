@@ -17,6 +17,7 @@ on:
       - 'feature/c3-5-directional-roll-ground-contact'
       - 'feature/c3-6-authoritative-hit-feedback'
       - 'feature/c3-7-visible-combat-diagnostics'
+      - 'integration/equipment-d3-c3-7-combat-stability'
   pull_request:
     branches:
       - 'port/fabric-26.3'
