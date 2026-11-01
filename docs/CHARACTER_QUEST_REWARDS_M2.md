@@ -111,7 +111,9 @@ E1 claim: 75 XP base or 100 XP if PER 12 investigation succeeds.
 - v4 -> v4: persist exact immutable receipt IDs; reject duplicates/malformed
   list/cap overflow instead of silently dropping receipts.
 - Future schema -> current: no downgrade; reward and allocation writes fail
-  closed until a deliberate migration. Downgrading the mod version risks
+  closed until a deliberate migration. Direct attribute/XP mutations also reject
+  unsupported future schema, and routine hostile-kill XP performs no write.
+  Do not open future-format worlds using older builds without a backup. Downgrading the mod version risks
   losing receipts; always back up `world/playerdata` before switching.
 - `copyOnDeath()` retains receipts, XP and spending across respawn. Relog and
   dimension transfer reuse the player attachment. Client owner sync excludes
