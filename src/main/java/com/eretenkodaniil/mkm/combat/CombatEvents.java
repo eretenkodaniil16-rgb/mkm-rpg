@@ -2,7 +2,7 @@ package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
-import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import java.util.Map;
 import java.util.WeakHashMap;
@@ -32,17 +32,26 @@ public final class CombatEvents {
             return amount;
         }
 
-        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(
-                attacker.getAttachedOrCreate(CharacterAttachments.CHARACTER));
+        PlayerModifierSnapshot modifiers = EquipmentSnapshots.snapshot(
+                attacker, attacker.getAttachedOrCreate(CharacterAttachments.CHARACTER));
         boolean heavy = attacker.isShiftKeyDown() && CombatService.tryHeavy(attacker);
         if (heavy) {
             PENDING_HEAVY.put(target, Boolean.TRUE);
         }
-        return CombatRules.scaleIncomingMelee(
+        float scaled = CombatRules.scaleIncomingMelee(
                 amount,
                 modifiers.get(PlayerModifierId.PHYSICAL_POWER),
                 modifiers.get(PlayerModifierId.MELEE_DAMAGE),
                 heavy);
+        // Separate MKM resistance before Minecraft handles shields and armor.
+        // No duplicate vanilla armor calculation and no secret hit roll.
+        if (target instanceof ServerPlayer defender) {
+            PlayerModifierSnapshot defense = EquipmentSnapshots.snapshot(
+                    defender, defender.getAttachedOrCreate(CharacterAttachments.CHARACTER));
+            return PhysicalMitigationRules.apply(
+                    scaled, modifiers, defense, EquipmentSnapshots.heldPhysicalType(attacker));
+        }
+        return scaled;
     }
 
     public static void afterDamage(
@@ -55,8 +64,8 @@ public final class CombatEvents {
             return;
         }
 
-        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(
-                player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
+        PlayerModifierSnapshot modifiers = EquipmentSnapshots.snapshot(
+                player, player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
         long tick = player.level().getGameTime();
         PoiseRules.Result result = PoiseRules.onHit(
                 mob.getAttachedOrCreate(CombatAttachments.POISE), tick,

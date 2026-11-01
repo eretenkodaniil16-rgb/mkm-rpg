@@ -4,7 +4,7 @@ import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
-import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.mojang.brigadier.Command;
 import com.mojang.brigadier.CommandDispatcher;
@@ -86,7 +86,7 @@ public final class MkmCommands {
 
     private static int showModifiers(CommandSourceStack source) throws CommandSyntaxException {
         ServerPlayer player = source.getPlayerOrException();
-        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(CharacterService.get(player));
+        PlayerModifierSnapshot modifiers = EquipmentSnapshots.snapshot(player, CharacterService.get(player));
 
         source.sendSuccess(() -> Component.literal(
                 "MKM modifiers | HP " + modifiers.formatted(PlayerModifierId.MAX_HEALTH)
@@ -99,6 +99,13 @@ public final class MkmCommands {
                         + " | Regen " + modifiers.formatted(PlayerModifierId.STAMINA_REGENERATION)
                         + " | Cost " + modifiers.formatted(PlayerModifierId.STAMINA_COST)
                         + " | Armor penetration " + modifiers.formatted(PlayerModifierId.ARMOR_PENETRATION)), false);
+        source.sendSuccess(() -> Component.literal(
+                "Physical resist " + modifiers.formatted(PlayerModifierId.PHYSICAL_RESISTANCE)
+                        + " | Slash " + modifiers.formatted(PlayerModifierId.SLASHING_RESISTANCE)
+                        + " | Pierce " + modifiers.formatted(PlayerModifierId.PIERCING_RESISTANCE)
+                        + " | Blunt " + modifiers.formatted(PlayerModifierId.BLUNT_RESISTANCE)
+                        + " | Stagger " + modifiers.formatted(PlayerModifierId.STAGGER_POWER)
+                        + " | Block stability " + modifiers.formatted(PlayerModifierId.BLOCK_STABILITY)), false);
         source.sendSuccess(() -> Component.literal(
                 "Magic " + modifiers.formatted(PlayerModifierId.MAGIC_POWER)
                         + " | Spell damage " + modifiers.formatted(PlayerModifierId.SPELL_DAMAGE)
