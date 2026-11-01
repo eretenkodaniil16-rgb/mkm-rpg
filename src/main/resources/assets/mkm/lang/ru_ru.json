@@ -36,7 +36,7 @@
   "screen.mkm.character.magic_power": "Магическая мощь: %s",
   "screen.mkm.character.max_mana": "Макс. мана: %s",
   "screen.mkm.character.weak_point_damage": "Урон по слабым местам: %s",
-  "screen.mkm.character.derived_note": "Рассчитано из основных атрибутов; экипировка, навыки и эффекты пока не подключены.",
+  "screen.mkm.character.derived_note": "Рассчитано из основных характеристик и надетой экипировки; навыки и временные эффекты пока не учитываются.",
   "attribute.mkm.strength": "Сила",
   "attribute.mkm.dexterity": "Ловкость",
   "attribute.mkm.vitality": "Живучесть",

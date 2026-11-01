@@ -36,7 +36,7 @@
   "screen.mkm.character.magic_power": "Magic power: %s",
   "screen.mkm.character.max_mana": "Max mana: %s",
   "screen.mkm.character.weak_point_damage": "Weak-point damage: %s",
-  "screen.mkm.character.derived_note": "Calculated from primary attributes; equipment, skills and buffs are not connected yet.",
+  "screen.mkm.character.derived_note": "Calculated from primary attributes and equipped items; skills and temporary effects are not yet included.",
   "attribute.mkm.strength": "Strength",
   "attribute.mkm.dexterity": "Dexterity",
   "attribute.mkm.vitality": "Vitality",
