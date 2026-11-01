@@ -5,6 +5,8 @@
   "key.mkm.open_character_sheet": "Открыть лист персонажа",
   "key.mkm.dodge": "Уклонение (боевой режим)",
   "key.mkm.combo": "Комбо-атака (C2)",
+  "key.mkm.cast_renewal": "Восстановление (лечение)",
+  "message.mkm.renewal.cast": "Восстановление применено",
   "screen.mkm.character.title": "Лист персонажа",
   "screen.mkm.character.close": "Закрыть",
   "screen.mkm.character.runtime": "MKM %s · клиент загружен",
