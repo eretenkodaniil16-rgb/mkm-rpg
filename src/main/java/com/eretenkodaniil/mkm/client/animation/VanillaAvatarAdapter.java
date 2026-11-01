@@ -5,20 +5,32 @@ import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.world.entity.HumanoidArm;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.tags.ItemTags;
 import java.util.*;
 /** Only one renderer path applies per avatar frame. Cosmetic changes never move hitboxes. */
 public final class VanillaAvatarAdapter {
     private VanillaAvatarAdapter(){}
-    public static String nativeClip(LocalCombatAnimation.Frame frame,boolean emptyHand){
-        if(frame==null||frame.timeline().kind()!=ActionTimeline.Kind.LIGHT_COMBO
-                ||frame.timeline().comboStep()!=1)return null;
-        return emptyHand?NativeDemoLibrary.JAB:NativeDemoLibrary.SWORD;
+    /**
+     * Prototype MNAE is deliberately restricted to unarmed and tagged swords.
+     * Axes, shields, mining tools and items use the existing C3 fallback;
+     * Equipment Core can later supply stable per-weapon presentation profiles.
+     */
+    public static String nativeClip(ActionTimeline timeline, ItemStack mainHand) {
+        if (timeline == null || mainHand == null
+                || timeline.kind() != ActionTimeline.Kind.LIGHT_COMBO
+                || timeline.comboStep() != 1) return null;
+        if (mainHand.isEmpty()) return NativeDemoLibrary.JAB;
+        return mainHand.is(ItemTags.SWORDS) ? NativeDemoLibrary.SWORD : null;
     }
+
     public static String apply(PlayerModel model,AvatarRenderState state,
-                               LocalCombatAnimation.Frame frame, boolean emptyHand){
-        String clipId=nativeClip(frame,emptyHand);
-        if(clipId==null||frame.sampledClip()==null)return null;
-        NativeClip clip=emptyHand?NativeDemoLibrary.jab():NativeDemoLibrary.sword();
+                               LocalCombatAnimation.Frame frame, ItemStack mainHand){
+        if(frame==null || frame.sampledClip()==null) return null;
+        String clipId=nativeClip(frame.timeline(),mainHand);
+        if(clipId==null)return null;
+        NativeClip clip=clipId.equals(NativeDemoLibrary.JAB)
+                ? NativeDemoLibrary.jab() : NativeDemoLibrary.sword();
         if(clip==null)return null;
         // Use EXACT server phase mapping inherited from C3; there is no client
         // authority to change start, hit, recovery or total action duration.

@@ -19,6 +19,7 @@ on:
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'feature/c3-8-pose-evidence-motion-qa'
       - 'feature/mnae-m1-native-core-two-attacks'
+      - 'feature/mnae-m1-1-transitions-blender-review'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -37,6 +38,7 @@ on:
       - 'feature/c3-6-authoritative-hit-feedback'
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'feature/c3-8-pose-evidence-motion-qa'
+      - 'feature/mnae-m1-native-core-two-attacks'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -98,7 +100,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.5-fabric.6.jar")
+              if p.endswith("0.0.5-fabric.7.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -230,7 +232,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.5-fabric.6.jar
+          path: build/libs/mkm-rpg-0.0.5-fabric.7.jar
           if-no-files-found: error
           retention-days: 14
 
@@ -239,4 +241,31 @@ jobs:
           name: mkm-fabric-26.3-oneclick-windows
           path: dist/MKM_Fabric_26.3_Installer_Windows.zip
           if-no-files-found: error
+          retention-days: 14
+
+  blender-preview:
+    if: github.ref == 'refs/heads/feature/mnae-m1-1-transitions-blender-review'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 18
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Debian-packaged Blender (not a runtime dependency)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender
+          blender --version | head -3
+      - name: Generate editable Blender scene and visible ten-frame preview
+        run: |
+          python3 tools/animation/blender/mnae_two_strikes.py --verify
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a blender -b --factory-startup --python tools/animation/blender/mnae_two_strikes.py -- --verify --blender --render
+          test -s tools/animation/blender/mnae_m1_source.blend
+          test "$(find build/reports/mnae-blender -name '*.png' -size +10k | wc -l)" -eq 10
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mnae-m1-1-blender-source-and-frames
+          path: |
+            tools/animation/blender/mnae_m1_source.blend
+            build/reports/mnae-blender/*.png
+          if-no-files-found: warn
           retention-days: 14

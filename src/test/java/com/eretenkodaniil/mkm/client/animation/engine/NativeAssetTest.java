@@ -43,4 +43,27 @@ class NativeAssetTest {
         assertThrows(IllegalArgumentException.class,()->NativeClipLoader.read(
                 "assets/mkm/mnae/../secrets.json"));
     }
+    @Test void parserRejectsOversizedDataBeforeDeserializing() {
+        byte[] excessive = new byte[256 * 1024 + 1];
+        java.util.Arrays.fill(excessive, (byte) ' ');
+        assertThrows(IllegalArgumentException.class, () -> NativeClipLoader.load(
+                "assets/mkm/mnae/too_large.json",
+                path -> new ByteArrayInputStream(excessive)));
+    }
+
+    @Test void jsonRejectsMoreThan256KeysPerTrack() {
+        String key = """
+                {"t":0,"p":[0,0,0],"r":[0,0,0],"s":[1,1,1]}
+                """.trim();
+        String header = """
+                {"format":2,"units":"model_pixels",
+                 "rotation":"xyz_radians","tracks":{"body":[
+                """.trim();
+        String payload = header + String.join(",", java.util.Collections.nCopies(257, key))
+                + "]}}";
+        assertThrows(IllegalArgumentException.class, () -> NativeClipLoader.load(
+                "assets/mkm/mnae/too_many_keys.json",
+                path -> new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8))));
+    }
+
 }

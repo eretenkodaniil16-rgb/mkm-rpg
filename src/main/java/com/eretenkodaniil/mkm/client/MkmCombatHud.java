@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.client.animation.AnimationController;
 import com.eretenkodaniil.mkm.client.animation.AnimationLibrary;
 import com.eretenkodaniil.mkm.client.animation.AnimationProfile;
 import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.VanillaAvatarAdapter;
 import com.eretenkodaniil.mkm.client.animation.engine.NativeDemoLibrary;
 import net.fabricmc.loader.api.FabricLoader;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -87,10 +88,10 @@ public final class MkmCombatHud {
             String action = AnimationController.actionKey(timeline);
             String expectedClip = profile == null || action == null
                     ? null : profile.clipFor(action);
-            if (NativeAnimationToggle.enabled() && timeline.kind() == ActionTimeline.Kind.LIGHT_COMBO
-                    && timeline.comboStep() == 1) {
-                expectedClip = client.player.getMainHandItem().isEmpty()
-                        ? NativeDemoLibrary.JAB : NativeDemoLibrary.SWORD;
+            if (NativeAnimationToggle.enabled()) {
+                String nativeClip = VanillaAvatarAdapter.nativeClip(
+                        timeline, client.player.getMainHandItem());
+                if (nativeClip != null) expectedClip = nativeClip;
             }
             graphics.text(client.font,
                     Component.literal(AnimationRenderProbe.status(
