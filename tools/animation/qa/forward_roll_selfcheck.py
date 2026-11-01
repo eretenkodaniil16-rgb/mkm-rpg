@@ -121,9 +121,9 @@ def main():
         check_clip(clip)
         assert clip["id"] not in clip_map
         clip_map[clip["id"]] = clip
-    assert len(clip_map) >= 12
+    assert len(clip_map) >= 15
     forward = clip_map["mkm:sword/dodge_0"]
-    assert forward["duration_ticks"] == 8
+    assert forward["duration_ticks"] == 10
     markers = {m["name"]: m["t"] for m in forward["markers"]}
     assert all(k in markers and abs(markers[k] - v) <= .0001
                for k, v in MARKERS.items())
