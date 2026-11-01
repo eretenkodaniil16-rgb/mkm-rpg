@@ -143,7 +143,7 @@ final class WeaponPresentationResolverTest {
         assertThrows(IllegalArgumentException.class, () ->
                 WeaponPresentationResolver.resolveVanillaAttack(hands,
                         AttackPresentationEvent.ActionKind.SPECIAL_COMBO, null, 100L));
-        assertThrows(IllegalArgumentException.class, () ->
+        assertThrows(NullPointerException.class, () ->
                 WeaponPresentationResolver.inspect(hands, null));
     }
 
