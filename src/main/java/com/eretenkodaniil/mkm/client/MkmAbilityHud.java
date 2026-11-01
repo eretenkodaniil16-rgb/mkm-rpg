@@ -2,12 +2,13 @@ package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.abilities.AbilityAttachments;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
+import com.eretenkodaniil.mkm.abilities.AbilityModifierAccess;
 import com.eretenkodaniil.mkm.abilities.AbilityRules;
+import com.eretenkodaniil.mkm.abilities.RenewalParameters;
 import com.eretenkodaniil.mkm.abilities.ManaLedger;
 import com.eretenkodaniil.mkm.abilities.RenewalEligibility;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
-import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -35,7 +36,8 @@ public final class MkmAbilityHud {
         var combat = client.player.getAttached(CombatAttachments.PLAYER);
         if (attached == null || character == null || timeline == null || combat == null) return;
 
-        var stats = PlayerModifierCalculator.calculate(character);
+        var stats = AbilityModifierAccess.snapshot(client.player);
+        var parameters = RenewalParameters.from(stats);
         double maximum = stats.get(PlayerModifierId.MAX_MANA);
         double ratio = maximum > 0D ? Math.clamp(attached.mana() / maximum, 0D, 1D) : 0D;
         int x = (client.getWindow().getGuiScaledWidth() - WIDTH) / 2;
@@ -51,8 +53,7 @@ public final class MkmAbilityHud {
         long now = client.level.getGameTime();
         ManaLedger ledger = AbilityRules.reconcileClock(attached, now);
         long remaining = Math.max(0L, ledger.readyTick(AbilityCatalog.RENEWAL.id()) - now);
-        double cost = AbilityRules.scaledCost(AbilityCatalog.RENEWAL.baseCost(),
-                stats.get(PlayerModifierId.MANA_COST));
+        double cost = parameters.cost();
         boolean actorValid = client.player.isAlive() && !client.player.isPassenger();
         boolean actionIdle = timeline.idle() && now >= combat.heavyReadyTick();
         boolean injured = client.player.getHealth() < client.player.getMaxHealth() - 0.001F;
