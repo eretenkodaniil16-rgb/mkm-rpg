@@ -25,7 +25,16 @@ public final class MnaeDemoClipRouting {
         Objects.requireNonNull(event, "event");
         if (event.actionKind() != AttackPresentationEvent.ActionKind.VANILLA_SWING
                 || event.outcome() != AttackPresentationEvent.Outcome.LOCAL_PREDICTED
+                || event.hand() != AttackPresentationEvent.Hand.MAIN_HAND
                 || event.sequenceStep() != 1) return Optional.empty();
+        // Legacy test events may lack optional handContext; all live LMB events
+        // are built by WeaponPresentationResolver and carry both hand slots.
+        if (event.handContext() != null) {
+            var active = event.handContext().activeItem();
+            if (event.weaponFamily() == EquipmentRules.Family.NONE && !active.empty()) {
+                return Optional.empty(); // pickaxe is not an unarmed punch
+            }
+        }
         if (event.weaponFamily() == EquipmentRules.Family.SWORD
                 && event.animationId().equals("mkm:attack/sword/light")) {
             return Optional.of(SWORD_DEMO);

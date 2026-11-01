@@ -106,3 +106,32 @@ Normal LMB presentation now resets its buffered events when the Minecraft player
 `MnaeDemoClipRouting.demoClipFor(AttackPresentationEvent)` is a **pure optional ID adapter** for the two MNAE M1 assets available on animation PR #40. The only allowed mappings are normal **first-stage local LMB sword** `mkm:attack/sword/light` → `mkm:mnae/sword_cut`, and **first-stage unarmed LMB** `mkm:attack/unarmed/light` → `mkm:mnae/straight_punch`. Unknown, heavy, alternate or higher stages return empty and preserve C3 renderer fallback; the bridge does not load or animate clips. No MNAE classes are added as dependencies and no new renderer is installed. The animation team must not play legacy and MNAE pose layers simultaneously.
 
 `RangedShotSnapshot` and its regression tests were ported unchanged from separately green equipment integration #27 because the latest all-systems PR #30 did not include that pure model. It remains a **non-wired, immutable server-launch-time contract** for bow/crossbow/trident physical and ranged modifiers and penetration. Weapon swapping after firing will not alter that snapshot once runtime binding is implemented. No projectile spawning/hit event is currently connected. Future authoritative projectile integration must replace the D3 fallback typed MKM defense for any projectile bearing this snapshot; **never apply both custom defenses**. Vanilla armor, enchantments and shields must remain downstream.
+
+## P0 correction — #43 active-hand and weapon-family contract
+
+### Single canonical resolver (Combat owns; MNAE reads)
+
+`WeaponPresentationResolver` accepts both **actual item registry IDs**, the player's physical preferred main arm (RIGHT/LEFT), the **actual action** (native LMB or existing Shift+LMB), and previous cosmetic combo state. It provides `HandContext` with distinct `mainHand`, `offHand`, `actionHand`, `preferredMainArm`, `attackingArm`, and `activeItem()`, plus a sequence selection and a matching immutable `AttackPresentationEvent.handContext()`.
+
+The resolver calls **`EquipmentRules.profile(itemId, MAIN_HAND).family()`** to classify each observed item, including an offhand sword, *without* contributing its mainhand bonuses. Actual equipment modifiers remain computed by the existing `EquipmentSnapshots` with slot-specific `EquipmentRules.profile(itemId, OFF_HAND)`. `Family.NONE` means either true air or an unsupported item; **inspect the real item ID or `activeItem().empty()`** before choosing an unarmed animation. This prevents treating a pickaxe as a fist.
+
+Vanilla LMB is explicitly `MAIN_HAND`, irrespective of LEFT or RIGHT dominant physical arm. An offhand sword does not become the attacking weapon just because mainhand is empty. An explicit `inspect(..., OFF_HAND)` can describe offhand use by future gameplay, but this patch never manufactures an offhand attack or damage event.
+
+`AttackPresentationEvent` retains the original nine-argument compatibility constructor (no context) for older tests/callers. **All newly observed LMB events** use the resolver and include the 10th, strictly consistent `handContext` field. `withOutcome` carries forward the same snapshot. The payload is client-only and remains `LOCAL_PREDICTED`.
+
+### Legacy C3 fallback correction
+
+`LocalCombatAnimation.frame` now inspects real mainhand and offhand gear through the same resolver and calls `AnimationController.profileForHands`:
+
+| Actual mainhand | Offhand (independent) | R combo 1/2/3 C3 profile | Reason |
+| --- | --- | --- | --- |
+| sword | any | `mkm:one_handed_sword` | authored sword clips exist |
+| empty | sword / shield / empty | `mkm:unarmed` | LMB/R mainhand remains empty |
+| axe, mace, trident, bow, crossbow, shield, pickaxe | any | **null**, neutral/no false sword clip | no authored matching C3 combo clip |
+| any | any | `mkm:unarmed` for DODGE only | existing shared C3 dodge clip; **no changed dodge physics** |
+
+MNAE's first-stage native demo routing permits only real mainhand sword and real empty-mainhand unarmed context. The animation stream owns an actual MNAE pose/render adapter and the offhand grip; this Combat PR **does not** modify model, bone system, held-item transforms, animation JSON or Blender. Unsupported weapons will have no authored MKM combo overlay instead of misleading sword slashes. Native Minecraft damage, mining, shields and combo/dodge server timing remain intact.
+
+### P0 deterministic test fixtures
+
+Added pure and light integration JUnit fixtures for: mainhand sword; offhand sword with selected empty mainhand; axe; mace; pickaxe; bow; crossbow; shield both hands; true unarmed; left-hand preference; explicit OFF_HAND arm direction; weapon swap; steps 1/2/3; generic fallback; actual `LOCAL_PREDICTED` status; unchanged offhand equipment bonuses. This is **not** a controlled F8 renderer A/B or a multiplayer gameplay acceptance. Next required audit: actual F5 frames for identical mainhand sword in both F8 modes and the live HUD reporting resolved families and fallback reason, owned by animation chat (#43).
