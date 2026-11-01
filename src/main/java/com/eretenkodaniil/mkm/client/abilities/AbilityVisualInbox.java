@@ -33,6 +33,21 @@ public final class AbilityVisualInbox {
         lastLevelInstance = null;
     }
 
+    /**
+     * Prevent a previously confirmed pose from surviving respawn or a level
+     * replacement before the next incoming event. No gameplay-tick state machine.
+     */
+    public static void onClientTick(Minecraft client) {
+        if (client.player == null || client.level == null) {
+            if (lastPlayerInstance != null || lastLevelInstance != null) reset();
+            return;
+        }
+        if ((lastPlayerInstance != null && lastPlayerInstance != client.player)
+                || (lastLevelInstance != null && lastLevelInstance != client.level)) {
+            reset();
+        }
+    }
+
     /** Must run on the client render/game thread, not the networking thread. */
     public static void onServerEvent(Minecraft client, AbilityVisualEvent event) {
         if (client.level == null || client.player == null) return;
