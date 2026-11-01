@@ -168,8 +168,8 @@ receipt list. Compare with the existing World `/mkmworld status` command:
 
 - Quest `return_to_warden`, receipt `ABSENT`: new keyed payout is eligible after
   normal server validation and World E2's repair mechanism is removed.
-- Quest `return_to_warden`, receipt `PAID`: only finalize stage; do not pay.
-- Quest `rewarded`, receipt `PAID`: already settled; do not top up XP.
+- Quest `return_to_warden`, receipt `REDEEMED`: only finalize stage; do not pay.
+- Quest `rewarded`, receipt `REDEEMED`: already settled; do not top up XP.
 - Quest `rewarded`, receipt `ABSENT`: **historically ambiguous**. Back up the
   player's world/playerdata and server logs and audit manually. Neither the
   XP floor nor current XP proves whether prior payment happened. Never execute
