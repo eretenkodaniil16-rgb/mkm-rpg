@@ -20,6 +20,7 @@ on:
       - 'feature/c3-8-pose-evidence-motion-qa'
       - 'feature/mnae-m1-native-core-two-attacks'
       - 'feature/mnae-m1-1-transitions-blender-review'
+      - 'qa/mnae-m1-1-item-hand-render-gates'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -39,6 +40,7 @@ on:
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'feature/c3-8-pose-evidence-motion-qa'
       - 'feature/mnae-m1-native-core-two-attacks'
+      - 'feature/mnae-m1-1-transitions-blender-review'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
