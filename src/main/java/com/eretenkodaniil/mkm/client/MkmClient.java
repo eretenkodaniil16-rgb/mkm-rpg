@@ -49,7 +49,7 @@ public final class MkmClient implements ClientModInitializer {
             while (ANIMATION_AB.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     boolean nativeMode = NativeAnimationToggle.flip();
-                    client.player.displayClientMessage(Component.literal(
+                    client.gui.setOverlayMessage(Component.literal(
                             nativeMode ? "MNAE M1: ON (two demo strikes)"
                                     : "C3.8: ON (legacy animations)"), true);
                 }
