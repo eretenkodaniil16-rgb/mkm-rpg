@@ -33,10 +33,13 @@ public abstract class PlayerModelAnimationMixin {
         if (frame.sampledClip() != null) {
             // C3's validated immutable data is the primary animation system.
             // Its rotations are additive; vanilla locomotion/head tracking remain.
+            float[] vanillaAngles = snapshotAngles(model);
             applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());
             if (Minecraft.getInstance().level != null) {
+                double changed = AnimationRenderProbe.maxAngleDelta(
+                        vanillaAngles, snapshotAngles(model));
                 AnimationRenderProbe.mark(Minecraft.getInstance().level.getGameTime(),
-                        frame.sampledClip().clipId());
+                        frame.sampledClip().clipId(), changed);
             }
         } else if (action.phase() == ActionTimeline.Phase.DODGING) {
             // Tuck the body into a crouched roll, then release naturally.
@@ -124,6 +127,18 @@ public abstract class PlayerModelAnimationMixin {
             part.yRot += (float) rotation.y() * mirror * intensity;
             part.zRot += (float) rotation.z() * mirror * intensity;
         }
+    }
+
+    private static float[] snapshotAngles(PlayerModel model) {
+        ModelPart[] parts = {model.head, model.body, model.leftArm, model.rightArm,
+                model.leftLeg, model.rightLeg};
+        float[] angles = new float[parts.length * 3];
+        for (int i = 0; i < parts.length; i++) {
+            angles[3 * i] = parts[i].xRot;
+            angles[3 * i + 1] = parts[i].yRot;
+            angles[3 * i + 2] = parts[i].zRot;
+        }
+        return angles;
     }
 
     private static void copyAngles(ModelPart overlay, ModelPart source) {
