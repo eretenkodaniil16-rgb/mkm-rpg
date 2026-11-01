@@ -66,7 +66,7 @@ final class AttackPresentationContractTest {
                 axe.alternatePauseWindowTicks());
         assertEquals(2, a2.state().step());
         assertTrue(a2.finisher());
-        var a3 = AttackSequenceRules.next(a2.state(), axe.family(), 125,
+        var a3 = AttackSequenceRules.next(a2.state(), axe.family(), 145,
                 axe.maxSequenceSteps(), axe.fastChainWindowTicks(),
                 axe.alternatePauseWindowTicks());
         assertTrue(a3.alternatePause());
