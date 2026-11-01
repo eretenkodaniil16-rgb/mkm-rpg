@@ -47,7 +47,7 @@ public final class AbilityService {
 
     public static boolean tryCast(ServerPlayer player, String id) {
         // Hard effect allowlist. Other catalog entries are design prototypes.
-        if (!AbilityCatalog.RENEWAL.id().equals(id)) return false;
+        if (!AbilityAccessRules.executableNow(id)) return false;
 
         long now = player.level().getGameTime();
         boolean actorValid = player.isAlive() && !player.isSpectator() && !player.isPassenger();
