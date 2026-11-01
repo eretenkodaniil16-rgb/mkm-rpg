@@ -9,8 +9,10 @@ public final class AbilityVisualReceiptGate {
     private int actorEntityId;
     private int lastSequence;
 
-    public boolean accept(AbilityVisualEvent event, int localPlayerEntityId) {
-        if (event == null || event.actorEntityId() != localPlayerEntityId
+    public boolean accept(AbilityVisualEvent event, int localPlayerEntityId,
+            String localDimensionId) {
+        if (event == null || !event.dimensionId().equals(localDimensionId)
+                || event.actorEntityId() != localPlayerEntityId
                 || localPlayerEntityId <= 0 || !AbilityVisualPolicy.allowedForPlayback(event)) {
             return false;
         }
