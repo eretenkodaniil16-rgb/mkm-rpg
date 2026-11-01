@@ -67,19 +67,35 @@ public final class FordQuestService {
             message(player, "MKM: Смотрительница уже существует в пределах 48 блоков. Новая не создана.");
             return false;
         }
-        Villager npc = new Villager(EntityTypes.VILLAGER, level);
-        npc.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
-        npc.addTag(NPC_TAG);
-        npc.setCustomName(Component.literal("Ильра — смотрительница брода"));
-        npc.setCustomNameVisible(true);
-        npc.setNoAi(true);
-        npc.setPermanentlyInvulnerable(true);
-        npc.setPersistenceRequired();
-        boolean placed = level.addFreshEntity(npc);
-        if (placed) {
-            message(player, "MKM: Ильра создана. Нажмите ПКМ на NPC. Для демонстрации нужна площадка рядом с ним.");
+        // Avoid spawning Ilra inside the player or obstructed terrain. This is a
+        // one-time GM operation, not a background spawn scan.
+        int[][] offsets = {{2,0},{-2,0},{0,2},{0,-2},{2,2},{-2,2},{2,-2},{-2,-2}};
+        for (int[] offset : offsets) {
+            double x = Math.floor(player.getX()) + offset[0] + 0.5;
+            double y = Math.floor(player.getY());
+            double z = Math.floor(player.getZ()) + offset[1] + 0.5;
+            BlockPos feet = BlockPos.containing(x, y, z);
+            if (!level.getBlockState(feet.below()).isSolid()) {
+                continue;
+            }
+            Villager npc = new Villager(EntityTypes.VILLAGER, level);
+            npc.snapTo(x, y, z, 0.0F, 0.0F);
+            if (!level.noCollision(npc)) {
+                continue;
+            }
+            npc.addTag(NPC_TAG);
+            npc.setCustomName(Component.literal("Ильра — смотрительница брода"));
+            npc.setCustomNameVisible(true);
+            npc.setNoAi(true);
+            npc.setPermanentlyInvulnerable(true);
+            npc.setPersistenceRequired();
+            if (level.addFreshEntity(npc)) {
+                message(player, "MKM: Ильра создана в двух блоках от вас. Нажмите ПКМ для диалога.");
+                return true;
+            }
         }
-        return placed;
+        message(player, "MKM: Для NPC нет свободного места рядом с вами. Встаньте на ровную площадку.");
+        return false;
     }
 
     private static Villager nearbyWarden(ServerPlayer player) {
