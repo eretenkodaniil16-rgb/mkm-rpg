@@ -14,7 +14,7 @@ public record CharacterSheetLayout(
         int left = (viewportWidth - width) / 2;
         int top = (viewportHeight - height) / 2;
         boolean compact = height < 320;
-        boolean micro = height < 225;
+        boolean micro = height < 231;
         boolean narrow = width < 310;
         int contentTop = top + (compact ? 27 : 75);
         // 7 entries, 14 pixels apart; each row's widget ends before footerTop.
