@@ -26,7 +26,7 @@ public final class EquipmentSnapshots {
     }
 
     public static PhysicalDamageType heldPhysicalType(LivingEntity player) {
-        return EquipmentRules.profile(id(player.getMainHandItem()), EquipmentRules.Slot.MAIN_HAND).damageType();
+        return EquipmentRules.meleePhysicalType(id(player.getMainHandItem()));
     }
 
     private static String id(ItemStack stack) {

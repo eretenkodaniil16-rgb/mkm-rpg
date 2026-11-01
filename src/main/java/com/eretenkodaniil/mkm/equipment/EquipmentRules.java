@@ -108,6 +108,18 @@ public final class EquipmentRules {
                         : Map.of(PlayerModifierId.PHYSICAL_RESISTANCE, resistance));
     }
 
+    /**
+     * A bow/crossbow struck as an improvised MELEE weapon deals blunt impact.
+     * The same item produces piercing damage only for its actual projectile.
+     */
+    public static PhysicalDamageType meleePhysicalType(String mainhandItemId) {
+        Profile profile = profile(mainhandItemId, Slot.MAIN_HAND);
+        if (profile.family() == Family.BOW || profile.family() == Family.CROSSBOW) {
+            return PhysicalDamageType.BLUNT;
+        }
+        return profile.damageType();
+    }
+
     /** Slot-aware and deterministic; no inventory items count unless actually equipped. */
     public static Map<PlayerModifierId, Double> aggregate(Map<Slot, String> equipped) {
         EnumMap<PlayerModifierId, Double> totals = new EnumMap<>(PlayerModifierId.class);

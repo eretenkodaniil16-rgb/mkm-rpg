@@ -33,3 +33,7 @@ One confirmed vanilla shield block debits guard stamina in `AFTER_DAMAGE`, with 
 ## Handoff to main chat
 
 Implemented: D1-D3 server equipment/guard/poise integration on top of C3.7 with C3.6 authoritative hit feedback preserved, one canonical snapshot path, pure immutable ranged capture prototype and focused JUnit tests. Remaining: real in-game client QA, actual projectile launch hooking, inventory item grade data components and typed mob/NPC resistances, coordinated B/C/E integration. Suggested next: accept this combined *draft* as an integration probe, run full runtime acceptance, then reconcile B/C/E in dependency order. Do not merge to `main` until the full Fabric baseline is reviewed.
+
+## Follow-up correction: improvised melee with ranged weapons
+
+The held bow/crossbow has a piercing **projectile** profile, but if the player hits with it in direct melee, its physical type is **blunt**. `EquipmentRules.meleePhysicalType` is used by `EquipmentSnapshots.heldPhysicalType`; `RangedShotSnapshot` retains piercing projectile damage. This avoids misapplying piercing resistance to a melee bow strike and preserves all vanilla damage mechanics.

@@ -20,6 +20,20 @@ final class EquipmentRulesTest {
     }
 
     @Test
+    void heldBowUsedAsMeleeIsBluntButLaunchedArrowIsPiercing() {
+        assertEquals(PhysicalDamageType.BLUNT,
+                EquipmentRules.meleePhysicalType("minecraft:bow"));
+        assertEquals(PhysicalDamageType.BLUNT,
+                EquipmentRules.meleePhysicalType("minecraft:crossbow"));
+        assertEquals(PhysicalDamageType.PIERCING,
+                EquipmentRules.profile("minecraft:bow", EquipmentRules.Slot.MAIN_HAND).damageType());
+        assertEquals(PhysicalDamageType.PIERCING,
+                EquipmentRules.meleePhysicalType("minecraft:trident"));
+        assertEquals(PhysicalDamageType.SLASHING,
+                EquipmentRules.meleePhysicalType("minecraft:diamond_sword"));
+    }
+
+    @Test
     void tiersAreMaterialGradesNotMutableSaveFields() {
         var iron = EquipmentRules.profile("minecraft:iron_sword", EquipmentRules.Slot.MAIN_HAND);
         var diamond = EquipmentRules.profile("minecraft:diamond_sword", EquipmentRules.Slot.MAIN_HAND);
