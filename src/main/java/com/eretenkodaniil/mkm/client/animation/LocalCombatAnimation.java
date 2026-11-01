@@ -14,7 +14,8 @@ public final class LocalCombatAnimation {
     private LocalCombatAnimation() {}
 
     public record Frame(ActionTimeline timeline, float progress, float weight, float attackLegWeight,
-                        AnimationController.Frame sampledClip) {}
+                        AnimationController.Frame sampledClip,
+                        WeaponPresentationResolver.Selection selection) {}
 
     public static Frame frame(AvatarRenderState state) {
         Minecraft client = Minecraft.getInstance();
@@ -28,13 +29,14 @@ public final class LocalCombatAnimation {
                 timeline, client.level.getGameTime(),
                 client.getDeltaTracker().getGameTimeDeltaPartialTick(false));
         float weight = CombatAnimationMath.poseWeight(timeline.phase(), progress);
-        String profile = AnimationController.profileForEmptyMainHand(
-                client.player.getMainHandItem().isEmpty());
+        WeaponPresentationResolver.Selection selected = WeaponPresentationResolver.resolve(
+                timeline, client.player.getMainHandItem(),client.player.getOffhandItem(),
+                state.mainArm, NativeAnimationToggle.enabled());
         AnimationController.Frame clip = AnimationController.sample(
-                AnimationLibrary.embedded(), profile, timeline, progress);
+                AnimationLibrary.embedded(), selected.profileId(), timeline, progress);
         float attackLegWeight = CombatStanceMath.attackLegWeight(
                 client.player.onGround(),
                 client.player.getDeltaMovement().horizontalDistanceSqr());
-        return new Frame(timeline, progress, weight, attackLegWeight, clip);
+        return new Frame(timeline, progress, weight, attackLegWeight, clip, selected);
     }
 }

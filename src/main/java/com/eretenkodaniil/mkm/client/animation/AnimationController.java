@@ -13,9 +13,21 @@ public final class AnimationController {
     public static final String FIRST_PROFILE = "mkm:one_handed_sword";
     public static final String UNARMED_PROFILE = "mkm:unarmed";
 
-    /** An empty main hand should not trigger sword slashes. */
+    /**
+     * Legacy helper kept only for old fixture compatibility. Never call this
+     * to resolve a real ItemStack: nonempty includes axes, tools and shields.
+     */
+    @Deprecated
     public static String profileForEmptyMainHand(boolean emptyHand) {
         return emptyHand ? UNARMED_PROFILE : FIRST_PROFILE;
+    }
+
+    public static String profileForFamily(WeaponPresentationResolver.Family family) {
+        return switch (family) {
+            case EMPTY -> UNARMED_PROFILE;
+            case SWORD -> FIRST_PROFILE;
+            default -> null;
+        };
     }
 
     private AnimationController() {}

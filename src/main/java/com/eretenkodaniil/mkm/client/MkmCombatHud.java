@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.client.animation.AnimationController;
 import com.eretenkodaniil.mkm.client.animation.AnimationLibrary;
 import com.eretenkodaniil.mkm.client.animation.AnimationProfile;
 import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.WeaponPresentationResolver;
 import com.eretenkodaniil.mkm.client.animation.VanillaAvatarAdapter;
 import com.eretenkodaniil.mkm.client.animation.engine.NativeDemoLibrary;
 import net.fabricmc.loader.api.FabricLoader;
@@ -82,21 +83,26 @@ public final class MkmCombatHud {
         graphics.text(client.font, Component.literal(description), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
         if (timeline != null && !timeline.idle() && client.level != null) {
-            String selected = AnimationController.profileForEmptyMainHand(
-                    client.player.getMainHandItem().isEmpty());
-            AnimationProfile profile = AnimationLibrary.embedded().profile(selected);
-            String action = AnimationController.actionKey(timeline);
-            String expectedClip = profile == null || action == null
-                    ? null : profile.clipFor(action);
-            if (NativeAnimationToggle.enabled()) {
-                String nativeClip = VanillaAvatarAdapter.nativeClip(
-                        timeline, client.player.getMainHandItem());
-                if (nativeClip != null) expectedClip = nativeClip;
-            }
+            WeaponPresentationResolver.Selection selection=WeaponPresentationResolver.resolve(
+                    timeline,client.player.getMainHandItem(),
+                    client.player.getOffhandItem(),client.player.getMainArm(),
+                    NativeAnimationToggle.enabled());
+            AnimationProfile profile=AnimationLibrary.embedded().profile(selection.profileId());
+            String action=AnimationController.actionKey(timeline);
+            String expectedClip=selection.nativeClipId()!=null
+                    ? selection.nativeClipId()
+                    : profile==null||action==null ? null : profile.clipFor(action);
             graphics.text(client.font,
-                    Component.literal(AnimationRenderProbe.status(
-                            client.level.getGameTime(), expectedClip)),
-                    x, y + 24, TEXT);
+                    Component.literal(expectedClip==null
+                            ? "NO AUTHORED CLIP / "+selection.reason()
+                            : AnimationRenderProbe.status(client.level.getGameTime(),expectedClip)),
+                    x,y+24,expectedClip==null ? STAMINA_LOW : TEXT);
+            graphics.text(client.font,
+                    Component.literal(AnimationRenderProbe.diagnostic(client.level.getGameTime())),
+                    x,y+35,TEXT);
+            graphics.text(client.font,
+                    Component.literal(AnimationRenderProbe.context(client.level.getGameTime())),
+                    x,y+46,MUTED);
         }
     }
 }
