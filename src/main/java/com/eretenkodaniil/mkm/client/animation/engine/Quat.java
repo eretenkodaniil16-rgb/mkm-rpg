@@ -22,10 +22,10 @@ public record Quat(double x,double y,double z,double w) {
     }
     public Vec3 rotate(Vec3 p){
         Quat q=this;
-        double vx=2*(q.y*p.z-q.z*p.y),vy=2*(q.z*p.x-q.x*p.z),vz=2*(q.x*p.y-q.y*p.x);
-        return new Vec3(p.x+q.w*vx+q.y*vz-q.z*vy,
-                p.y+q.w*vy+q.z*vx-q.x*vz,
-                p.z+q.w*vz+q.x*vy-q.y*vx);
+        double vx=2*(q.y*p.z()-q.z*p.y()),vy=2*(q.z*p.x()-q.x*p.z()),vz=2*(q.x*p.y()-q.y*p.x());
+        return new Vec3(p.x()+q.w*vx+q.y*vz-q.z*vy,
+                p.y()+q.w*vy+q.z*vx-q.x*vz,
+                p.z()+q.w*vz+q.x*vy-q.y*vx);
     }
     public Quat slerp(Quat other,double t) {
         if(!Double.isFinite(t))throw new IllegalArgumentException("Nonfinite blend");
