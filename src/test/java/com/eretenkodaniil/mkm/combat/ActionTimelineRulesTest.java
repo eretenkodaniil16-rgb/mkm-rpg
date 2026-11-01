@@ -9,11 +9,11 @@ final class ActionTimelineRulesTest {
         ActionTimeline windup = ActionTimelineRules.beginCombo(new ActionTimeline(), 100);
         assertEquals(ActionTimeline.Phase.WINDUP, windup.phase());
         assertEquals(1, windup.comboStep());
-        assertSame(windup, ActionTimelineRules.advance(windup, 105));
-        ActionTimeline active = ActionTimelineRules.advance(windup, 104);
+        assertSame(windup, ActionTimelineRules.advance(windup, 104));
+        ActionTimeline active = ActionTimelineRules.advance(windup, 105);
         assertEquals(ActionTimeline.Phase.ACTIVE, active.phase());
-        assertSame(active, ActionTimelineRules.advance(active, 106));
-        ActionTimeline recovery = ActionTimelineRules.advance(active, 105);
+        assertSame(active, ActionTimelineRules.advance(active, 105));
+        ActionTimeline recovery = ActionTimelineRules.advance(active, 106);
         assertEquals(ActionTimeline.Phase.RECOVERY, recovery.phase());
         assertNull(ActionTimelineRules.beginCombo(recovery, 107));
         ActionTimeline idle = ActionTimelineRules.advance(recovery, 114);
