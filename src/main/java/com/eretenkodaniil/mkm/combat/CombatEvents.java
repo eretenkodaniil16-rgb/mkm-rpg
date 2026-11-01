@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.combat.net.HitConfirm;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
@@ -62,6 +64,17 @@ public final class CombatEvents {
                 mob.getAttachedOrCreate(CombatAttachments.POISE), tick,
                 damageTaken, modifiers.get(PlayerModifierId.STAGGER_POWER), heavy);
         mob.setAttached(CombatAttachments.POISE, result.state());
+        // Send the cinematic hit flash ONLY after positive, unblocked server
+        // damage from an actual MKM combo. Marker-only swings and misses never
+        // imply a successful hit, and other vanilla attacks are unchanged.
+        ActionTimeline action = player.getAttachedOrCreate(CombatAttachments.TIMELINE);
+        if (action.kind() == ActionTimeline.Kind.LIGHT_COMBO
+                && action.phase() == ActionTimeline.Phase.ACTIVE
+                && HitFeedbackRules.validConfirmedHit(mob.getId(), damageTaken)
+                && ServerPlayNetworking.canSend(player, HitConfirm.TYPE)) {
+            ServerPlayNetworking.send(player,
+                    new HitConfirm(mob.getId(), damageTaken, result.staggered()));
+        }
         if (result.staggered()) {
             mob.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 25, 3));
             player.sendOverlayMessage(Component.literal("MKM  STAGGER!"));

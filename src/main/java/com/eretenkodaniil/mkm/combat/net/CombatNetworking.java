@@ -9,6 +9,7 @@ public final class CombatNetworking {
     private CombatNetworking() {}
 
     public static void initialize() {
+        PayloadTypeRegistry.clientboundPlay().register(HitConfirm.TYPE, HitConfirm.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(DodgeRequest.TYPE, DodgeRequest.STREAM_CODEC);
         ServerPlayNetworking.registerGlobalReceiver(DodgeRequest.TYPE,
                 (payload, context) -> CombatService.tryDodge(context.player(), payload.direction()));
