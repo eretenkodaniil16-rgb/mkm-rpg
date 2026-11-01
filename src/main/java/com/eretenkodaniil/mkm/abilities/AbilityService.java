@@ -1,5 +1,6 @@
 package com.eretenkodaniil.mkm.abilities;
 
+import com.eretenkodaniil.mkm.abilities.visual.AbilityVisualEmitter;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
@@ -74,7 +75,11 @@ public final class AbilityService {
         // Commit exactly once before the native healing effect. Retransmitted
         // packets see the updated cooldown on the next server-side invocation.
         player.setAttached(AbilityAttachments.PLAYER, paid);
+        float beforeHealth = player.getHealth();
         player.heal(parameters.healing());
+        // Cosmetic signal is emitted only AFTER authoritative, positive healing.
+        // No MNAE marker can influence the above transaction.
+        AbilityVisualEmitter.onRenewalApplied(player, beforeHealth);
         player.sendOverlayMessage(Component.translatable("message.mkm.renewal.cast"));
         return true;
     }
