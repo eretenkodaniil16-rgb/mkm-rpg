@@ -20,7 +20,9 @@ public final class AbilityIntentCodec {
         for (byte b : raw) {
             if (b < 32 || b > 126) throw new IllegalArgumentException("Non-ASCII ability ID");
         }
-        return new String(raw, StandardCharsets.US_ASCII);
+        String id = new String(raw, StandardCharsets.US_ASCII);
+        if (!AbilityIds.valid(id)) throw new IllegalArgumentException("Invalid ability ID");
+        return id;
     }
 
     public static void encode(ByteBuf buf, String id) {
