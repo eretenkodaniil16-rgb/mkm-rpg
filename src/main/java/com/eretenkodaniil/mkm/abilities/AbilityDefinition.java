@@ -21,7 +21,7 @@ public record AbilityDefinition(
     public enum Effect { HEAL, DAMAGE, BARRIER, CONTROL, MODIFIER }
 
     public AbilityDefinition {
-        if (id == null || !id.matches("mkm:[a-z0-9_./-]{1,54}")) {
+        if (!AbilityIds.valid(id)) {
             throw new IllegalArgumentException("Ability ID must be a stable mkm: identifier");
         }
         if (kind == null || targetMode == null || resource == null || effect == null) {
