@@ -313,19 +313,56 @@ public final class FordQuestService {
         return found;
     }
 
-    /** Combat is vanilla + MKM CombatService. This listener only consumes confirmed deaths. */
+    /**
+     * The authored objective is that the owned raider is eliminated, not that
+     * the owner must deal the final hit. Other players/environment can help.
+     * Offline owners receive a world-persistent death tombstone on login.
+     */
     public static void onDeath(LivingEntity entity, DamageSource source) {
         if (!(entity instanceof Husk) || !entity.entityTags().contains(RAIDER_TAG)
-                || !(source.getEntity() instanceof ServerPlayer killer)
-                || !entity.entityTags().contains(ownerTag(killer))) {
-            return;
+                || !(entity.level() instanceof ServerLevel level)) return;
+        UUID ownerId = null;
+        for (String tag : entity.entityTags()) {
+            if (!tag.startsWith(OWNER_PREFIX)) continue;
+            try {
+                ownerId = UUID.fromString(tag.substring(OWNER_PREFIX.length()));
+                break;
+            } catch (IllegalArgumentException ignored) {
+                return; // malformed ownership: fail closed
+            }
         }
-        FordQuestState previous = get(killer);
-        if (!FordQuestRules.matchesEncounter(previous, entity.getUUID().toString())) return;
+        if (ownerId == null) return;
+        String deadId = entity.getUUID().toString();
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        if (owner != null) {
+            applyEncounterDeath(owner, deadId);
+        } else {
+            var existing = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_OUTCOMES);
+            var updated = existing.recordDeath(deadId, ownerId.toString());
+            if (existing != updated) level.setAttached(FordQuestAttachments.ENCOUNTER_OUTCOMES, updated);
+        }
+    }
+
+    private static boolean applyEncounterDeath(ServerPlayer owner, String deadId) {
+        FordQuestState previous = get(owner);
+        if (!FordQuestRules.matchesEncounter(previous, deadId)) return false;
         FordQuestState result = FordQuestRules.onOwnedRaiderDefeated(previous);
-        if (result != previous) {
-            update(killer, result);
-            message(killer, "MKM: Налётчик побеждён. Вернись к Ильре за наградой.");
+        if (result == previous) return false;
+        update(owner, result);
+        message(owner, "MKM: Разоритель брода устранён. Вернись к Ильре.");
+        return true;
+    }
+
+    private static void replayOfflineDeaths(ServerPlayer owner) {
+        String ownerId = owner.getUUID().toString();
+        for (ServerLevel level : owner.level().getServer().getAllLevels()) {
+            FordEncounterOutcomes pending = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_OUTCOMES);
+            for (var entry : pending.deadRaiders().entrySet()) {
+                if (entry.getValue().equals(ownerId) && applyEncounterDeath(owner, entry.getKey())) {
+                    level.setAttached(FordQuestAttachments.ENCOUNTER_OUTCOMES, pending.remove(entry.getKey()));
+                    return; // this authored quest has only one active encounter
+                }
+            }
         }
     }
 
@@ -353,6 +390,7 @@ public final class FordQuestService {
     }
 
     public static void onLogin(ServerPlayer player) {
+        replayOfflineDeaths(player);
         repairReward(player);
     }
 
