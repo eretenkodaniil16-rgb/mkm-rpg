@@ -23,11 +23,11 @@ public record FordQuestState(int schemaVersion, String stage, boolean foundTrack
     ).apply(instance, FordQuestState::new));
 
     public FordQuestState {
-        schemaVersion = Math.max(SCHEMA_VERSION, schemaVersion);
+        schemaVersion = schemaVersion == 1 ? SCHEMA_VERSION : schemaVersion;
         stage = stage == null ? "invalid" : stage;
         // Negative / corrupt counts cannot produce a free reset. Higher-than-cap values
         // remain stored; recovery rules refuse all further respawns.
-        recoveryCount = Math.max(0, recoveryCount);
+        recoveryCount = recoveryCount < 0 ? Integer.MAX_VALUE : recoveryCount;
     }
 
     public FordQuestState() {
