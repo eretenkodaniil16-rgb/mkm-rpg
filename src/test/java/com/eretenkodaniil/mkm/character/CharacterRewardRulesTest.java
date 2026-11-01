@@ -158,7 +158,7 @@ final class CharacterRewardRulesTest {
 
     @Test
     void existingSnapshotChangesWithAllocatedStatsWithoutMagicDuplication() {
-        CharacterData initial = new CharacterData().withExperience(4000);
+        CharacterData initial = new CharacterData().withExperience(6000);
         CharacterData built = AllocationRules.tryAllocate(initial,
                 new int[]{4, 0, 4, 4, 4, 4, 0});
         assertNotNull(built);
