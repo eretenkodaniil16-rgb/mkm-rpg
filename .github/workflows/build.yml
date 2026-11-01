@@ -110,6 +110,54 @@ jobs:
                           os.killpg(process.pid, signal.SIGKILL)
                           process.wait()
           PY
+      - name: Smoke-test client startup under virtual display
+        timeout-minutes: 3
+        run: |
+          python3 - <<'PY'
+          import os
+          import signal
+          import subprocess
+          import time
+          from pathlib import Path
+
+          log_path = Path("client-smoke.log")
+          environment = dict(os.environ, LIBGL_ALWAYS_SOFTWARE="1")
+          with log_path.open("w", encoding="utf-8") as output:
+              process = subprocess.Popen(
+                  ["xvfb-run", "-a", "./gradlew", "runClient", "--no-daemon"],
+                  stdout=output, stderr=subprocess.STDOUT, env=environment,
+                  start_new_session=True)
+              initialized_at = None
+              try:
+                  for i in range(115):
+                      time.sleep(1)
+                      logs = log_path.read_text(encoding="utf-8", errors="replace")
+                      if "MKM Fabric 26.3 initialized" in logs and initialized_at is None:
+                          initialized_at = i
+                      if process.poll() is not None:
+                          raise RuntimeError(f"Client exited early (code {process.returncode})")
+                      if initialized_at is not None and i - initialized_at >= 22:
+                          fatal = ("MixinApplyError", "Mixin apply failed",
+                                   "Could not execute entrypoint", "Game crashed!",
+                                   "Crash report saved to")
+                          if any(message in logs for message in fatal):
+                              raise RuntimeError("Fatal client mixin or initialization message")
+                          print("PASS: MKM ability client initialized and remained alive under Xvfb.", flush=True)
+                          break
+                  else:
+                      raise RuntimeError("Client did not initialize and stay alive before timeout")
+              except Exception:
+                  print(log_path.read_text(encoding="utf-8", errors="replace")[-19000:], flush=True)
+                  raise
+              finally:
+                  if process.poll() is None:
+                      os.killpg(process.pid, signal.SIGTERM)
+                      try:
+                          process.wait(timeout=10)
+                      except subprocess.TimeoutExpired:
+                          os.killpg(process.pid, signal.SIGKILL)
+                          process.wait()
+          PY
       - name: Validate Windows PowerShell installer syntax
         shell: pwsh
         run: |
