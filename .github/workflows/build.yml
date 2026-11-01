@@ -9,8 +9,10 @@ on:
       - 'fix/fabric-dodge-direction-input'
       - 'feature/action-combat-c2-state-hud'
       - 'feature/character-quest-rewards-m2'
+      - 'feature/character-m3-crosscore-mnae-contract'
   pull_request:
     branches:
+      - 'feature/character-quest-rewards-m2'
       - 'feature/character-progression-m1'
       - 'feature/action-combat-c2-state-hud'
       - 'port/fabric-26.3'
