@@ -4,12 +4,14 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AbilityVisualContractTest {
+    private static final String DIM = "minecraft:overworld";
+
     private static AbilityVisualEvent valid(int seq) {
         return new AbilityVisualEvent("mkm:renewal",
                 AbilityVisualPolicy.RENEWAL_ACTION_ID,
                 42, seq, AbilityVisualEvent.Hand.MAIN_HAND,
                 AbilityVisualEvent.Phase.APPLIED, 650L,
-                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS);
+                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS, DIM);
     }
 
     @Test void successfulRenewalOnlyWhenServerActuallyHeals() {
@@ -31,18 +33,18 @@ class AbilityVisualContractTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new AbilityVisualEvent("mkm:renewal", "mkm:renewal_cast",
                         42, 1, AbilityVisualEvent.Hand.MAIN_HAND,
-                        AbilityVisualEvent.Phase.APPLIED, 1, 101));
+                        AbilityVisualEvent.Phase.APPLIED, 1, 101, DIM));
         assertThrows(IllegalArgumentException.class,
                 () -> new AbilityVisualEvent("mkm:renewal", "mkm:renewal_cast",
                         42, 0, AbilityVisualEvent.Hand.MAIN_HAND,
-                        AbilityVisualEvent.Phase.APPLIED, 1, 14));
+                        AbilityVisualEvent.Phase.APPLIED, 1, 14, DIM));
     }
 
     @Test void eventLifecycleIsDefinedButRenewalDoesNotFakeCastingPhases() {
         for (var phase : AbilityVisualEvent.Phase.values()) {
             var event = new AbilityVisualEvent("mkm:renewal",
                     AbilityVisualPolicy.RENEWAL_ACTION_ID,
-                    42, 1, AbilityVisualEvent.Hand.MAIN_HAND, phase, 10L, 14);
+                    42, 1, AbilityVisualEvent.Hand.MAIN_HAND, phase, 10L, 14, DIM);
             assertEquals(phase == AbilityVisualEvent.Phase.APPLIED,
                     AbilityVisualPolicy.allowedForPlayback(event));
         }
@@ -52,17 +54,17 @@ class AbilityVisualContractTest {
         var wrong = new AbilityVisualEvent("mkm:arcane_bolt",
                 AbilityVisualPolicy.RENEWAL_ACTION_ID,
                 42, 1, AbilityVisualEvent.Hand.MAIN_HAND,
-                AbilityVisualEvent.Phase.APPLIED, 10, 14);
+                AbilityVisualEvent.Phase.APPLIED, 10, 14, DIM);
         assertFalse(AbilityVisualPolicy.allowedForPlayback(wrong));
         assertFalse(AbilityVisualPolicy.allowedForPlayback(new AbilityVisualEvent(
                 "mkm:renewal", "mkm:different", 42, 1,
-                AbilityVisualEvent.Hand.MAIN_HAND, AbilityVisualEvent.Phase.APPLIED, 10, 14)));
+                AbilityVisualEvent.Hand.MAIN_HAND, AbilityVisualEvent.Phase.APPLIED, 10, 14, DIM)));
         assertFalse(AbilityVisualPolicy.allowedForPlayback(new AbilityVisualEvent(
                 "mkm:renewal", AbilityVisualPolicy.RENEWAL_ACTION_ID, 42, 1,
-                AbilityVisualEvent.Hand.OFF_HAND, AbilityVisualEvent.Phase.APPLIED, 10, 14)));
+                AbilityVisualEvent.Hand.OFF_HAND, AbilityVisualEvent.Phase.APPLIED, 10, 14, DIM)));
         assertFalse(AbilityVisualPolicy.allowedForPlayback(new AbilityVisualEvent(
                 "mkm:renewal", AbilityVisualPolicy.RENEWAL_ACTION_ID, 42, 1,
-                AbilityVisualEvent.Hand.MAIN_HAND, AbilityVisualEvent.Phase.APPLIED, 10, 15)));
+                AbilityVisualEvent.Hand.MAIN_HAND, AbilityVisualEvent.Phase.APPLIED, 10, 15, DIM)));
     }
 
     @Test void rejectedVisualEventDoesNotPoisonLaterServerSequence() {
@@ -71,21 +73,33 @@ class AbilityVisualContractTest {
                 AbilityVisualPolicy.RENEWAL_ACTION_ID,
                 42, 999, AbilityVisualEvent.Hand.MAIN_HAND,
                 AbilityVisualEvent.Phase.STARTED, 10L,
-                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS);
-        assertFalse(gate.accept(invalid, 42));
-        assertTrue(gate.accept(valid(1), 42));
-        assertFalse(gate.accept(valid(1), 42));
-        assertTrue(gate.accept(valid(2), 42));
+                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS, DIM);
+        assertFalse(gate.accept(invalid, 42, DIM));
+        assertTrue(gate.accept(valid(1), 42, DIM));
+        assertFalse(gate.accept(valid(1), 42, DIM));
+        assertTrue(gate.accept(valid(2), 42, DIM));
+    }
+
+    @Test void wrongDimensionCannotStartVisualOrPoisonSequence() {
+        var gate = new AbilityVisualReceiptGate();
+        assertFalse(gate.accept(valid(900), 42, "minecraft:the_nether"));
+        assertTrue(gate.accept(valid(1), 42, DIM));
+        assertFalse(gate.accept(valid(1), 42, DIM));
+        gate.reset();
+        assertTrue(gate.accept(valid(1), 42, DIM));
+        assertFalse(AbilityVisualEvent.validDimensionId("minecraft:../escape"));
+        assertFalse(AbilityVisualEvent.validDimensionId("minecraft:"));
+        assertTrue(AbilityVisualEvent.validDimensionId("example:custom/world"));
     }
 
     @Test void clientGateFiltersDuplicatesReorderedAndWrongActor() {
         var gate = new AbilityVisualReceiptGate();
-        assertTrue(gate.accept(valid(1), 42));
-        assertFalse(gate.accept(valid(1), 42));
-        assertFalse(gate.accept(valid(2), 43));
-        assertTrue(gate.accept(valid(2), 42));
-        assertFalse(gate.accept(valid(1), 42));
+        assertTrue(gate.accept(valid(1), 42, DIM));
+        assertFalse(gate.accept(valid(1), 42, DIM));
+        assertFalse(gate.accept(valid(2), 43, DIM));
+        assertTrue(gate.accept(valid(2), 42, DIM));
+        assertFalse(gate.accept(valid(1), 42, DIM));
         gate.reset();
-        assertTrue(gate.accept(valid(1), 42));
+        assertTrue(gate.accept(valid(1), 42, DIM));
     }
 }
