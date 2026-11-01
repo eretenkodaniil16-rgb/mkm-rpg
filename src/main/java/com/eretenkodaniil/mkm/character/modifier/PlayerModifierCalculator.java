@@ -17,7 +17,19 @@ public final class PlayerModifierCalculator {
         return calculate(data::attribute);
     }
 
+    /** Adds already-resolved equipment/buff deltas before the single final safety clamp. */
+    public static PlayerModifierSnapshot calculate(
+            CharacterData data, Map<PlayerModifierId, Double> additiveDeltas) {
+        return calculate(data::attribute, additiveDeltas);
+    }
+
     static PlayerModifierSnapshot calculate(ToIntFunction<PrimaryAttribute> attributeValues) {
+        return calculate(attributeValues, Map.of());
+    }
+
+    static PlayerModifierSnapshot calculate(
+            ToIntFunction<PrimaryAttribute> attributeValues,
+            Map<PlayerModifierId, Double> additiveDeltas) {
         EnumMap<PlayerModifierId, Double> values = new EnumMap<>(PlayerModifierId.class);
 
         for (PlayerModifierId id : PlayerModifierId.values()) {
@@ -37,6 +49,19 @@ public final class PlayerModifierCalculator {
                 double contribution = effectiveDelta * definition.coefficient(influence.getValue());
                 values.compute(id, (ignored, current) -> current + contribution);
             }
+        }
+
+        for (Map.Entry<PlayerModifierId, Double> contribution : additiveDeltas.entrySet()) {
+            PlayerModifierId id = contribution.getKey();
+            Double delta = contribution.getValue();
+            if (id == null || delta == null || !Double.isFinite(delta)) {
+                throw new IllegalArgumentException("Modifier contributions must be finite and named");
+            }
+            double next = values.get(id) + delta;
+            if (!Double.isFinite(next)) {
+                throw new IllegalArgumentException("Modifier contribution sum overflow: " + id);
+            }
+            values.put(id, next);
         }
 
         for (PlayerModifierId id : PlayerModifierId.values()) {
