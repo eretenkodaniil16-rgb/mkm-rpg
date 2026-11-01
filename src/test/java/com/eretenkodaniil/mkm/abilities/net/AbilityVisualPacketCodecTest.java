@@ -68,6 +68,27 @@ class AbilityVisualPacketCodecTest {
         } finally { buf.release(); }
     }
 
+    @Test void rejectTrailingOrOversizedVisualPayload() {
+        ByteBuf trailing = Unpooled.buffer();
+        ByteBuf excessive = Unpooled.buffer();
+        try {
+            AbilityVisualPacketCodec.encode(trailing, event());
+            trailing.writeByte(0x33);
+            assertThrows(IllegalArgumentException.class,
+                    () -> AbilityVisualPacketCodec.decode(trailing));
+
+            AbilityVisualPacketCodec.encode(excessive, event());
+            while (excessive.readableBytes() <= AbilityVisualPacketCodec.MAX_WIRE_BYTES) {
+                excessive.writeByte(0);
+            }
+            assertThrows(IllegalArgumentException.class,
+                    () -> AbilityVisualPacketCodec.decode(excessive));
+        } finally {
+            trailing.release();
+            excessive.release();
+        }
+    }
+
     @Test void rejectMalformedAbilityIdentifier() {
         ByteBuf buf = Unpooled.buffer();
         try {
