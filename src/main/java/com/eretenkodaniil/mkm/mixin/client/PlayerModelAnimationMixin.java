@@ -31,7 +31,7 @@ public abstract class PlayerModelAnimationMixin {
         if (frame.sampledClip() != null) {
             // C3's validated immutable data is the primary animation system.
             // Its rotations are additive; vanilla locomotion/head tracking remain.
-            applyClip(model, state, frame.sampledClip());
+            applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());
         } else if (action.phase() == ActionTimeline.Phase.DODGING) {
             // Tuck the body into a crouched roll, then release naturally.
             model.body.xRot -= 0.70F * w;
@@ -89,8 +89,11 @@ public abstract class PlayerModelAnimationMixin {
 
     private static void applyClip(
             PlayerModel model, AvatarRenderState state,
-            com.eretenkodaniil.mkm.client.animation.AnimationController.Frame clip) {
+            com.eretenkodaniil.mkm.client.animation.AnimationController.Frame clip,
+            float attackLegWeight) {
         boolean left = state.mainArm == HumanoidArm.LEFT;
+        boolean attackClip = clip.clipId().startsWith("mkm:sword/light_")
+                || clip.clipId().startsWith("mkm:unarmed/");
         for (var entry : clip.rotations().entrySet()) {
             AnimationClip.Bone bone = entry.getKey();
             AnimationClip.Rotation rotation = entry.getValue();
@@ -99,16 +102,21 @@ public abstract class PlayerModelAnimationMixin {
                 case BODY -> model.body;
                 case RIGHT_ARM -> left ? model.leftArm : model.rightArm;
                 case LEFT_ARM -> left ? model.rightArm : model.leftArm;
-                case RIGHT_LEG -> model.rightLeg;
-                case LEFT_LEG -> model.leftLeg;
+                case RIGHT_LEG -> left && attackClip ? model.leftLeg : model.rightLeg;
+                case LEFT_LEG -> left && attackClip ? model.rightLeg : model.leftLeg;
             };
             // Data is authored for right-hand dominance; mirror the transverse
             // axes for left-handed player animations without changing skeleton.
-            float mirror = left && (bone != AnimationClip.Bone.LEFT_LEG
-                    && bone != AnimationClip.Bone.RIGHT_LEG) ? -1F : 1F;
-            part.xRot += (float) rotation.x();
-            part.yRot += (float) rotation.y() * mirror;
-            part.zRot += (float) rotation.z() * mirror;
+            boolean leg = bone == AnimationClip.Bone.LEFT_LEG
+                    || bone == AnimationClip.Bone.RIGHT_LEG;
+            float mirror = left && (!leg || attackClip) ? -1F : 1F;
+            // C3.4 attack stance is deliberately a subtle additive lower-body
+            // offset, never a replacement of vanilla run/jump leg animation.
+            // Preserve all C3.1 directional dodge leg choreography untouched.
+            float intensity = leg && attackClip ? attackLegWeight : 1F;
+            part.xRot += (float) rotation.x() * intensity;
+            part.yRot += (float) rotation.y() * mirror * intensity;
+            part.zRot += (float) rotation.z() * mirror * intensity;
         }
     }
 

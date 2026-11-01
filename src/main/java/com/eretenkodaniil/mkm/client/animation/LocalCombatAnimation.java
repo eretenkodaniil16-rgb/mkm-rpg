@@ -13,7 +13,7 @@ import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 public final class LocalCombatAnimation {
     private LocalCombatAnimation() {}
 
-    public record Frame(ActionTimeline timeline, float progress, float weight,
+    public record Frame(ActionTimeline timeline, float progress, float weight, float attackLegWeight,
                         AnimationController.Frame sampledClip) {}
 
     public static Frame frame(AvatarRenderState state) {
@@ -32,6 +32,9 @@ public final class LocalCombatAnimation {
                 client.player.getMainHandItem().isEmpty());
         AnimationController.Frame clip = AnimationController.sample(
                 AnimationLibrary.embedded(), profile, timeline, progress);
-        return new Frame(timeline, progress, weight, clip);
+        float attackLegWeight = CombatStanceMath.attackLegWeight(
+                client.player.onGround(),
+                client.player.getDeltaMovement().horizontalDistanceSqr());
+        return new Frame(timeline, progress, weight, attackLegWeight, clip);
     }
 }

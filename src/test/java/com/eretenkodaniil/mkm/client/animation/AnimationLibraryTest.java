@@ -20,7 +20,7 @@ class AnimationLibraryTest {
             assertNotNull(clip);
             assertEquals(ActionTimelineRules.windupTicks(stage)
                     + 1 + ActionTimelineRules.recoveryTicks(stage), clip.durationTicks());
-            assertEquals(AnimationClip.Layer.UPPER_BODY, clip.layer());
+            assertEquals(AnimationClip.Layer.FULL_BODY, clip.layer());
             assertTrue(clip.markers().stream().anyMatch(m -> m.name().equals("impact")));
             assertFalse(clip.sample(.5D).isEmpty());
         }
