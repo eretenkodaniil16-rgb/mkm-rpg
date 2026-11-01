@@ -42,6 +42,13 @@ public final class LocalCombatAnimation {
                                 ? AttackPresentationEvent.Arm.LEFT : AttackPresentationEvent.Arm.RIGHT),
                 AttackPresentationEvent.Hand.MAIN_HAND);
         String profile = AnimationController.profileForHands(hands, timeline);
+        // Do not fall into PlayerModelAnimationMixin's old generic sword-like
+        // combo fallback when an item family has no authored animation.
+        // Null frame makes vanilla locomotion the neutral pose; CombatService
+        // still owns the same legitimate vanilla hit/stamina/timeline.
+        if (timeline.kind() == ActionTimeline.Kind.LIGHT_COMBO && profile == null) {
+            return null;
+        }
         AnimationController.Frame clip = AnimationController.sample(
                 AnimationLibrary.embedded(), profile, timeline, progress);
         float attackLegWeight = CombatStanceMath.attackLegWeight(
