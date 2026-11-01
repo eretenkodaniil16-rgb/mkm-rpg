@@ -10,6 +10,7 @@ on:
       - 'feature/action-combat-c2-state-hud'
       - 'feature/action-combat-c2-1-animations'
       - 'feature/animation-foundation-c3'
+      - 'fix/c3-forward-roll-animation-qa'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -19,6 +20,7 @@ on:
       - 'fix/fabric-dodge-direction-input'
       - 'feature/action-combat-c2-state-hud'
       - 'feature/action-combat-c2-1-animations'
+      - 'feature/animation-foundation-c3'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -36,6 +38,15 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build --no-daemon
+      - name: Self-check animation choreography and generate storyboard
+        run: python3 tools/animation/qa/forward_roll_selfcheck.py --out build/reports/animation-qa
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mkm-c3-animation-qa-report
+          path: build/reports/animation-qa/
+          if-no-files-found: warn
+          retention-days: 14
       - name: Verify the release JAR embeds a complete Fabric API distribution
         run: |
           python3 - <<'PY'
@@ -47,7 +58,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.5-fabric.0.jar")
+              if p.endswith("0.0.5-fabric.1.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
