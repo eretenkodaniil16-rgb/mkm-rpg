@@ -11,6 +11,13 @@ import java.util.List;
 public final class AllocationRules {
     private AllocationRules() {}
 
+    /** Optimistic revision check: stale snapshots cannot silently overwrite another build. */
+    public static CharacterData tryAllocate(CharacterData current, int[] requestedTotals,
+                                            int expectedSpent) {
+        if (current == null || expectedSpent != current.spentPoints()) return null;
+        return tryAllocate(current, requestedTotals);
+    }
+
     /** Returns the new immutable character or null for an invalid/duplicate request. */
     public static CharacterData tryAllocate(CharacterData current, int[] requestedTotals) {
         if (current.schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION
