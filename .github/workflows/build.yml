@@ -18,6 +18,7 @@ on:
       - 'feature/c3-6-authoritative-hit-feedback'
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'integration/fabric-26.3-c3.7-all-systems-v1'
+      - 'integration/world-e2-1-fabric-character-v4-qa'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -35,6 +36,7 @@ on:
       - 'feature/c3-5-directional-roll-ground-contact'
       - 'feature/c3-6-authoritative-hit-feedback'
       - 'feature/c3-7-visible-combat-diagnostics'
+      - 'integration/world-e2-1-fabric-character-v4-qa'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
