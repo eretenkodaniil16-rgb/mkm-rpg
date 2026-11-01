@@ -33,8 +33,9 @@ final class ConfirmedBlockLedgerTest {
         Object actual = new Object();
         ledger.begin(defender, cancelled, 100);
         ledger.begin(defender, actual, 101);
-        assertFalse(ledger.consume(defender, cancelled, 103));
+        assertFalse(ledger.consume(defender, new Object(), 101));
         assertTrue(ledger.consume(defender, actual, 101));
+        assertFalse(ledger.consume(defender, cancelled, 103));
     }
 
     @Test void differentPlayersAndSourcesRemainIndependent() {
