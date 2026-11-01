@@ -62,6 +62,11 @@ public final class FordQuestService {
         if (!(player.level() instanceof ServerLevel level)) {
             return false;
         }
+        if (!level.getEntitiesOfClass(Villager.class, player.getBoundingBox().inflate(48.0),
+                existing -> existing.isAlive() && existing.entityTags().contains(NPC_TAG)).isEmpty()) {
+            message(player, "MKM: Смотрительница уже существует в пределах 48 блоков. Новая не создана.");
+            return false;
+        }
         Villager npc = new Villager(EntityTypes.VILLAGER, level);
         npc.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
         npc.addTag(NPC_TAG);
@@ -89,7 +94,7 @@ public final class FordQuestService {
     }
 
     private static boolean requireWarden(ServerPlayer player) {
-        if (player.isSpectator() || nearbyWarden(player) == null) {
+        if (player.isSpectator() || !player.isAlive() || nearbyWarden(player) == null) {
             message(player, "MKM: Подойдите к смотрительнице Ильре (не далее 6 блоков).");
             return false;
         }
@@ -203,8 +208,13 @@ public final class FordQuestService {
         if (!requireWarden(player)) {
             return;
         }
-        if (!get(player).stage().equals(FordQuestState.ACTIVE)) {
+        FordQuestState quest = get(player);
+        if (!quest.stage().equals(FordQuestState.ACTIVE)) {
             message(player, "MKM: Восстановление встречи доступно только при активном задании.");
+            return;
+        }
+        if (!FordQuestRules.canRecover(quest)) {
+            message(player, "MKM: Лимит восстановления встречи исчерпан (2). Обратитесь к администратору тестового мира.");
             return;
         }
         Villager npc = nearbyWarden(player);
@@ -218,7 +228,9 @@ public final class FordQuestService {
         if (exists) {
             message(player, "MKM: Твой противник ещё существует поблизости. Новый не создаётся.");
         } else if (spawnRaider(player, npc)) {
-            message(player, "MKM: Потерянная встреча восстановлена.");
+            update(player, FordQuestRules.onRecoveredRaiderSpawned(quest));
+            message(player, "MKM: Потерянная встреча восстановлена ("
+                    + (quest.recoveryCount() + 1) + "/" + FordQuestRules.MAX_RECOVERIES + ").");
         } else {
             message(player, "MKM: Не удалось создать противника. Проверьте сложность и окружающую площадку.");
         }
@@ -260,6 +272,7 @@ public final class FordQuestService {
         FordQuestState quest = get(player);
         message(player, "MKM Ford Quest | stage=" + quest.stage()
                 + " | tracks=" + quest.foundTracks()
+                + " | recoveries=" + quest.recoveryCount() + "/" + FordQuestRules.MAX_RECOVERIES
                 + " | version=" + quest.schemaVersion());
     }
 }
