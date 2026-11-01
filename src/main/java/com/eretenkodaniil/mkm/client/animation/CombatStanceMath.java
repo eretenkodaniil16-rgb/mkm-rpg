@@ -8,14 +8,15 @@ package com.eretenkodaniil.mkm.client.animation;
  */
 public final class CombatStanceMath {
     private static final double STILL_SPEED = 0.025D;
-    private static final double MOVING_SPEED = 0.14D;
+    private static final double MOVING_SPEED = 0.25D;
+    private static final double MOVING_WEIGHT = 0.20D;
 
     private CombatStanceMath() {}
 
     /**
      * @param grounded local client's grounded state
      * @param horizontalSpeedSquared length squared of current horizontal velocity
-     * @return finite weight in [0,1], used ONLY on authored attack leg offsets
+     * @return finite grounded weight in [0.2,1], used ONLY on authored attack leg offsets
      */
     public static float attackLegWeight(boolean grounded, double horizontalSpeedSquared) {
         if (!grounded || !Double.isFinite(horizontalSpeedSquared) || horizontalSpeedSquared < 0D) {
@@ -25,6 +26,6 @@ public final class CombatStanceMath {
         double t = Math.max(0D, Math.min(1D,
                 (speed - STILL_SPEED) / (MOVING_SPEED - STILL_SPEED)));
         double smooth = t * t * (3D - 2D * t);
-        return (float) (1D - smooth);
+        return (float) (1D - (1D - MOVING_WEIGHT) * smooth);
     }
 }
