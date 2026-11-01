@@ -45,5 +45,12 @@
   "attribute.mkm.endurance": "Выносливость",
   "attribute.mkm.intelligence": "Интеллект",
   "attribute.mkm.willpower": "Воля",
-  "attribute.mkm.perception": "Восприятие"
+  "attribute.mkm.perception": "Восприятие",
+  "hud.mkm.mana": "MKM Мана  %s / %s",
+  "hud.mkm.renewal.hotkey": "%s: Лечение",
+  "hud.mkm.renewal.ready": "ГОТОВО",
+  "hud.mkm.renewal.busy": "ЗАНЯТ",
+  "hud.mkm.renewal.full_health": "HP: МАКС.",
+  "hud.mkm.renewal.low_mana": "НЕТ МАНЫ",
+  "hud.mkm.renewal.cooldown": "%s с"
 }
