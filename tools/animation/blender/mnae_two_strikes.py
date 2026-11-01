@@ -146,7 +146,11 @@ def create_blender_source(render):
     if render:
         # Real Blender frames of our editable six-cube proxy, not Minecraft.
         scene=bpy.context.scene
-        scene.render.engine="CYCLES";scene.cycles.samples=12
+        # Workbench needs no OpenImageDenoiser/GPU; Ubuntu's distro Blender
+        # can render these diagnostic material-colored cubes headlessly.
+        scene.render.engine="BLENDER_WORKBENCH"
+        scene.display.shading.light='STUDIO'
+        scene.display.shading.color_type='MATERIAL'
         scene.render.resolution_x=384;scene.render.resolution_y=384
         scene.render.resolution_percentage=100
         for name in POSES:
