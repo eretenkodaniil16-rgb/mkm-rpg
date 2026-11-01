@@ -43,5 +43,9 @@
   "attribute.mkm.endurance": "Выносливость",
   "attribute.mkm.intelligence": "Интеллект",
   "attribute.mkm.willpower": "Воля",
-  "attribute.mkm.perception": "Восприятие"
+  "attribute.mkm.perception": "Восприятие",
+  "screen.mkm.character.points": "Свободных очков: %s · выбрано: %s",
+  "screen.mkm.character.apply": "Подтвердить",
+  "screen.mkm.character.reset": "Сброс",
+  "screen.mkm.character.derived_preview": "Модификаторы · предварительно"
 }
