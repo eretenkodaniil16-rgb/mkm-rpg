@@ -8,6 +8,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.level.ClipContext;
+import net.minecraft.world.phys.AABB;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
@@ -53,8 +54,7 @@ public final class ArcaneBoltTargetProbe {
         // A short, bounded world query occurs only on a requested spell cast,
         // not every player tick. Resolve the closest physical intersection.
         for (Entity entity : caster.level().getEntities(
-                caster, caster.getBoundingBox().expandTowards(
-                        direction.scale(range)).inflate(1.0D),
+                caster, new AABB(start, end).inflate(1.0D),
                 candidate -> candidate instanceof LivingEntity
                         && candidate.isPickable() && candidate.isAlive())) {
             if (!(entity instanceof LivingEntity living)) continue;
