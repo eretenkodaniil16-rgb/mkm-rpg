@@ -130,6 +130,10 @@ final class CharacterRewardRulesTest {
                 10, 10, 10, 10, 10, 10, 10, 4,
                 List.of(0,0,0,0,0,0,0), List.of(FORD));
         assertEquals(5, future.schemaVersion());
+        assertThrows(IllegalStateException.class, () -> future.withExperience(500));
+        assertThrows(IllegalStateException.class,
+                () -> future.withAttribute(
+                        com.eretenkodaniil.mkm.character.attribute.PrimaryAttribute.STRENGTH, 15));
         assertEquals(Status.INVALID_REQUEST,
                 CharacterRewardRules.grantOnce(future, "mkm:another", 50).status());
         assertThrows(IllegalArgumentException.class, () -> new CharacterData(
