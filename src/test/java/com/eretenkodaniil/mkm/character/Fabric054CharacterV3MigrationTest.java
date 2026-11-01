@@ -163,12 +163,14 @@ final class Fabric054CharacterV3MigrationTest {
     void corruptedV3AllocationLedgerFailsClosedInsteadOfResetingPurchasedCredits() {
         JsonObject v3 = oldRecord("allocated");
         v3.remove("allocated_points");
-        assertTrue(CharacterData.CODEC.codec().parse(JsonOps.INSTANCE, v3).error().isPresent(),
-                "missing v3 ledger must NOT silently reset to all-zero credits");
+        assertThrows(IllegalArgumentException.class,
+                () -> CharacterData.CODEC.codec().parse(JsonOps.INSTANCE, v3),
+                "missing v3 ledger fails closed via constructor exception, not DataResult.error");
         JsonObject v3WrongLength = oldRecord("allocated");
         v3WrongLength.getAsJsonArray("allocated_points").remove(0);
-        assertTrue(CharacterData.CODEC.codec().parse(JsonOps.INSTANCE, v3WrongLength)
-                .error().isPresent());
+        assertThrows(IllegalArgumentException.class,
+                () -> CharacterData.CODEC.codec().parse(JsonOps.INSTANCE, v3WrongLength),
+                "short v3 ledger must never be silently rewritten as zero spent points");
     }
 
     @Test
