@@ -1,5 +1,17 @@
 # Character M3 — World E2 reward recovery, single modifier snapshot, MNAE boundary
 
+> **E2.1 update — 2026-11-01:** The earlier P0 assessment in this document
+> applies to **World E2 PR #26**, not its successor. **World E2.1 PR #39 has
+> already replaced** `reward_xp_floor` top-up with the exact upstream M2
+> `grantExperienceOnce` receipt-first claim and removed `repairReward`
+> from login. Git blobs of `CharacterData`, `CharacterRewardRules`, and
+> `CharacterService` are identical in #39 and this Character branch.
+> **Do not reimplement or revert** #39's repaired claim path. The active
+> blockers are **real v3 0.0.5-fabric.4 playerdata migration**, actual
+> death/relog/multiplayer QA, safe packaging version, and preserving v4
+> receipts when reconciling MNAE v2 source. See
+> [current v3/v4 E2.1 migration gates](CHARACTER_M3_V4_E21_MIGRATION_QA.md).
+>
 Status: integration contract + pure Java implementation, stacked on Character M2 PR #29.
 Branch: `feature/character-m3-crosscore-mnae-contract` → `feature/character-quest-rewards-m2`.
 **No MNAE runtime files, combat damage logic or magic runtime modified.**
