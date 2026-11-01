@@ -47,6 +47,11 @@ final class FordQuestRulesTest {
         assertSame(unknown, FordQuestRules.claim(unknown));
         assertSame(unknown, FordQuestRules.accept(unknown));
         assertFalse(FordQuestRules.canRecover(unknown));
+        FordQuestState invalidSchema = new FordQuestState(0, FordQuestState.ACTIVE, false, 0);
+        assertFalse(FordQuestRules.canRecover(invalidSchema));
+        assertSame(invalidSchema, FordQuestRules.claim(invalidSchema));
+        FordQuestState invalidRecovery = new FordQuestState(2, FordQuestState.ACTIVE, false, -1);
+        assertFalse(FordQuestRules.canRecover(invalidRecovery));
     }
 
     @Test
