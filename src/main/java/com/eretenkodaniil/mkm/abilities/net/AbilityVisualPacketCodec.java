@@ -17,12 +17,12 @@ public final class AbilityVisualPacketCodec {
         buf.writeByte(VERSION);
         AbilityIntentCodec.encode(buf, event.abilityId());
         AbilityIntentCodec.encode(buf, event.visualActionId());
-        buf.writeVarInt(event.actorEntityId());
-        buf.writeVarInt(event.sequence());
+        buf.writeInt(event.actorEntityId());
+        buf.writeInt(event.sequence());
         buf.writeByte(event.hand().ordinal());
         buf.writeByte(event.phase().ordinal());
         buf.writeLong(event.serverTick());
-        buf.writeVarInt(event.visualDurationTicks());
+        buf.writeInt(event.visualDurationTicks());
     }
 
     public static AbilityVisualEvent decode(ByteBuf buf) {
@@ -30,8 +30,8 @@ public final class AbilityVisualPacketCodec {
         if (version != VERSION) throw new IllegalArgumentException("Unknown ability visual protocol");
         String ability = AbilityIntentCodec.decode(buf);
         String action = AbilityIntentCodec.decode(buf);
-        int actorId = buf.readVarInt();
-        int sequence = buf.readVarInt();
+        int actorId = buf.readInt();
+        int sequence = buf.readInt();
         int handCode = buf.readUnsignedByte();
         int phaseCode = buf.readUnsignedByte();
         if (handCode >= AbilityVisualEvent.Hand.values().length
@@ -39,7 +39,7 @@ public final class AbilityVisualPacketCodec {
             throw new IllegalArgumentException("Invalid ability presentation enum");
         }
         long tick = buf.readLong();
-        int duration = buf.readVarInt();
+        int duration = buf.readInt();
         return new AbilityVisualEvent(ability, action, actorId, sequence,
                 AbilityVisualEvent.Hand.values()[handCode],
                 AbilityVisualEvent.Phase.values()[phaseCode], tick, duration);
