@@ -12,7 +12,7 @@ class AnimationLibraryTest {
     @Test
     void loadsEveryPublishedClipAndBindsServerHitMoments() {
         AnimationLibrary library = AnimationLibrary.loadClasspath();
-        assertEquals(12, library.clipCount());
+        assertEquals(15, library.clipCount());
         AnimationProfile sword = library.profile("mkm:one_handed_sword");
         assertNotNull(sword);
         for (int stage = 1; stage <= 3; stage++) {
@@ -24,11 +24,24 @@ class AnimationLibraryTest {
             assertTrue(clip.markers().stream().anyMatch(m -> m.name().equals("impact")));
             assertFalse(clip.sample(.5D).isEmpty());
         }
+        AnimationProfile unarmed = library.profile(AnimationController.UNARMED_PROFILE);
+        assertNotNull(unarmed, "Empty hand must have separate punch animations");
+        for (int stage = 1; stage <= 3; stage++) {
+            AnimationClip punch = library.clip(unarmed.clipFor("combo_" + stage));
+            assertNotNull(punch);
+            assertTrue(punch.id().startsWith("mkm:unarmed/"));
+            assertEquals(ActionTimelineRules.windupTicks(stage)
+                    + 1 + ActionTimelineRules.recoveryTicks(stage), punch.durationTicks());
+        }
+        assertEquals(AnimationController.UNARMED_PROFILE,
+                AnimationController.profileForEmptyMainHand(true));
+        assertEquals(AnimationController.FIRST_PROFILE,
+                AnimationController.profileForEmptyMainHand(false));
         for (int d = 0; d <= DodgeDirection.LAST; d++) {
             AnimationClip clip = library.clip(sword.clipFor("dodge_" + d));
             assertNotNull(clip);
             assertEquals(AnimationClip.Layer.FULL_BODY, clip.layer());
-            assertEquals(8, clip.durationTicks());
+            assertEquals(10, clip.durationTicks());
         }
     }
 
@@ -40,7 +53,7 @@ class AnimationLibraryTest {
                 AnimationController.FIRST_PROFILE, first, .5F);
         assertNotNull(early);
         assertEquals("mkm:sword/light_1", early.clipId());
-        assertEquals(2D/11D, early.localTime(), 0.00001);
+        assertEquals(2.5D/14D, early.localTime(), 0.00001);
         assertNotNull(AnimationController.sample(lib, AnimationController.FIRST_PROFILE,
                 ActionTimelineRules.beginDodge(new ActionTimeline(), 40,
                         DodgeDirection.BACKWARD_LEFT), .5F));

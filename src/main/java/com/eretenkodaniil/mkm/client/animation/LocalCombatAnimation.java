@@ -28,8 +28,10 @@ public final class LocalCombatAnimation {
                 timeline, client.level.getGameTime(),
                 client.getDeltaTracker().getGameTimeDeltaPartialTick(false));
         float weight = CombatAnimationMath.poseWeight(timeline.phase(), progress);
+        String profile = AnimationController.profileForEmptyMainHand(
+                client.player.getMainHandItem().isEmpty());
         AnimationController.Frame clip = AnimationController.sample(
-                AnimationLibrary.embedded(), AnimationController.FIRST_PROFILE, timeline, progress);
+                AnimationLibrary.embedded(), profile, timeline, progress);
         return new Frame(timeline, progress, weight, clip);
     }
 }

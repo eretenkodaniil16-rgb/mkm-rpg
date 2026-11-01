@@ -12,9 +12,13 @@
     "sword/dodge_5.json",
     "sword/dodge_6.json",
     "sword/dodge_7.json",
-    "sword/combat_idle.json"
+    "sword/combat_idle.json",
+    "unarmed/jab.json",
+    "unarmed/cross.json",
+    "unarmed/uppercut.json"
   ],
   "profiles": [
-    "profiles/one_handed_sword.json"
+    "profiles/one_handed_sword.json",
+    "profiles/unarmed.json"
   ]
 }

@@ -9,8 +9,8 @@ final class CombatAnimationMathTest {
         ActionTimeline combo = ActionTimelineRules.beginCombo(new ActionTimeline(), 100);
         assertNotNull(combo);
         assertEquals(0F, CombatAnimationMath.phaseProgress(combo, 100, 0), 0.001);
-        assertEquals(0.5F, CombatAnimationMath.phaseProgress(combo, 102, 0), 0.001);
-        assertEquals(1F, CombatAnimationMath.phaseProgress(combo, 104, 0), 0.001);
+        assertEquals(0.5F, CombatAnimationMath.phaseProgress(combo, 102, 0.5F), 0.001);
+        assertEquals(1F, CombatAnimationMath.phaseProgress(combo, 105, 0), 0.001);
         assertEquals(0F, CombatAnimationMath.phaseProgress(combo, 95, 0), 0.001);
         assertEquals(1F, CombatAnimationMath.phaseProgress(combo, 900, 0), 0.001);
         assertEquals(0F, CombatAnimationMath.phaseProgress(new ActionTimeline(), 120, 0), 0.001);
@@ -27,7 +27,7 @@ final class CombatAnimationMathTest {
         assertEquals(0F, CombatAnimationMath.poseWeight(
                 ActionTimeline.Phase.RECOVERY, 1F), 0.001);
         assertEquals(ActionTimeline.Phase.ACTIVE,
-                ActionTimelineRules.advance(windup, 14).phase());
+                ActionTimelineRules.advance(windup, 15).phase());
     }
 
     @Test
@@ -42,7 +42,7 @@ final class CombatAnimationMathTest {
             assertNotNull(dodge);
             assertEquals(direction, dodge.dodgeDirection());
             assertEquals(0F, CombatAnimationMath.phaseProgress(dodge, 20, 0), 0.001);
-            assertEquals(1F, CombatAnimationMath.phaseProgress(dodge, 28, 0), 0.001);
+            assertEquals(1F, CombatAnimationMath.phaseProgress(dodge, 30, 0), 0.001);
         }
         assertNull(ActionTimelineRules.beginDodge(new ActionTimeline(), 20, (byte) 8));
         assertEquals(0F, CombatAnimationMath.rollRadians(0), 0.001);
