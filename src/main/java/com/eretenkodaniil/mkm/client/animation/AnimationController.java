@@ -1,0 +1,63 @@
+package com.eretenkodaniil.mkm.client.animation;
+
+import com.eretenkodaniil.mkm.combat.ActionTimeline;
+import com.eretenkodaniil.mkm.combat.ActionTimelineRules;
+import com.eretenkodaniil.mkm.combat.CombatAnimationMath;
+import java.util.Map;
+
+/**
+ * Bridges a server-owned combat timeline to client-only sampled pose data.
+ * Damage moments and position are never sourced from marker or pose data.
+ */
+public final class AnimationController {
+    public static final String FIRST_PROFILE = "mkm:one_handed_sword";
+
+    private AnimationController() {}
+
+    public record Frame(AnimationClip.Layer layer, Map<AnimationClip.Bone, AnimationClip.Rotation> rotations,
+                        String clipId, double localTime) {
+    }
+
+    public static String actionKey(ActionTimeline timeline) {
+        if (timeline == null || timeline.idle()) return null;
+        if (timeline.phase() == ActionTimeline.Phase.DODGING) {
+            return "dodge_" + timeline.dodgeDirection();
+        }
+        if (timeline.kind() == ActionTimeline.Kind.LIGHT_COMBO
+                && timeline.comboStep() >= 1 && timeline.comboStep() <= 3) {
+            return "combo_" + timeline.comboStep();
+        }
+        return null;
+    }
+
+    public static double normalizedClipTime(ActionTimeline timeline, float phaseProgress) {
+        if (timeline == null || timeline.idle()) return 0D;
+        double p = CombatAnimationMath.clamp01(phaseProgress);
+        if (timeline.phase() == ActionTimeline.Phase.DODGING) return p;
+        if (timeline.kind() != ActionTimeline.Kind.LIGHT_COMBO
+                || timeline.comboStep() < 1 || timeline.comboStep() > 3) return 0D;
+
+        long windup = ActionTimelineRules.windupTicks(timeline.comboStep());
+        long active = 1L;
+        long recovery = ActionTimelineRules.recoveryTicks(timeline.comboStep());
+        long full = windup + active + recovery;
+        return switch (timeline.phase()) {
+            case WINDUP -> windup * p / full;
+            case ACTIVE -> (windup + active * p) / full;
+            case RECOVERY -> (windup + active + recovery * p) / full;
+            default -> 0D;
+        };
+    }
+
+    public static Frame sample(AnimationLibrary library, String profileId,
+                               ActionTimeline timeline, float phaseProgress) {
+        if (library == null || timeline == null) return null;
+        AnimationProfile profile = library.profile(profileId);
+        String action = actionKey(timeline);
+        if (profile == null || action == null) return null;
+        AnimationClip clip = library.clip(profile.clipFor(action));
+        if (clip == null) return null;
+        double t = normalizedClipTime(timeline, phaseProgress);
+        return new Frame(clip.layer(), clip.sample(t), clip.id(), t);
+    }
+}

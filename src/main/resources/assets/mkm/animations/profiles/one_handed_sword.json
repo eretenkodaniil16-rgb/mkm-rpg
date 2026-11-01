@@ -1,0 +1,18 @@
+{
+  "format": 1,
+  "id": "mkm:one_handed_sword",
+  "clips": {
+    "combat_idle": "mkm:sword/combat_idle",
+    "combo_1": "mkm:sword/light_1",
+    "combo_2": "mkm:sword/light_2",
+    "combo_3": "mkm:sword/light_3",
+    "dodge_0": "mkm:sword/dodge_0",
+    "dodge_1": "mkm:sword/dodge_1",
+    "dodge_2": "mkm:sword/dodge_2",
+    "dodge_3": "mkm:sword/dodge_3",
+    "dodge_4": "mkm:sword/dodge_4",
+    "dodge_5": "mkm:sword/dodge_5",
+    "dodge_6": "mkm:sword/dodge_6",
+    "dodge_7": "mkm:sword/dodge_7"
+  }
+}

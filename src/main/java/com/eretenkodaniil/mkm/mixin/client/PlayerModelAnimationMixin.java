@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.mixin.client;
 
 import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
+import com.eretenkodaniil.mkm.client.animation.AnimationClip;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -27,7 +28,11 @@ public abstract class PlayerModelAnimationMixin {
         ActionTimeline action = frame.timeline();
         float w = frame.weight();
 
-        if (action.phase() == ActionTimeline.Phase.DODGING) {
+        if (frame.sampledClip() != null) {
+            // C3's validated immutable data is the primary animation system.
+            // Its rotations are additive; vanilla locomotion/head tracking remain.
+            applyClip(model, state, frame.sampledClip());
+        } else if (action.phase() == ActionTimeline.Phase.DODGING) {
             // Tuck the body into a crouched roll, then release naturally.
             model.body.xRot -= 0.70F * w;
             model.head.xRot += 0.45F * w;
@@ -80,6 +85,31 @@ public abstract class PlayerModelAnimationMixin {
         copyAngles(model.rightPants, model.rightLeg);
         copyAngles(model.leftPants, model.leftLeg);
         copyAngles(model.jacket, model.body);
+    }
+
+    private static void applyClip(
+            PlayerModel model, AvatarRenderState state,
+            com.eretenkodaniil.mkm.client.animation.AnimationController.Frame clip) {
+        boolean left = state.mainArm == HumanoidArm.LEFT;
+        for (var entry : clip.rotations().entrySet()) {
+            AnimationClip.Bone bone = entry.getKey();
+            AnimationClip.Rotation rotation = entry.getValue();
+            ModelPart part = switch (bone) {
+                case HEAD -> model.head;
+                case BODY -> model.body;
+                case RIGHT_ARM -> left ? model.leftArm : model.rightArm;
+                case LEFT_ARM -> left ? model.rightArm : model.leftArm;
+                case RIGHT_LEG -> model.rightLeg;
+                case LEFT_LEG -> model.leftLeg;
+            };
+            // Data is authored for right-hand dominance; mirror the transverse
+            // axes for left-handed player animations without changing skeleton.
+            float mirror = left && (bone != AnimationClip.Bone.LEFT_LEG
+                    && bone != AnimationClip.Bone.RIGHT_LEG) ? -1F : 1F;
+            part.xRot += (float) rotation.x();
+            part.yRot += (float) rotation.y() * mirror;
+            part.zRot += (float) rotation.z() * mirror;
+        }
     }
 
     private static void copyAngles(ModelPart overlay, ModelPart source) {
