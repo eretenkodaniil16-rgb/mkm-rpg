@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.CharacterRewardRules;
+import com.eretenkodaniil.mkm.character.QuestRewardRecovery;
 import com.mojang.serialization.JsonOps;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -14,12 +15,16 @@ final class FordM2IntegrationTest {
         FordQuestState ready = FordQuestRules.onOwnedRaiderDefeated(
                 FordQuestRules.accept(new FordQuestState()));
         CharacterData initial = new CharacterData().withExperience(25);
+        assertEquals(QuestRewardRecovery.Decision.GRANT_ONCE,
+                QuestRewardRecovery.decide(initial, REWARD_ID, true, false, ready.rewardXpFloor()));
         var first = CharacterRewardRules.grantOnce(initial, REWARD_ID, FordQuestRules.rewardExperience(ready));
         assertEquals(CharacterRewardRules.Status.GRANTED, first.status());
         assertEquals(100L, first.character().experience());
         assertEquals(2, first.character().earnedPoints());
         assertTrue(first.character().hasClaimedReward(REWARD_ID));
-        // Crash after Character M2 commit but before E2 stage transition.
+        // Crash after Character M2/M3 receipt commit but before E2 stage transition.
+        assertEquals(QuestRewardRecovery.Decision.FINALIZE_QUEST,
+                QuestRewardRecovery.decide(first.character(),REWARD_ID,true,false,-1L));
         var afterCrash = CharacterRewardRules.grantOnce(first.character(), REWARD_ID,
                 FordQuestRules.rewardExperience(ready));
         assertEquals(CharacterRewardRules.Status.ALREADY_GRANTED, afterCrash.status());
@@ -27,6 +32,8 @@ final class FordM2IntegrationTest {
         FordQuestState rewarded = FordQuestRules.claim(ready);
         assertEquals(FordQuestState.REWARDED, rewarded.stage());
         assertSame(rewarded, FordQuestRules.claim(rewarded));
+        assertEquals(QuestRewardRecovery.Decision.COMPLETE,
+                QuestRewardRecovery.decide(first.character(),REWARD_ID,false,true,-1L));
     }
 
     @Test void multiplePlayersHaveIndependentReceiptsAndQuests() {
@@ -51,6 +58,8 @@ final class FordM2IntegrationTest {
         // The legacy floor is not proof of a receipt and must NEVER trigger a claim.
         FordQuestState withFloor = legacy.withRewardFloor(500);
         assertSame(withFloor, FordQuestRules.claim(withFloor));
+        assertEquals(QuestRewardRecovery.Decision.MANUAL_REVIEW,
+                QuestRewardRecovery.decide(new CharacterData(),REWARD_ID,false,true,500));
         var encoded = FordQuestState.CODEC.encodeStart(JsonOps.INSTANCE,withFloor).getOrThrow();
         assertEquals(withFloor,FordQuestState.CODEC.parse(JsonOps.INSTANCE,encoded).getOrThrow());
     }
