@@ -9,16 +9,16 @@ final class ActionTimelineRulesTest {
         ActionTimeline windup = ActionTimelineRules.beginCombo(new ActionTimeline(), 100);
         assertEquals(ActionTimeline.Phase.WINDUP, windup.phase());
         assertEquals(1, windup.comboStep());
-        assertSame(windup, ActionTimelineRules.advance(windup, 103));
+        assertSame(windup, ActionTimelineRules.advance(windup, 105));
         ActionTimeline active = ActionTimelineRules.advance(windup, 104);
         assertEquals(ActionTimeline.Phase.ACTIVE, active.phase());
-        assertSame(active, ActionTimelineRules.advance(active, 104));
+        assertSame(active, ActionTimelineRules.advance(active, 106));
         ActionTimeline recovery = ActionTimelineRules.advance(active, 105);
         assertEquals(ActionTimeline.Phase.RECOVERY, recovery.phase());
-        assertNull(ActionTimelineRules.beginCombo(recovery, 106));
-        ActionTimeline idle = ActionTimelineRules.advance(recovery, 111);
+        assertNull(ActionTimelineRules.beginCombo(recovery, 107));
+        ActionTimeline idle = ActionTimelineRules.advance(recovery, 114);
         assertTrue(idle.idle());
-        assertEquals(127L, idle.comboUntilTick());
+        assertEquals(130L, idle.comboUntilTick());
     }
 
     @Test
@@ -49,7 +49,7 @@ final class ActionTimelineRulesTest {
         assertNull(ActionTimelineRules.beginCombo(dodging, 35));
         assertNull(ActionTimelineRules.beginDodge(dodging, 35));
         assertSame(dodging, ActionTimelineRules.advance(dodging, 37));
-        assertTrue(ActionTimelineRules.advance(dodging, 38).idle());
+        assertTrue(ActionTimelineRules.advance(dodging, 40).idle());
     }
 
     @Test
