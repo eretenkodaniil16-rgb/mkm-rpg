@@ -45,7 +45,14 @@ public final class WeaponPresentationResolver {
      */
     public static Selection resolve(ActionTimeline timeline, ItemStack main, ItemStack off,
                                     HumanoidArm mainArm, boolean nativeEnabled) {
-        Family m = family(main), o = family(off);
+        return resolveFamilies(timeline,family(main),family(off),mainArm,nativeEnabled);
+    }
+
+    /** Pure routing contract; test without Minecraft's global item registries. */
+    public static Selection resolveFamilies(ActionTimeline timeline, Family m, Family o,
+                                            HumanoidArm mainArm, boolean nativeEnabled) {
+        Objects.requireNonNull(m);
+        Objects.requireNonNull(o);
         HumanoidArm arm = mainArm == null ? HumanoidArm.RIGHT : mainArm;
         if (timeline == null || timeline.idle()) {
             return new Selection(m,o,InteractionHand.MAIN_HAND,arm,Renderer.VANILLA,
