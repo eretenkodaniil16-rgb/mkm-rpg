@@ -36,7 +36,7 @@ No animation marker or receipt acknowledgement may mutate the player.
 
 ## On-wire S2C payload
 
-Packet ID `mkm:ability_visual_event`, version 1. Registered as
+Packet ID `mkm:ability_visual_event`, version **2** (v1 packets rejected; client/server must use the same mod build). Registered as
 `PayloadTypeRegistry.clientboundPlay()` only. Owner-targeted with
 `ServerPlayNetworking.send(player,...)`.
 
@@ -51,8 +51,9 @@ Packet ID `mkm:ability_visual_event`, version 1. Registered as
 | phase | unsigned byte | `STARTED=0`, `APPLIED=1`, `INTERRUPTED=2`, `FINISHED=3` |
 | serverTick | signed int64 | non-negative server game time for diagnostics/sync |
 | visualDurationTicks | signed int32 | 0–100 inclusive, **cosmetic only** |
+| dimensionId | length-prefixed ASCII | 1–128 bytes, validated namespace/path; authoritative level key |
 
-Maximum encoded length is **153 bytes**, including all prefix bytes.
+Maximum encoded length is **282 bytes**, including all prefix bytes.
 Packet deliberately does NOT contain health amount, damage, target ID,
 mana cost, cooldown, player stats or entity coordinates. These remain
 server-authoritative and are never echoed from a client cast request.
@@ -63,14 +64,14 @@ Current successful Renewal payload:
 - `hand = MAIN_HAND` (MNAE maps to physical left/right using avatar settings)
 - `phase = APPLIED`
 - `visualDurationTicks = 14`, about 0.7 s at 20 TPS
-- `actorEntityId`, `sequence`, `serverTick` supplied only by the server.
+- `actorEntityId`, `sequence`, `serverTick`, `dimensionId` supplied only by the server.
 
-The decoder also rejects **trailing bytes and any frame over 153 bytes**
+The decoder also rejects **trailing bytes and any frame over 282 bytes**
 instead of tolerating ambiguous packet extensions. New fields require an
 explicit protocol version rather than appending unversioned data.
 
 The client validates the exact Renewal action ID/phase/hand/duration, local
-actor ID and monotonically increasing sequence, then presents one visual event.
+actor ID, exact live client dimension and monotonically increasing sequence, then presents one visual event.
 It resets replay state on join/disconnect **and when the client replaces
 its local player or level (respawn/dimension travel)**. Sending a duplicate or reordered
 S2C event cannot spawn another owner-local effect. This does not constitute
@@ -80,7 +81,16 @@ the current local prototype. Observer broadcasting is MNAE-5, **not**
 implicitly enabled by this change.
 
 **Client integration seam:**
-`AbilityVisualInbox.installMnaeListener(Consumer<AbilityVisualEvent>)`.
+`AbilityVisualInbox.installMnaeListener(Consumer<AbilityVisualEvent>, Runnable onStop)`
+(new overload; one-argument legacy registration remains supported). MNAE
+should register the confirmation consumer **and** the cosmetic cancellation
+callback. `onStop` runs when a newer visual supersedes Renewal, the
+local avatar or dimension changes, the client disconnects/rejoins, or
+the local 14-tick cosmetic lease expires. It never cancels or refunds
+server-authoritative healing/mana. The 14 ticks are counted by **client
+game ticks after receipt**, avoiding presentation lasting forever with network
+latency. World-time rollback also expires the cosmetic lease without affecting
+server cooldown. No standalone animation player is implemented in Magic.
 It receives only owner-verified server-confirmed events on the client thread.
 `latestConfirmed()` is an optional diagnostic getter. MNAE owns clip
 selection, pose blending, left-handed transforms, masking and first-person
@@ -168,3 +178,31 @@ an in-game hand-gesture, multiplayer latency or FPS test.
 **Arcane Bolt** remains disabled until Combat Core approves an authoritative
 magic damage source + mitigation + PvP permission contract and one cast
 timeline/interrupt protocol. Do not infer hit success from an animation.
+
+## M3.1 security and integration update (issue #43)
+
+The packet moved from v1 to **v2** to include `dimensionId`. A v1 event received
+in a different dimension could have been treated as new after the old
+client scene was replaced and the replay gate reset. Now the gate rejects
+mismatched dimensions **before updating its sequence counter**. It also
+rejects duplicate or reordered sequence values within a scene. The
+server-owned sequence never wraps to 1 in an active session. Neither
+network delivery nor the client renderer can claim a successful heal.
+
+`MAIN_HAND` describes the **logical item/action hand** and **not physical
+right arm**. MNAE must map the logical main hand through the user's actual
+left/right dominant-arm preference and its `WeaponPresentationResolver`.
+Do not bind Renewal to sword, axe, pickaxe or grip family. The semantic
+`mkm:renewal_cast` action is a distinct small one-shot gesture: after
+`APPLIED`, optionally overlay it on the current animation for at most 14
+cosmetic ticks, then return to the original stance/locomotion and held-item
+transform. The MNAE owner owns transitions, fades, physical hand pivots,
+weapon grip and skeleton space; Magic only sends a bounded event and onStop.
+
+**Save safety:** Isolated PR #37 still has CharacterData schema v2. Combined
+PR #42 retains CharacterData schema **v3** as verified against PR #30 and
+calls real `EquipmentSnapshots`. Character PR #35 adds **schema v4** with
+keyed claim receipts; PR #42 does NOT contain v4. Never load v4 saves with
+PR #42 or claim it can downgrade v4 safely. Test with a backed-up v3 save
+and a matching dedicated server/client build. The full future integration
+must retain v4 receipts rather than regenerate them from XP.
