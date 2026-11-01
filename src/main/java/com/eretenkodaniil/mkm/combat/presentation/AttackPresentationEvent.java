@@ -16,7 +16,8 @@ public record AttackPresentationEvent(
         String animationId,
         long startGameTick,
         long sequenceId,
-        Outcome outcome) {
+        Outcome outcome,
+        WeaponPresentationResolver.HandContext handContext) {
     public enum ActionKind {
         VANILLA_SWING, SPECIAL_COMBO, HEAVY, CHARGED, DODGE, RENEWAL
     }
@@ -33,15 +34,29 @@ public record AttackPresentationEvent(
         Objects.requireNonNull(leadingArm, "leadingArm");
         Objects.requireNonNull(animationId, "animationId");
         Objects.requireNonNull(outcome, "outcome");
+        if (handContext != null
+                && (handContext.actionHand() != hand
+                    || handContext.attackingArm() != leadingArm
+                    || handContext.activeItem().family() != weaponFamily)) {
+            throw new IllegalArgumentException("Event weapon/hand differs from resolved equipment");
+        }
         if (!animationId.startsWith("mkm:") || animationId.length() > 96
                 || sequenceStep < 0 || sequenceStep > 4
                 || startGameTick < 0 || sequenceId < 0) {
             throw new IllegalArgumentException("Invalid bounded presentation metadata");
         }
     }
+    /** Compatibility constructor for existing presentation tests and legacy consumers. */
+    public AttackPresentationEvent(ActionKind actionKind, EquipmentRules.Family weaponFamily,
+            Hand hand, Arm leadingArm, int sequenceStep, String animationId,
+            long startGameTick, long sequenceId, Outcome outcome) {
+        this(actionKind, weaponFamily, hand, leadingArm, sequenceStep,
+                animationId, startGameTick, sequenceId, outcome, null);
+    }
+
     /** Never infer SERVER_CONFIRMED_HIT from client input or an animation marker. */
     public AttackPresentationEvent withOutcome(Outcome next) {
         return new AttackPresentationEvent(actionKind, weaponFamily, hand,
-                leadingArm, sequenceStep, animationId, startGameTick, sequenceId, next);
+                leadingArm, sequenceStep, animationId, startGameTick, sequenceId, next, handContext);
     }
 }

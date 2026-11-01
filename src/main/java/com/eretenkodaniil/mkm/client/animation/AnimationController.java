@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.client.animation;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import com.eretenkodaniil.mkm.combat.ActionTimelineRules;
 import com.eretenkodaniil.mkm.combat.CombatAnimationMath;
+import com.eretenkodaniil.mkm.combat.presentation.WeaponPresentationResolver;
+import com.eretenkodaniil.mkm.equipment.EquipmentRules;
 import java.util.Map;
 
 /**
@@ -16,6 +18,21 @@ public final class AnimationController {
     /** An empty main hand should not trigger sword slashes. */
     public static String profileForEmptyMainHand(boolean emptyHand) {
         return emptyHand ? UNARMED_PROFILE : FIRST_PROFILE;
+    }
+
+    /**
+     * Only authored sword/unarmed combo clips may drive these action profiles.
+     * A neutral unsupported weapon has NO sword combo pose. Dodges share C3's
+     * identical generic dodge clips via either profile without changing physics.
+     */
+    public static String profileForHands(
+            WeaponPresentationResolver.HandContext hands, ActionTimeline timeline) {
+        if (hands == null || timeline == null) return null;
+        if (timeline.kind() == ActionTimeline.Kind.DODGE) return UNARMED_PROFILE;
+        if (timeline.kind() != ActionTimeline.Kind.LIGHT_COMBO) return null;
+        if (hands.activeItem().empty()) return UNARMED_PROFILE;
+        return hands.activeItem().family() == EquipmentRules.Family.SWORD
+                ? FIRST_PROFILE : null;
     }
 
     private AnimationController() {}

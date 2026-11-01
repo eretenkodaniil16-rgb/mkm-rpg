@@ -5,7 +5,7 @@ import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.presentation.AttackInputPriority;
 import com.eretenkodaniil.mkm.combat.presentation.AttackPresentationEvent;
 import com.eretenkodaniil.mkm.combat.presentation.AttackSequenceRules;
-import com.eretenkodaniil.mkm.equipment.WeaponCombatProfiles;
+import com.eretenkodaniil.mkm.combat.presentation.WeaponPresentationResolver;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.List;
@@ -51,26 +51,20 @@ public final class VanillaAttackPresentationFeed {
             lastPlayerId = client.player.getId();
             lastLevel = client.level;
         }
-        String weaponId = net.minecraft.core.registries.BuiltInRegistries.ITEM
-                .getKey(client.player.getMainHandItem().getItem()).toString();
-        WeaponCombatProfiles.Profile profile = WeaponCombatProfiles.forItem(weaponId);
+        var registry = net.minecraft.core.registries.BuiltInRegistries.ITEM;
+        WeaponPresentationResolver.Hands hands = new WeaponPresentationResolver.Hands(
+                registry.getKey(client.player.getMainHandItem().getItem()).toString(),
+                registry.getKey(client.player.getOffhandItem().getItem()).toString(),
+                client.player.getMainArm() == HumanoidArm.LEFT
+                        ? AttackPresentationEvent.Arm.LEFT : AttackPresentationEvent.Arm.RIGHT);
         long tick = Math.max(0L, client.level.getGameTime());
-        AttackSequenceRules.Selection selection = AttackSequenceRules.next(
-                lastSequence, profile.family(), weaponId, tick, profile.maxSequenceSteps(),
-                profile.fastChainWindowTicks(), profile.alternatePauseWindowTicks());
-        lastSequence = selection.state();
-        String animationId = WeaponCombatProfiles.animationFor(
-                profile, selection.state().step(), selection.alternatePause(), selection.finisher());
-        boolean left = client.player.getMainArm() == HumanoidArm.LEFT;
-        AttackPresentationEvent event = new AttackPresentationEvent(
-                decision == AttackInputPriority.Decision.EXISTING_HEAVY
+        var resolved = WeaponPresentationResolver.resolveVanillaAttack(
+                hands, decision == AttackInputPriority.Decision.EXISTING_HEAVY
                         ? AttackPresentationEvent.ActionKind.HEAVY
                         : AttackPresentationEvent.ActionKind.VANILLA_SWING,
-                profile.family(),
-                AttackPresentationEvent.Hand.MAIN_HAND,
-                left ? AttackPresentationEvent.Arm.LEFT : AttackPresentationEvent.Arm.RIGHT,
-                selection.state().step(), animationId, tick, selection.state().sequenceId(),
-                AttackPresentationEvent.Outcome.LOCAL_PREDICTED);
+                lastSequence, tick);
+        lastSequence = resolved.selection().state();
+        AttackPresentationEvent event = resolved.event();
         if (EVENTS.size() == MAX_EVENTS) EVENTS.removeFirst();
         EVENTS.addLast(event);
     }
