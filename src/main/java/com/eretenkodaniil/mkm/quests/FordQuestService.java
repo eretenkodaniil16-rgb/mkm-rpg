@@ -443,14 +443,18 @@ public final class FordQuestService {
         FordEncounterRegistry after = registry.removeIfMatch(ownerId.toString(), deadId);
         if (after != registry) level.setAttached(FordQuestAttachments.ENCOUNTER_REGISTRY, after);
         NpcVisualSignals.emit(entity, NpcVisualSignals.Cue.DEATH);
-        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
-        if (owner != null) {
-            applyEncounterDeath(owner, deadId);
-        } else {
-            var existing = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_OUTCOMES);
-            var updated = existing.recordDeath(deadId, ownerId.toString());
-            if (existing != updated) level.setAttached(FordQuestAttachments.ENCOUNTER_OUTCOMES, updated);
+        // Preserve verified death proof irrespective of whether the owner is online.
+        // A player-data save cut must not erase a previously witnessed death.
+        var existing = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_OUTCOMES);
+        var recorded = existing.recordDeath(deadId, ownerId.toString());
+        if (recorded != existing) {
+            level.setAttached(FordQuestAttachments.ENCOUNTER_OUTCOMES, recorded);
+        } else if (!existing.deadRaiders().containsKey(deadId)) {
+            com.eretenkodaniil.mkm.MkmMod.LOGGER.error(
+                    "Ford death tombstone ledger full for owner {} raider {}", ownerId, deadId);
         }
+        ServerPlayer owner = level.getServer().getPlayerList().getPlayer(ownerId);
+        if (owner != null) applyEncounterDeath(owner, deadId);
     }
 
     private static boolean applyEncounterDeath(ServerPlayer owner, String deadId) {
@@ -463,14 +467,14 @@ public final class FordQuestService {
         return true;
     }
 
-    private static void replayOfflineDeaths(ServerPlayer owner) {
+    private static void replayPersistedDeaths(ServerPlayer owner) {
         String ownerId = owner.getUUID().toString();
         for (ServerLevel level : owner.level().getServer().getAllLevels()) {
             FordEncounterOutcomes pending = level.getAttachedOrCreate(FordQuestAttachments.ENCOUNTER_OUTCOMES);
             for (var entry : pending.deadRaiders().entrySet()) {
                 if (entry.getValue().equals(ownerId) && applyEncounterDeath(owner, entry.getKey())) {
-                    level.setAttached(FordQuestAttachments.ENCOUNTER_OUTCOMES, pending.remove(entry.getKey()));
-                    return; // this authored quest has only one active encounter
+                    // Retain proof through a possible second player/world save cut.
+                    return;
                 }
             }
         }
@@ -508,7 +512,7 @@ public final class FordQuestService {
 
     public static void onLogin(ServerPlayer player) {
         FordDialogueSessions.invalidate(player);
-        replayOfflineDeaths(player);
+        replayPersistedDeaths(player);
         // Legacy completed saves without a Character M2 receipt are ambiguous.
         // Do not invent historical XP by interpreting an obsolete reward floor.
     }
