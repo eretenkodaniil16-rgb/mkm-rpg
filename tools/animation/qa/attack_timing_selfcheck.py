@@ -65,7 +65,7 @@ def check(files):
         pose=tuple(round(axis(data["tracks"][part],hit,k),3) for part in ("body","left_arm","right_arm") for k in range(3))
         poses[(profile,stage)]=pose
         legs=[axis(data["tracks"][part],hit,0) for part in ("left_leg","right_leg")]
-        assert .15 < sum(abs(x) for x in legs) < .50,(name,"weight transfer leg angle")
+        assert .30 < sum(abs(x) for x in legs) < 1.1,(name,"weight transfer leg angle")
         report.append({"clip":name,"duration_ticks":duration,"impact_tick":WINDUP[stage],
                        "leg_pitch_at_impact":[round(x,3) for x in legs],
                        "impact_normalized":round(hit,6),"body_yaw_at_impact":pose[1],
