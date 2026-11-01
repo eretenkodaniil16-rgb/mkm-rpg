@@ -13,9 +13,16 @@ public final class FordQuestAttachments {
                     .persistent(FordQuestState.CODEC)
                     .copyOnDeath());
 
+    public static final AttachmentType<FordEncounterOutcomes> ENCOUNTER_OUTCOMES = AttachmentRegistry.create(
+            MkmMod.id("ford_encounter_outcomes"),
+            builder -> builder
+                    .initializer(FordEncounterOutcomes::new)
+                    .persistent(FordEncounterOutcomes.CODEC));
+
     private FordQuestAttachments() {}
 
     public static void initialize() {
         FORD_QUEST.identifier();
+        ENCOUNTER_OUTCOMES.identifier();
     }
 }
