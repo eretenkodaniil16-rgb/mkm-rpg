@@ -48,6 +48,7 @@ public final class CharacterSheetScreen extends Screen {
     private boolean awaitingSync;
     private int requestId;
     private int pendingTicks;
+    private int statusTicks;
     private Component statusMessage;
 
     public CharacterSheetScreen() {
@@ -109,6 +110,7 @@ public final class CharacterSheetScreen extends Screen {
                 awaitingReply = false;
                 awaitingSync = false;
                 statusMessage = Component.translatable("screen.mkm.character.synced_allocation");
+                statusTicks = 0;
             }
             observedLedger = data.allocatedPoints();
         }
@@ -116,6 +118,12 @@ public final class CharacterSheetScreen extends Screen {
             awaitingReply = false;
             awaitingSync = false;
             statusMessage = Component.translatable("screen.mkm.character.allocation_timeout");
+            statusTicks = 0;
+        }
+        // Feedback must not hide the available-point counter forever on compact screens.
+        if (!awaitingReply && !awaitingSync && statusMessage != null && ++statusTicks > 80) {
+            statusMessage = null;
+            statusTicks = 0;
         }
         refreshButtons();
     }
@@ -194,6 +202,7 @@ public final class CharacterSheetScreen extends Screen {
         statusMessage = Component.translatable(result.accepted()
                 ? "screen.mkm.character.allocation_accepted"
                 : "screen.mkm.character.allocation_rejected");
+        statusTicks = 0;
         refreshButtons();
     }
 
