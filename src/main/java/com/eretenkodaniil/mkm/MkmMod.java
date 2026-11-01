@@ -14,6 +14,7 @@ import com.eretenkodaniil.mkm.command.MkmCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
 import com.eretenkodaniil.mkm.quests.FordQuestCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestService;
+import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.fabricmc.api.ModInitializer;
@@ -45,12 +46,14 @@ public final class MkmMod implements ModInitializer {
         CombatNetworking.initialize();
         CharacterNetworking.initialize();
         AbilityNetworking.initialize();
+        FordQuestNetworking.initialize();
         FordQuestService.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
             CombatService.onLogin(handler.player);
             AbilityService.onLogin(handler.player);
+            FordQuestService.onLogin(handler.player);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
