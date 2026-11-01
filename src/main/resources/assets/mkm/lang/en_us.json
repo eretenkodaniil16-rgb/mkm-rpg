@@ -5,6 +5,8 @@
   "key.mkm.open_character_sheet": "Open Character Sheet",
   "key.mkm.dodge": "Dodge (Action Combat)",
   "key.mkm.combo": "Combo attack (C2)",
+  "key.mkm.cast_renewal": "Cast Renewal (heal self)",
+  "message.mkm.renewal.cast": "Renewal cast",
   "screen.mkm.character.title": "Character Sheet",
   "screen.mkm.character.close": "Close",
   "screen.mkm.character.runtime": "MKM %s · client loaded",
