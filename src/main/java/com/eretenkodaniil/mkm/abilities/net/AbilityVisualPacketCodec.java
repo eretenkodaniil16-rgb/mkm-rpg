@@ -9,6 +9,9 @@ import io.netty.buffer.ByteBuf;
  */
 public final class AbilityVisualPacketCodec {
     public static final int VERSION = 1;
+    // 1 version + 2 x (1-byte length + max 64 ASCII bytes)
+    // + 2 x int + 2 x byte + long + int.
+    public static final int MAX_WIRE_BYTES = 153;
 
     private AbilityVisualPacketCodec() {}
 
@@ -26,6 +29,9 @@ public final class AbilityVisualPacketCodec {
     }
 
     public static AbilityVisualEvent decode(ByteBuf buf) {
+        if (buf.readableBytes() > MAX_WIRE_BYTES) {
+            throw new IllegalArgumentException("Excessive ability visual packet");
+        }
         int version = buf.readUnsignedByte();
         if (version != VERSION) throw new IllegalArgumentException("Unknown ability visual protocol");
         String ability = AbilityIntentCodec.decode(buf);
@@ -40,6 +46,9 @@ public final class AbilityVisualPacketCodec {
         }
         long tick = buf.readLong();
         int duration = buf.readInt();
+        if (buf.isReadable()) {
+            throw new IllegalArgumentException("Unexpected trailing ability visual bytes");
+        }
         return new AbilityVisualEvent(ability, action, actorId, sequence,
                 AbilityVisualEvent.Hand.values()[handCode],
                 AbilityVisualEvent.Phase.values()[phaseCode], tick, duration);
