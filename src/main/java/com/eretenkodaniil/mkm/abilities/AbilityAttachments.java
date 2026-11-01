@@ -1,8 +1,6 @@
 package com.eretenkodaniil.mkm.abilities;
 
 import com.eretenkodaniil.mkm.MkmMod;
-import com.mojang.serialization.Codec;
-import com.mojang.serialization.codecs.RecordCodecBuilder;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -17,16 +15,6 @@ import net.minecraft.network.codec.StreamCodec;
  * no changes to CombatState or ActionTimeline. Owner-only synchronization.
  */
 public final class AbilityAttachments {
-    public static final Codec<ManaLedger> PERSISTENT_CODEC = RecordCodecBuilder.create(instance ->
-            instance.group(
-                    Codec.DOUBLE.fieldOf("mana").forGetter(ManaLedger::mana),
-                    Codec.LONG.fieldOf("last_tick").forGetter(ManaLedger::lastUpdateTick),
-                    Codec.LONG.fieldOf("regen_ready_tick").forGetter(ManaLedger::regenReadyTick),
-                    Codec.unboundedMap(Codec.STRING, Codec.LONG)
-                            .optionalFieldOf("cooldowns", Map.of())
-                            .forGetter(ManaLedger::cooldowns)
-            ).apply(instance, ManaLedger::new));
-
     public static final StreamCodec<RegistryFriendlyByteBuf, ManaLedger> NETWORK_CODEC = new StreamCodec<>() {
         @Override
         public ManaLedger decode(RegistryFriendlyByteBuf buf) {
@@ -64,7 +52,7 @@ public final class AbilityAttachments {
     public static final AttachmentType<ManaLedger> PLAYER = AttachmentRegistry.create(
             MkmMod.id("ability_resources"), builder -> builder
                     .initializer(ManaLedger::new)
-                    .persistent(PERSISTENT_CODEC)
+                    .persistent(ManaLedgerCodec.PERSISTENT_CODEC)
                     .copyOnDeath()
                     .syncWith(NETWORK_CODEC, AttachmentSyncPredicate.targetOnly()));
 
