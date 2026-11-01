@@ -13,14 +13,15 @@ class AbilityVisualPacketCodecTest {
                 AbilityVisualPolicy.RENEWAL_ACTION_ID,
                 11, 3, AbilityVisualEvent.Hand.MAIN_HAND,
                 AbilityVisualEvent.Phase.APPLIED, 12000L,
-                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS);
+                AbilityVisualPolicy.RENEWAL_VISUAL_TICKS, "minecraft:overworld");
     }
 
     @Test void fullProtocolRoundTripAndSmallBoundedPayload() {
         ByteBuf buf = Unpooled.buffer();
         try {
             AbilityVisualPacketCodec.encode(buf, event());
-            assertTrue(buf.readableBytes() < 160);
+            assertEquals(AbilityVisualPacketCodec.VERSION, 2);
+            assertTrue(buf.readableBytes() <= AbilityVisualPacketCodec.MAX_WIRE_BYTES);
             assertEquals(event(), AbilityVisualPacketCodec.decode(buf));
             assertEquals(0, buf.readableBytes());
         } finally { buf.release(); }
@@ -62,7 +63,10 @@ class AbilityVisualPacketCodecTest {
                     () -> AbilityVisualPacketCodec.decode(buf));
             buf.clear();
             AbilityVisualPacketCodec.encode(buf, event());
-            buf.setInt(buf.writerIndex() - 4, -1);
+            int durationIndex = 1 + 1 + "mkm:renewal".length()
+                    + 1 + AbilityVisualPolicy.RENEWAL_ACTION_ID.length()
+                    + 4 + 4 + 1 + 1 + 8;
+            buf.setInt(durationIndex, -1);
             assertThrows(IllegalArgumentException.class,
                     () -> AbilityVisualPacketCodec.decode(buf));
         } finally { buf.release(); }
@@ -87,6 +91,22 @@ class AbilityVisualPacketCodecTest {
             trailing.release();
             excessive.release();
         }
+    }
+
+    @Test void rejectDimensionMismatchEncodingAndTruncatedDimension() {
+        ByteBuf frame = Unpooled.buffer();
+        try {
+            AbilityVisualPacketCodec.encode(frame, event());
+            int end = frame.writerIndex();
+            frame.setByte(end - 1, '!');
+            assertThrows(IllegalArgumentException.class,
+                    () -> AbilityVisualPacketCodec.decode(frame));
+            frame.clear();
+            AbilityVisualPacketCodec.encode(frame, event());
+            frame.writerIndex(frame.writerIndex() - 1);
+            assertThrows(IndexOutOfBoundsException.class,
+                    () -> AbilityVisualPacketCodec.decode(frame));
+        } finally { frame.release(); }
     }
 
     @Test void rejectMalformedAbilityIdentifier() {
