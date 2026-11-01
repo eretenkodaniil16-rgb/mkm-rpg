@@ -5,6 +5,7 @@ import com.eretenkodaniil.mkm.client.animation.AnimationClip;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
 import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
 import com.eretenkodaniil.mkm.client.animation.VanillaAvatarAdapter;
+import com.eretenkodaniil.mkm.client.animation.WeaponPresentationResolver;
 import net.minecraft.client.Minecraft;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import net.minecraft.client.model.player.PlayerModel;
@@ -32,28 +33,26 @@ public abstract class PlayerModelAnimationMixin {
         ActionTimeline action = frame.timeline();
         float w = frame.weight();
 
+        WeaponPresentationResolver.Selection selection=frame.selection();
+        float[] vanillaAngles=snapshotAngles(model);
+        String applied=null;
+        String renderer="VANILLA";
+        String reason=selection.reason();
         if (frame.sampledClip() != null) {
-            // C3's validated immutable data is the primary animation system.
-            // Its rotations are additive; vanilla locomotion/head tracking remain.
-            float[] vanillaAngles = snapshotAngles(model);
-            String applied = null;
-            if (NativeAnimationToggle.enabled()) {
-                // New engine and old C3 are mutually exclusive for this frame.
-                // Other clips (combo 2/3 and all dodges) intentionally fall back.
-                applied = VanillaAvatarAdapter.apply(model, state, frame,
-                        Minecraft.getInstance().player.getMainHandItem());
+            if (selection.renderer() == WeaponPresentationResolver.Renderer.MNAE) {
+                // One path ONLY. Never apply C3 and MNAE in the same frame.
+                applied=VanillaAvatarAdapter.apply(model,state,frame);
+                if(applied!=null)renderer="MNAE";
+                else reason="NATIVE_ASSET_MISSING_C3_FALLBACK";
             }
-            if (applied == null) {
-                applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());
-                applied = frame.sampledClip().clipId();
+            if(applied==null) {
+                applyClip(model,state,frame.sampledClip(),frame.attackLegWeight(),
+                        selection);
+                applied=frame.sampledClip().clipId();
+                renderer="C3";
             }
-            if (Minecraft.getInstance().level != null) {
-                double changed = AnimationRenderProbe.maxAngleDelta(
-                        vanillaAngles, snapshotAngles(model));
-                AnimationRenderProbe.mark(Minecraft.getInstance().level.getGameTime(),
-                        applied, changed);
-            }
-        } else if (action.phase() == ActionTimeline.Phase.DODGING) {
+        } else if (selection.renderer() == WeaponPresentationResolver.Renderer.C3
+                && action.phase() == ActionTimeline.Phase.DODGING) {
             // Tuck the body into a crouched roll, then release naturally.
             model.body.xRot -= 0.70F * w;
             model.head.xRot += 0.45F * w;
@@ -63,7 +62,8 @@ public abstract class PlayerModelAnimationMixin {
             model.leftArm.zRot += 0.55F * w;
             model.rightLeg.xRot += 0.95F * w;
             model.leftLeg.xRot += 0.95F * w;
-        } else if (action.kind() == ActionTimeline.Kind.LIGHT_COMBO) {
+        } else if (selection.renderer() == WeaponPresentationResolver.Renderer.C3
+                && action.kind() == ActionTimeline.Kind.LIGHT_COMBO) {
             boolean leftHanded = state.mainArm == HumanoidArm.LEFT;
             ModelPart mainArm = leftHanded ? model.leftArm : model.rightArm;
             ModelPart offArm = leftHanded ? model.rightArm : model.leftArm;
@@ -99,6 +99,14 @@ public abstract class PlayerModelAnimationMixin {
             }
         }
 
+        if(Minecraft.getInstance().level!=null){
+            double changed=AnimationRenderProbe.maxAngleDelta(
+                    vanillaAngles,snapshotAngles(model));
+            AnimationRenderProbe.markDecision(
+                    Minecraft.getInstance().level.getGameTime(),applied,changed,
+                    renderer,selection,reason);
+        }
+
         // The jacket and sleeves are separate cubes in vanilla's player model.
         // Keep their rotations aligned with modified skeleton parts.
         copyAngles(model.rightSleeve, model.rightArm);
@@ -111,12 +119,15 @@ public abstract class PlayerModelAnimationMixin {
     private static void applyClip(
             PlayerModel model, AvatarRenderState state,
             com.eretenkodaniil.mkm.client.animation.AnimationController.Frame clip,
-            float attackLegWeight) {
+            float attackLegWeight,WeaponPresentationResolver.Selection selection) {
         boolean left = state.mainArm == HumanoidArm.LEFT;
         boolean attackClip = clip.clipId().startsWith("mkm:sword/light_")
                 || clip.clipId().startsWith("mkm:unarmed/");
+        boolean guardOffhand=selection.offFamily()!=WeaponPresentationResolver.Family.EMPTY;
         for (var entry : clip.rotations().entrySet()) {
             AnimationClip.Bone bone = entry.getKey();
+            // Offhand sword/shield remains held: it is not the attack hand.
+            if (guardOffhand && attackClip && bone == AnimationClip.Bone.LEFT_ARM) continue;
             AnimationClip.Rotation rotation = entry.getValue();
             ModelPart part = switch (bone) {
                 case HEAD -> model.head;
