@@ -61,6 +61,14 @@ public final class MkmMod implements ModInitializer {
                 AbilityService.onPlayerTick(player);
             }
         });
+        // A receipt is minted per legitimate damage attempt. Do not deduplicate
+        // by DamageSource identity: vanilla may reuse it for separate hits.
+        ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) -> {
+            if (entity instanceof net.minecraft.server.level.ServerPlayer player) {
+                ShieldGuardService.onDamageAttempt(player, source);
+            }
+            return true;
+        });
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);
         ServerLivingEntityEvents.AFTER_DEATH.register(CharacterEvents::onEntityDeath);

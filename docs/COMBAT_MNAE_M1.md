@@ -65,7 +65,7 @@ Default unchanged: `min(18, 4 + 0.5 × blockedDamage) × STAMINA_COST / max(0.25
 
 Opt in at **server startup** with JVM `-Dmkm.guard.costFactor=1.5` (control is absent or `1.0`). Unknown values fall back safely to `1.0`. Experiment replaces **only the cost** with `originalCost × factor`, without touching vanilla shield block eligibility, damage, durability, enchantments or guard-break timing. This is read on the server; no client request can set it.
 
-`ConfirmedBlockLedger` prevents repeated stamina debits for the same defender + exact source identity within 1 tick; separate damage events and players remain independent. It bounds state to 64 active sources per player and purges old ticks. **Caveat:** Fabric may reuse an identical `DamageSource` object for distinct hits in the same tick, so source-identity deduplication requires live multiplayer QA; unlike a real event ID it cannot conclusively prove every hit's uniqueness. No retroactive blocked-hit damage is invented on guard break. Shield repair, initial facing, enchantments and PvP/PvE validation stay Minecraft's.
+`ConfirmedBlockLedger` now issues one **receipt on each Fabric `ALLOW_DAMAGE` callback** and consumes one receipt for the matching `AFTER_DAMAGE` blocked callback, instead of suppressing all repeated object-identical `DamageSource` hits. Legitimate repeated hits using the same source can each spend stamina. Duplicate callbacks without a fresh damage attempt cannot. It keeps up to 64 unconsumed receipts per player, expiring after one tick, and clears state on disconnect. This depends on the vanilla/Fabric synchronous ordering `ALLOW_DAMAGE → AFTER_DAMAGE`; canceled attempts simply expire. Concurrent nested events and mods which short-circuit or independently fire `AFTER_DAMAGE` still need real server QA; the receipt is a per-attempt marker, not a global event UUID. No retroactive blocked-hit damage is invented on guard break. Shield repair, initial facing, enchantments and PvP/PvE validation stay Minecraft's.
 
 ### Formula-only A/B at neutral stamina cost and stability
 
@@ -90,3 +90,7 @@ These are costs in MKM stamina units, **not** observed live PvP results.
 ### Cadence vs vanilla attack cooldown
 
 Cosmetic cadence windows intentionally differ by weapon: sword up to 14 ticks and alternate pause 15–20, axe 21/22–30, mace 35/36–46, spear 14/15–23, unarmed 7/8–12. This allows players who wait for normal vanilla weapon cooldowns to still receive stage-2/3 animation metadata. It **does not change Minecraft attack speed**, nor does it force an attack during any window.
+
+### Fabric event semantics and source identity (D4 correctness note)
+
+The Fabric API publishes `ALLOW_DAMAGE` before mitigation and `AFTER_DAMAGE` after applied **or shield-blocked** damage (but not after fatal damage). The M1.1 correction explicitly leverages that attempt ordering. Returning `true` from our observer never cancels a hit; no second damage path is introduced. See Fabric `ServerLivingEntityEvents` API docs for the exact callbacks. Old D4 source-only dedup was **unsafe** for repeated damage from one source within a tick; it is superseded by attempt receipts. Both variants require in-world PvE/PvP validation with real repeated projectiles, mob melee and enchanted gear.

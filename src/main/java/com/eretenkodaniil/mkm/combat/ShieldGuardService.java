@@ -21,12 +21,19 @@ public final class ShieldGuardService {
 
     private ShieldGuardService() {}
 
+    /** Fabric ALLOW_DAMAGE supplies one receipt for each real damage attempt. */
+    public static void onDamageAttempt(ServerPlayer defender, DamageSource source) {
+        LEDGER.begin(defender, source, defender.level().getGameTime());
+    }
+
     public static void onBlocked(ServerPlayer defender, DamageSource source, float blockedDamage) {
+        // Consume BEFORE testing item state so a later callback cannot reuse
+        // this attempt, including when the shield was swapped or disabled.
+        long now = defender.level().getGameTime();
+        if (!LEDGER.consume(defender, source, now)) return;
         if (!Float.isFinite(blockedDamage) || blockedDamage < 0.0F) return;
         ItemStack shield = defender.getUseItem();
         if (!shield.is(Items.SHIELD)) return;
-        long now = defender.level().getGameTime();
-        if (!LEDGER.record(defender, source, now)) return;
 
         PlayerModifierSnapshot stats = EquipmentSnapshots.snapshot(
                 defender, defender.getAttachedOrCreate(CharacterAttachments.CHARACTER));
