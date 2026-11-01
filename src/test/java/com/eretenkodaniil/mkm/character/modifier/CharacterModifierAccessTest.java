@@ -52,8 +52,12 @@ final class CharacterModifierAccessTest {
         assertEquals(PlayerModifierCalculator.calculate(preview, equipped).all(), projected.all());
         assertTrue(projected.get(PlayerModifierId.MELEE_DAMAGE) > current.get(PlayerModifierId.MELEE_DAMAGE));
         assertTrue(projected.get(PlayerModifierId.STAMINA_COST) < current.get(PlayerModifierId.STAMINA_COST));
-        assertEquals(current.get(PlayerModifierId.BLOCK_STABILITY),
-                projected.get(PlayerModifierId.BLOCK_STABILITY), 1.0e-9);
+        assertEquals(
+                current.get(PlayerModifierId.BLOCK_STABILITY)
+                        - CharacterModifierAccess.base(original).get(PlayerModifierId.BLOCK_STABILITY),
+                projected.get(PlayerModifierId.BLOCK_STABILITY)
+                        - CharacterModifierAccess.base(preview).get(PlayerModifierId.BLOCK_STABILITY),
+                1.0e-9, "same shield contribution while staged END/STR change base stability");
         // Character-only preview is NOT equivalent to a real equipped snapshot.
         assertNotEquals(CharacterModifierAccess.base(preview).all(), projected.all());
         assertThrows(UnsupportedOperationException.class,
