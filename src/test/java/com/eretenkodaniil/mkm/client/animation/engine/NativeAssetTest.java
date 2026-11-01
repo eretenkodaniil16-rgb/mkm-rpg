@@ -35,6 +35,14 @@ class NativeAssetTest {
         assertEquals(old.markers().size(),imported.events().size());
         assertTrue(imported.events().stream().anyMatch(e->e.id().equals("impact")));
     }
+    @Test void oversizedJsonIsRejectedBeforeGsonParsing(){
+        byte[] oversized = new byte[NativeClipLoader.MAX_CLIP_BYTES + 1];
+        java.util.Arrays.fill(oversized, (byte)' ');
+        assertThrows(IllegalArgumentException.class, () -> NativeClipLoader.load(
+                "assets/mkm/mnae/oversized.json",
+                name -> new ByteArrayInputStream(oversized)));
+    }
+
     @Test void malformedSchemaIsRejectedWithoutExecutingData(){
         String invalid="{\"format\":2,\"units\":\"blocks\",\"rotation\":\"xyz_radians\"}";
         assertThrows(IllegalArgumentException.class,()->NativeClipLoader.load(

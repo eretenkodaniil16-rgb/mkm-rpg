@@ -17,6 +17,6 @@ public final class LegacyC3Importer {
             tracks.put(entry.getKey().name().toLowerCase(Locale.ROOT),keys);
         }
         return new NativeClip(source.id(),source.durationTicks(),tracks,
-                source.markers().stream().map(m->new NativeClip.Event(m.name(),m.time())).toList());
+                source.markers().stream().map(m->new NativeClip.Event(m.name(),m.time())).toList(),source);
     }
 }

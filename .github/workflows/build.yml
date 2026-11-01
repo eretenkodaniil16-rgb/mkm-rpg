@@ -19,6 +19,7 @@ on:
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'feature/c3-8-pose-evidence-motion-qa'
       - 'feature/mnae-m1-native-core-two-attacks'
+      - 'qa/mnae-m1-math-contract-gates'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -37,6 +38,7 @@ on:
       - 'feature/c3-6-authoritative-hit-feedback'
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'feature/c3-8-pose-evidence-motion-qa'
+      - 'feature/mnae-m1-native-core-two-attacks'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
