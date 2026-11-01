@@ -17,6 +17,7 @@ on:
       - 'feature/c3-5-directional-roll-ground-contact'
       - 'feature/c3-6-authoritative-hit-feedback'
       - 'feature/c3-7-visible-combat-diagnostics'
+      - 'feature/c3-8-pose-evidence-motion-qa'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -33,6 +34,7 @@ on:
       - 'feature/c3-4-grounded-combat-stance'
       - 'feature/c3-5-directional-roll-ground-contact'
       - 'feature/c3-6-authoritative-hit-feedback'
+      - 'feature/c3-7-visible-combat-diagnostics'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -54,6 +56,10 @@ jobs:
         run: python3 tools/animation/qa/forward_roll_selfcheck.py --out build/reports/animation-qa
       - name: Self-check six attacks against authoritative hit ticks
         run: python3 tools/animation/qa/attack_timing_selfcheck.py --out build/reports/animation-qa
+      - name: C3.8 biomechanical sampling, impact contract and storyboard proxy
+        run: |
+          python3 -m py_compile tools/animation/qa/biomechanics_audit.py tools/animation/blender/render_clip_review.py
+          python3 tools/animation/qa/biomechanics_audit.py --out build/reports/animation-qa
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -72,7 +78,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.5-fabric.4.jar")
+              if p.endswith("0.0.5-fabric.5.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -204,7 +210,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.5-fabric.4.jar
+          path: build/libs/mkm-rpg-0.0.5-fabric.5.jar
           if-no-files-found: error
           retention-days: 14
 
