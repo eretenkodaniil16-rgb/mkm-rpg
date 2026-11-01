@@ -10,6 +10,7 @@ on:
       - 'feature/action-combat-c2-state-hud'
       - 'feature/equipment-weapon-modifiers-d1'
       - 'feature/equipment-guard-mitigation-d2'
+      - 'feature/equipment-hit-provenance-d3'
   pull_request:
     branches:
       - 'port/fabric-26.3'
