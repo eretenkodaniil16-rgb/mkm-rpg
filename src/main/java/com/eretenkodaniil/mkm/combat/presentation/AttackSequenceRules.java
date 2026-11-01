@@ -13,10 +13,13 @@ public final class AttackSequenceRules {
 
     private AttackSequenceRules() {}
 
-    public record State(EquipmentRules.Family family, int step, long lastTick, long sequenceId) {
+    public record State(EquipmentRules.Family family, String weaponId,
+                        int step, long lastTick, long sequenceId) {
         public State {
             Objects.requireNonNull(family, "family");
-            if (step < 1 || step > 4 || lastTick < 0L || sequenceId < 0L) {
+            Objects.requireNonNull(weaponId, "weaponId");
+            if (weaponId.length() > 160 || step < 1 || step > 4
+                    || lastTick < 0L || sequenceId < 0L) {
                 throw new IllegalArgumentException("Invalid cosmetic sequence state");
             }
         }
@@ -26,35 +29,45 @@ public final class AttackSequenceRules {
 
     public static Selection next(State previous, EquipmentRules.Family family,
                                  long tick, int maxSteps) {
-        return next(previous, family, tick, maxSteps,
+        return next(previous, family, "", tick, maxSteps,
                 FAST_CHAIN_MAX_GAP_TICKS, ALTERNATE_PAUSE_MAX_GAP_TICKS);
     }
 
     public static Selection next(State previous, EquipmentRules.Family family,
                                  long tick, int maxSteps,
                                  long fastChainWindowTicks, long alternatePauseWindowTicks) {
+        return next(previous, family, "", tick, maxSteps,
+                fastChainWindowTicks, alternatePauseWindowTicks);
+    }
+
+    /** Switching weapon identity resets stage without recycling the sequence ID. */
+    public static Selection next(State previous, EquipmentRules.Family family,
+                                 String weaponId, long tick, int maxSteps,
+                                 long fastChainWindowTicks, long alternatePauseWindowTicks) {
         Objects.requireNonNull(family, "family");
-        if (tick < 0L || maxSteps < 1 || maxSteps > 4
+        Objects.requireNonNull(weaponId, "weaponId");
+        if (tick < 0L || weaponId.length() > 160 || maxSteps < 1 || maxSteps > 4
                 || fastChainWindowTicks < 1L || fastChainWindowTicks > 40L
                 || alternatePauseWindowTicks <= fastChainWindowTicks
                 || alternatePauseWindowTicks > 60L) {
             throw new IllegalArgumentException("Invalid attack cadence input");
         }
-        if (previous == null || family != previous.family() || tick < previous.lastTick()) {
-            return new Selection(new State(family, 1, tick, previous == null ? 1L
+        if (previous == null || family != previous.family()
+                || !weaponId.equals(previous.weaponId()) || tick < previous.lastTick()) {
+            return new Selection(new State(family, weaponId, 1, tick, previous == null ? 1L
                     : nextId(previous.sequenceId())), false, false);
         }
         long gap = tick - previous.lastTick();
         if (gap > alternatePauseWindowTicks) {
-            return new Selection(new State(family, 1, tick, nextId(previous.sequenceId())),
+            return new Selection(new State(family, weaponId, 1, tick, nextId(previous.sequenceId())),
                     false, false);
         }
         if (gap > fastChainWindowTicks) {
-            return new Selection(new State(family, 1, tick, nextId(previous.sequenceId())),
+            return new Selection(new State(family, weaponId, 1, tick, nextId(previous.sequenceId())),
                     true, false);
         }
         int step = Math.min(maxSteps, previous.step() + 1);
-        return new Selection(new State(family, step, tick, previous.sequenceId()),
+        return new Selection(new State(family, weaponId, step, tick, previous.sequenceId()),
                 false, step == maxSteps && previous.step() < maxSteps);
     }
 

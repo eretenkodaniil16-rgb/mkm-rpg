@@ -72,6 +72,23 @@ final class AttackPresentationContractTest {
         assertTrue(a3.alternatePause());
     }
 
+    @Test void actualWeaponSwapRestartsStageWithFreshSequenceId() {
+        var p = WeaponCombatProfiles.forItem("minecraft:iron_sword");
+        var first = AttackSequenceRules.next(null, p.family(), "minecraft:iron_sword",
+                100, p.maxSequenceSteps(), p.fastChainWindowTicks(), p.alternatePauseWindowTicks());
+        var second = AttackSequenceRules.next(first.state(), p.family(), "minecraft:iron_sword",
+                112, p.maxSequenceSteps(), p.fastChainWindowTicks(), p.alternatePauseWindowTicks());
+        assertEquals(2, second.state().step());
+        var swapped = AttackSequenceRules.next(second.state(), p.family(), "minecraft:netherite_sword",
+                113, p.maxSequenceSteps(), p.fastChainWindowTicks(), p.alternatePauseWindowTicks());
+        assertEquals(1, swapped.state().step());
+        assertTrue(swapped.state().sequenceId() > second.state().sequenceId());
+        var next = AttackSequenceRules.next(swapped.state(), p.family(), "minecraft:netherite_sword",
+                126, p.maxSequenceSteps(), p.fastChainWindowTicks(), p.alternatePauseWindowTicks());
+        assertEquals(2, next.state().step());
+        assertEquals(swapped.state().sequenceId(), next.state().sequenceId());
+    }
+
     @Test void miningAndUseAlwaysTakePrecedence() {
         var base = new AttackInputPriority.Context(false, false, false, false, false);
         assertEquals(AttackInputPriority.Decision.VANILLA_SWING,

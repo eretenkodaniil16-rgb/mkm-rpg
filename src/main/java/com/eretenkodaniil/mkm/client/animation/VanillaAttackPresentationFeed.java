@@ -23,6 +23,7 @@ public final class VanillaAttackPresentationFeed {
     private static final ArrayDeque<AttackPresentationEvent> EVENTS = new ArrayDeque<>();
     private static AttackSequenceRules.State lastSequence;
     private static int lastPlayerId = -1;
+    private static Object lastLevel;
 
     private VanillaAttackPresentationFeed() {}
 
@@ -45,16 +46,17 @@ public final class VanillaAttackPresentationFeed {
         if (decision != AttackInputPriority.Decision.VANILLA_SWING
                 && decision != AttackInputPriority.Decision.EXISTING_HEAVY) return;
 
-        if (client.player.getId() != lastPlayerId) {
+        if (client.player.getId() != lastPlayerId || client.level != lastLevel) {
             reset();
             lastPlayerId = client.player.getId();
+            lastLevel = client.level;
         }
         String weaponId = net.minecraft.core.registries.BuiltInRegistries.ITEM
                 .getKey(client.player.getMainHandItem().getItem()).toString();
         WeaponCombatProfiles.Profile profile = WeaponCombatProfiles.forItem(weaponId);
         long tick = Math.max(0L, client.level.getGameTime());
         AttackSequenceRules.Selection selection = AttackSequenceRules.next(
-                lastSequence, profile.family(), tick, profile.maxSequenceSteps(),
+                lastSequence, profile.family(), weaponId, tick, profile.maxSequenceSteps(),
                 profile.fastChainWindowTicks(), profile.alternatePauseWindowTicks());
         lastSequence = selection.state();
         String animationId = WeaponCombatProfiles.animationFor(
@@ -84,5 +86,6 @@ public final class VanillaAttackPresentationFeed {
         EVENTS.clear();
         lastSequence = null;
         lastPlayerId = -1;
+        lastLevel = null;
     }
 }
