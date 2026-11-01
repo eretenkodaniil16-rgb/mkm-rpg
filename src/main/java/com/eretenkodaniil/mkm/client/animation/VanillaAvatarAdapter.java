@@ -16,18 +16,19 @@ public final class VanillaAvatarAdapter {
      * Axes, shields, mining tools and items use the existing C3 fallback;
      * Equipment Core can later supply stable per-weapon presentation profiles.
      */
-    public static String nativeClip(ActionTimeline timeline, ItemStack mainHand) {
-        if (timeline == null || mainHand == null
-                || timeline.kind() != ActionTimeline.Kind.LIGHT_COMBO
-                || timeline.comboStep() != 1) return null;
-        if (mainHand.isEmpty()) return NativeDemoLibrary.JAB;
-        return mainHand.is(ItemTags.SWORDS) ? NativeDemoLibrary.SWORD : null;
+    public static String nativeClip(ActionTimeline timeline, ItemStack mainHand,
+                                    ItemStack offHand, boolean leftDominant) {
+        if (timeline == null || timeline.kind() != ActionTimeline.Kind.LIGHT_COMBO)
+            return null;
+        return MinecraftWeaponPresentation.resolve(timeline, mainHand, offHand,
+                leftDominant, true).nativeClip();
     }
 
     public static String apply(PlayerModel model,AvatarRenderState state,
-                               LocalCombatAnimation.Frame frame, ItemStack mainHand){
+                               LocalCombatAnimation.Frame frame){
         if(frame==null || frame.sampledClip()==null) return null;
-        String clipId=nativeClip(frame.timeline(),mainHand);
+        // Consume the SAME choice used by LocalCombatAnimation and the HUD.
+        String clipId=frame.selection().nativeClip();
         if(clipId==null)return null;
         NativeClip clip=clipId.equals(NativeDemoLibrary.JAB)
                 ? NativeDemoLibrary.jab() : NativeDemoLibrary.sword();

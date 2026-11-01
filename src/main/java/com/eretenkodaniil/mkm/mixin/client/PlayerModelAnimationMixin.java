@@ -40,8 +40,7 @@ public abstract class PlayerModelAnimationMixin {
             if (NativeAnimationToggle.enabled()) {
                 // New engine and old C3 are mutually exclusive for this frame.
                 // Other clips (combo 2/3 and all dodges) intentionally fall back.
-                applied = VanillaAvatarAdapter.apply(model, state, frame,
-                        Minecraft.getInstance().player.getMainHandItem());
+                applied = VanillaAvatarAdapter.apply(model, state, frame);
             }
             if (applied == null) {
                 applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());

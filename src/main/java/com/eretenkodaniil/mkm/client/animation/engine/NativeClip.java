@@ -1,7 +1,13 @@
 package com.eretenkodaniil.mkm.client.animation.engine;
 import java.util.*;
+import com.eretenkodaniil.mkm.client.animation.AnimationClip;
 /** Bounded, immutable animation data. Events are PRESENTATION ONLY. */
-public record NativeClip(String id,int ticks,Map<String,List<Key>> tracks,List<Event> events) {
+public record NativeClip(String id,int ticks,Map<String,List<Key>> tracks,List<Event> events,
+                         AnimationClip legacyC3Source) {
+    /** New format-v2 clips have the native SQUAD/Hermite playback policy. */
+    public NativeClip(String id,int ticks,Map<String,List<Key>> tracks,List<Event> events) {
+        this(id,ticks,tracks,events,null);
+    }
     public record Key(double t,Transform value){
         public Key{if(!Double.isFinite(t)||t<0||t>1)throw new IllegalArgumentException("Key time");Objects.requireNonNull(value);}
     }
@@ -26,5 +32,13 @@ public record NativeClip(String id,int ticks,Map<String,List<Key>> tracks,List<E
         }
         tracks=Map.copyOf(safe);
         events=List.copyOf(events);
+        // Legacy format-v1 clips carry their original, immutable interpolation
+        // contract; a quaternion SQUAD curve cannot replicate C3 Euler PCHIP.
+        if(legacyC3Source!=null &&
+                (!legacyC3Source.id().equals(id)
+                 ||legacyC3Source.durationTicks()!=ticks
+                 ||legacyC3Source.tracks().size()!=tracks.size()
+                 ||legacyC3Source.markers().size()!=events.size()))
+            throw new IllegalArgumentException("Legacy clip metadata mismatch");
     }
 }

@@ -82,21 +82,36 @@ public final class MkmCombatHud {
         graphics.text(client.font, Component.literal(description), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
         if (timeline != null && !timeline.idle() && client.level != null) {
-            String selected = AnimationController.profileForEmptyMainHand(
-                    client.player.getMainHandItem().isEmpty());
+            var selection = com.eretenkodaniil.mkm.client.animation.MinecraftWeaponPresentation.resolve(
+                    timeline, client.player.getMainHandItem(), client.player.getOffhandItem(),
+                    client.player.getMainArm() == net.minecraft.world.entity.HumanoidArm.LEFT,
+                    NativeAnimationToggle.enabled());
+            String selected = selection.c3Profile();
             AnimationProfile profile = AnimationLibrary.embedded().profile(selected);
             String action = AnimationController.actionKey(timeline);
             String expectedClip = profile == null || action == null
                     ? null : profile.clipFor(action);
-            if (NativeAnimationToggle.enabled()) {
-                String nativeClip = VanillaAvatarAdapter.nativeClip(
-                        timeline, client.player.getMainHandItem());
-                if (nativeClip != null) expectedClip = nativeClip;
-            }
+            if (selection.nativeClip() != null) expectedClip = selection.nativeClip();
+            String selectedRoute = selection.nativeClip() != null ? "MNAE"
+                    : selection.c3Profile() != null ? "C3.8" : "NO_POSE";
+            // This reports the intended route; the probe below only proves
+            // setupAnim changed ModelParts, NOT actual pixels/grip quality.
+            String families = "route=" + selectedRoute
+                    + " M:" + com.eretenkodaniil.mkm.client.animation.MinecraftWeaponPresentation.family(
+                            client.player.getMainHandItem())
+                    + " O:" + com.eretenkodaniil.mkm.client.animation.MinecraftWeaponPresentation.family(
+                            client.player.getOffhandItem());
+            String reason = "why=" + selection.reason()
+                    + " arm=" + selection.leadingArm()
+                    + " step=" + timeline.comboStep();
+            graphics.text(client.font, Component.literal(families), x, y + 24, MUTED);
+            graphics.text(client.font, Component.literal(reason), x, y + 35, MUTED);
             graphics.text(client.font,
-                    Component.literal(AnimationRenderProbe.status(
-                            client.level.getGameTime(), expectedClip)),
-                    x, y + 24, TEXT);
+                    Component.literal(expectedClip == null
+                            ? "NO SAFE COMBAT CLIP"
+                            : AnimationRenderProbe.status(
+                                    client.level.getGameTime(), expectedClip)),
+                    x, y + 46, TEXT);
         }
     }
 }

@@ -4,6 +4,7 @@ import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import com.eretenkodaniil.mkm.combat.CombatAnimationMath;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.HumanoidArm;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 
 /**
@@ -14,7 +15,8 @@ public final class LocalCombatAnimation {
     private LocalCombatAnimation() {}
 
     public record Frame(ActionTimeline timeline, float progress, float weight, float attackLegWeight,
-                        AnimationController.Frame sampledClip) {}
+                        AnimationController.Frame sampledClip,
+                        WeaponPresentationResolver.Choice selection) {}
 
     public static Frame frame(AvatarRenderState state) {
         Minecraft client = Minecraft.getInstance();
@@ -28,13 +30,18 @@ public final class LocalCombatAnimation {
                 timeline, client.level.getGameTime(),
                 client.getDeltaTracker().getGameTimeDeltaPartialTick(false));
         float weight = CombatAnimationMath.poseWeight(timeline.phase(), progress);
-        String profile = AnimationController.profileForEmptyMainHand(
-                client.player.getMainHandItem().isEmpty());
+        WeaponPresentationResolver.Choice selection = MinecraftWeaponPresentation.resolve(
+                timeline, client.player.getMainHandItem(), client.player.getOffhandItem(),
+                client.player.getMainArm() == HumanoidArm.LEFT,
+                NativeAnimationToggle.enabled());
+        // Unsupported families and missing offhand grip mapping must not
+        // fall through into the old hard-coded sword-shaped combo pose.
+        if (!selection.hasSafeClip()) return null;
         AnimationController.Frame clip = AnimationController.sample(
-                AnimationLibrary.embedded(), profile, timeline, progress);
+                AnimationLibrary.embedded(), selection.c3Profile(), timeline, progress);
         float attackLegWeight = CombatStanceMath.attackLegWeight(
                 client.player.onGround(),
                 client.player.getDeltaMovement().horizontalDistanceSqr());
-        return new Frame(timeline, progress, weight, attackLegWeight, clip);
+        return new Frame(timeline, progress, weight, attackLegWeight, clip, selection);
     }
 }
