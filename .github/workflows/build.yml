@@ -8,6 +8,7 @@ on:
       - 'fix/fabric-dodge-movement-sync'
       - 'fix/fabric-dodge-direction-input'
       - 'feature/action-combat-c2-state-hud'
+      - 'feature/equipment-weapon-modifiers-d1'
   pull_request:
     branches:
       - 'port/fabric-26.3'
