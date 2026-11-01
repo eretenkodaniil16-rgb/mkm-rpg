@@ -4,15 +4,13 @@ import com.eretenkodaniil.mkm.character.attribute.PrimaryAttribute;
 import com.mojang.serialization.Codec;
 import com.mojang.serialization.MapCodec;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import net.minecraft.network.RegistryFriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 
-/**
- * Persistent RPG state owned by one player.
- *
- * <p>The record is intentionally immutable. Replacing the attachment through setData makes
- * persistence and synchronization explicit and avoids mutable-state dirty tracking bugs.</p>
- */
+/** Immutable, owner-synchronized player attachment. Build credits are tracked separately from XP. */
 public record CharacterData(
         int schemaVersion,
         long experience,
@@ -22,19 +20,29 @@ public record CharacterData(
         int endurance,
         int intelligence,
         int willpower,
-        int perception) {
+        int perception,
+        int earnedPoints,
+        List<Integer> allocatedPoints,
+        List<String> claimedRewardIds) {
 
-    public static final int CURRENT_SCHEMA_VERSION = 2;
+    public static final int CURRENT_SCHEMA_VERSION = 4;
+    public static final int ALLOCATION_SCHEMA_VERSION = 3;
     public static final int DEFAULT_ATTRIBUTE = 10;
     public static final int MIN_ATTRIBUTE = 1;
     public static final int MAX_ATTRIBUTE = 100;
+    public static final int ATTRIBUTE_COUNT = PrimaryAttribute.values().length;
+    private static final List<Integer> ZERO_ALLOCATIONS = List.of(0, 0, 0, 0, 0, 0, 0);
 
     /**
-     * Schema v2 adds END/INT/WIL/PER. All attribute fields are optional in persistent decoding so
-     * schema-v1 saves automatically receive the neutral default for the four new attributes.
+     * v1/v2 did not record spending. Their primary attributes remain untouched and become the
+     * starting baseline; XP grants unspent level credits on migration. Never infer historic spending
+     * from non-default stats (admins could edit them).
+     *
+     * The old v2 encoder omitted schema_version when it matched its default, so an absent marker
+     * must be treated as pre-v3 rather than assumed current.
      */
     public static final MapCodec<CharacterData> CODEC = RecordCodecBuilder.mapCodec(instance -> instance.group(
-            Codec.INT.optionalFieldOf("schema_version", CURRENT_SCHEMA_VERSION).forGetter(CharacterData::schemaVersion),
+            Codec.INT.optionalFieldOf("schema_version", 1).forGetter(CharacterData::schemaVersion),
             Codec.LONG.optionalFieldOf("experience", 0L).forGetter(CharacterData::experience),
             Codec.INT.optionalFieldOf("strength", DEFAULT_ATTRIBUTE).forGetter(CharacterData::strength),
             Codec.INT.optionalFieldOf("dexterity", DEFAULT_ATTRIBUTE).forGetter(CharacterData::dexterity),
@@ -42,41 +50,47 @@ public record CharacterData(
             Codec.INT.optionalFieldOf("endurance", DEFAULT_ATTRIBUTE).forGetter(CharacterData::endurance),
             Codec.INT.optionalFieldOf("intelligence", DEFAULT_ATTRIBUTE).forGetter(CharacterData::intelligence),
             Codec.INT.optionalFieldOf("willpower", DEFAULT_ATTRIBUTE).forGetter(CharacterData::willpower),
-            Codec.INT.optionalFieldOf("perception", DEFAULT_ATTRIBUTE).forGetter(CharacterData::perception)
+            Codec.INT.optionalFieldOf("perception", DEFAULT_ATTRIBUTE).forGetter(CharacterData::perception),
+            Codec.INT.optionalFieldOf("earned_points", 0).forGetter(CharacterData::earnedPoints),
+            Codec.INT.listOf().optionalFieldOf("allocated_points", List.of()).forGetter(CharacterData::allocatedPoints),
+            Codec.STRING.listOf().optionalFieldOf("claimed_reward_ids", List.of()).forGetter(CharacterData::claimedRewardIds)
     ).apply(instance, CharacterData::new));
 
     public static final StreamCodec<RegistryFriendlyByteBuf, CharacterData> STREAM_CODEC = new StreamCodec<>() {
         @Override
-        public CharacterData decode(RegistryFriendlyByteBuf buffer) {
-            return new CharacterData(
-                    buffer.readVarInt(),
-                    buffer.readVarLong(),
-                    buffer.readVarInt(),
-                    buffer.readVarInt(),
-                    buffer.readVarInt(),
-                    buffer.readVarInt(),
-                    buffer.readVarInt(),
-                    buffer.readVarInt(),
-                    buffer.readVarInt());
+        public CharacterData decode(RegistryFriendlyByteBuf buf) {
+            int schema = buf.readVarInt();
+            long xp = buf.readVarLong();
+            int str = buf.readVarInt(), dex = buf.readVarInt(), vit = buf.readVarInt();
+            int end = buf.readVarInt(), intelligence = buf.readVarInt();
+            int wil = buf.readVarInt(), per = buf.readVarInt();
+            int earned = buf.readVarInt();
+            List<Integer> spent = new ArrayList<>(ATTRIBUTE_COUNT);
+            for (int i = 0; i < ATTRIBUTE_COUNT; i++) spent.add(buf.readVarInt());
+            // The claim ledger is deliberately SERVER-PRIVATE and never copied into owner sync.
+            // Clients still receive full level, XP, allocation and derived-stat inputs.
+            return new CharacterData(schema, xp, str, dex, vit, end, intelligence, wil, per,
+                    earned, spent, List.of());
         }
 
         @Override
-        public void encode(RegistryFriendlyByteBuf buffer, CharacterData value) {
-            buffer.writeVarInt(value.schemaVersion());
-            buffer.writeVarLong(value.experience());
-            buffer.writeVarInt(value.strength());
-            buffer.writeVarInt(value.dexterity());
-            buffer.writeVarInt(value.vitality());
-            buffer.writeVarInt(value.endurance());
-            buffer.writeVarInt(value.intelligence());
-            buffer.writeVarInt(value.willpower());
-            buffer.writeVarInt(value.perception());
+        public void encode(RegistryFriendlyByteBuf buf, CharacterData data) {
+            buf.writeVarInt(data.schemaVersion);
+            buf.writeVarLong(data.experience);
+            buf.writeVarInt(data.strength);
+            buf.writeVarInt(data.dexterity);
+            buf.writeVarInt(data.vitality);
+            buf.writeVarInt(data.endurance);
+            buf.writeVarInt(data.intelligence);
+            buf.writeVarInt(data.willpower);
+            buf.writeVarInt(data.perception);
+            buf.writeVarInt(data.earnedPoints);
+            for (int allocation : data.allocatedPoints) buf.writeVarInt(allocation);
         }
     };
 
     public CharacterData {
-        // Decoding a schema-v1 value materializes the four new v2 defaults and marks the in-memory
-        // value as v2. A future higher schema marker is not silently downgraded.
+        int sourceVersion = schemaVersion;
         schemaVersion = Math.max(CURRENT_SCHEMA_VERSION, schemaVersion);
         experience = Math.max(0L, experience);
         strength = clampAttribute(strength);
@@ -86,26 +100,75 @@ public record CharacterData(
         intelligence = clampAttribute(intelligence);
         willpower = clampAttribute(willpower);
         perception = clampAttribute(perception);
+        if (sourceVersion < ALLOCATION_SCHEMA_VERSION) {
+            allocatedPoints = ZERO_ALLOCATIONS;
+            earnedPoints = ProgressionRules.earnedPointsForLevel(
+                    ProgressionRules.levelForExperience(experience));
+        } else {
+            allocatedPoints = List.copyOf(allocatedPoints);
+            if (allocatedPoints.size() != ATTRIBUTE_COUNT) {
+                throw new IllegalArgumentException("Invalid allocation ledger size");
+            }
+            for (int value : allocatedPoints) {
+                if (value < 0 || value > MAX_ATTRIBUTE) {
+                    throw new IllegalArgumentException("Invalid allocation ledger entry");
+                }
+            }
+            if (earnedPoints < 0 || earnedPoints > ProgressionRules.earnedPointsForLevel(
+                    ProgressionRules.MAX_LEVEL)) {
+                throw new IllegalArgumentException("Invalid earned-point ledger");
+            }
+        }
+        if (sourceVersion < CURRENT_SCHEMA_VERSION) {
+            // v1/v2/v3 had no keyed receipts. Do not fabricate them from XP or attributes.
+            claimedRewardIds = List.of();
+        } else {
+            claimedRewardIds = List.copyOf(claimedRewardIds);
+            if (claimedRewardIds.size() > CharacterRewardRules.MAX_CLAIMED_REWARDS
+                    || new HashSet<>(claimedRewardIds).size() != claimedRewardIds.size()) {
+                throw new IllegalArgumentException("Oversized or duplicate reward ledger");
+            }
+            for (String rewardId : claimedRewardIds) {
+                if (!CharacterRewardRules.validRewardId(rewardId)) {
+                    throw new IllegalArgumentException("Malformed saved reward ID");
+                }
+            }
+        }
     }
 
     public CharacterData() {
-        this(
-                CURRENT_SCHEMA_VERSION,
-                0L,
-                DEFAULT_ATTRIBUTE,
-                DEFAULT_ATTRIBUTE,
-                DEFAULT_ATTRIBUTE,
-                DEFAULT_ATTRIBUTE,
-                DEFAULT_ATTRIBUTE,
-                DEFAULT_ATTRIBUTE,
-                DEFAULT_ATTRIBUTE);
+        this(CURRENT_SCHEMA_VERSION, 0L, DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE,
+                DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE, DEFAULT_ATTRIBUTE,
+                DEFAULT_ATTRIBUTE, 0, ZERO_ALLOCATIONS, List.of());
     }
 
     /**
-     * Level is derived rather than persisted so it cannot drift out of sync with total experience.
+     * Compatibility constructor for schema-v1/v2/v3 fixtures and callers that do not track
+     * persistent reward receipts. Prior v3 allocation balances are preserved on v4 migration.
      */
+    public CharacterData(int schemaVersion, long experience,
+            int strength, int dexterity, int vitality, int endurance, int intelligence,
+            int willpower, int perception, int earnedPoints, List<Integer> allocatedPoints) {
+        this(schemaVersion, experience, strength, dexterity, vitality, endurance, intelligence,
+                willpower, perception, earnedPoints, allocatedPoints, List.of());
+    }
+
+    public boolean hasClaimedReward(String id) {
+        return claimedRewardIds.contains(id);
+    }
+
     public int level() {
         return ProgressionRules.levelForExperience(experience);
+    }
+
+    public int spentPoints() {
+        int spent = 0;
+        for (int count : allocatedPoints) spent += count;
+        return spent;
+    }
+
+    public int availablePoints() {
+        return Math.max(0, earnedPoints - spentPoints());
     }
 
     public int attribute(PrimaryAttribute attribute) {
@@ -120,30 +183,50 @@ public record CharacterData(
         };
     }
 
-    public CharacterData withExperience(long newExperience) {
-        return new CharacterData(
-                CURRENT_SCHEMA_VERSION,
-                newExperience,
-                strength,
-                dexterity,
-                vitality,
-                endurance,
-                intelligence,
-                willpower,
-                perception);
+    public CharacterData withExperience(long xp) {
+        requireWritableSchema();
+        long safeXp = Math.max(0L, xp);
+        int credits = Math.max(earnedPoints, ProgressionRules.earnedPointsForLevel(
+                ProgressionRules.levelForExperience(safeXp)));
+        return new CharacterData(schemaVersion, safeXp, strength, dexterity, vitality, endurance,
+                intelligence, willpower, perception, credits, allocatedPoints, claimedRewardIds);
     }
 
+    /** Administrative baseline adjustment only, never used to spend build credits. */
     public CharacterData withAttribute(PrimaryAttribute attribute, int newValue) {
-        return new CharacterData(
-                CURRENT_SCHEMA_VERSION,
-                experience,
+        requireWritableSchema();
+        return new CharacterData(schemaVersion, experience,
                 attribute == PrimaryAttribute.STRENGTH ? newValue : strength,
                 attribute == PrimaryAttribute.DEXTERITY ? newValue : dexterity,
                 attribute == PrimaryAttribute.VITALITY ? newValue : vitality,
                 attribute == PrimaryAttribute.ENDURANCE ? newValue : endurance,
                 attribute == PrimaryAttribute.INTELLIGENCE ? newValue : intelligence,
                 attribute == PrimaryAttribute.WILLPOWER ? newValue : willpower,
-                attribute == PrimaryAttribute.PERCEPTION ? newValue : perception);
+                attribute == PrimaryAttribute.PERCEPTION ? newValue : perception,
+                earnedPoints, allocatedPoints, claimedRewardIds);
+    }
+
+    /** Package-local: allocation rules are the sole runtime caller. */
+    CharacterData withAllocatedPoints(List<Integer> newAllocations) {
+        requireWritableSchema();
+        return new CharacterData(schemaVersion, experience, strength, dexterity, vitality,
+                endurance, intelligence, willpower, perception, earnedPoints, newAllocations,
+                claimedRewardIds);
+    }
+
+    /** Package-local atomic receipt replacement, called only by CharacterRewardRules. */
+    CharacterData withClaimedRewardIds(List<String> rewardIds) {
+        requireWritableSchema();
+        return new CharacterData(schemaVersion, experience, strength, dexterity, vitality,
+                endurance, intelligence, willpower, perception, earnedPoints, allocatedPoints,
+                rewardIds);
+    }
+
+    private void requireWritableSchema() {
+        if (schemaVersion != CURRENT_SCHEMA_VERSION) {
+            throw new IllegalStateException("Cannot mutate unsupported future character schema: "
+                    + schemaVersion);
+        }
     }
 
     private static int clampAttribute(int value) {
