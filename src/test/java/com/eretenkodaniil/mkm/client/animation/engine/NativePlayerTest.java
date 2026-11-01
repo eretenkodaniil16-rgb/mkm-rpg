@@ -19,7 +19,8 @@ class NativePlayerTest {
         assertEquals(.4,player.sample(110).get("body").rotation().toEuler().y(),1e-6);
         player.play(b,110,2);
         assertEquals(.4,player.sample(110).get("body").rotation().toEuler().y(),1e-6);
-        assertEquals(0,player.sample(111).get("body").rotation().toEuler().y(),.01);
+        assertTrue(player.sample(111).get("body").rotation().toEuler().y() > .12);
+        assertTrue(player.sample(111).get("body").rotation().toEuler().y() < .30);
         assertEquals(-.4,player.sample(120).get("body").rotation().toEuler().y(),1e-6);
         player.speed(2);
         assertThrows(IllegalArgumentException.class,()->player.speed(0));

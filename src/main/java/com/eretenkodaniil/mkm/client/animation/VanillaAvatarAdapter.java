@@ -19,6 +19,7 @@ public final class VanillaAvatarAdapter {
         String clipId=nativeClip(frame,emptyHand);
         if(clipId==null||frame.sampledClip()==null)return null;
         NativeClip clip=emptyHand?NativeDemoLibrary.jab():NativeDemoLibrary.sword();
+        if(clip==null)return null;
         // Use EXACT server phase mapping inherited from C3; there is no client
         // authority to change start, hit, recovery or total action duration.
         double time=frame.sampledClip().localTime();
@@ -33,19 +34,25 @@ public final class VanillaAvatarAdapter {
         Map<String,Transform> pose=PoseMixer.mix(Map.of(),
                 List.of(new AnimationLayer(weighted,10,Set.of(),1,AnimationLayer.Mode.ADDITIVE)));
         boolean leftHanded=state.mainArm==HumanoidArm.LEFT;
+        // Vanilla's head/arms are *siblings*, not children of a real pelvis.
+        // Carry the small authored torso translation to upper pieces to avoid
+        // visibly detaching the helmet or shoulders from the chest.
+        Vec3 torsoShift=pose.getOrDefault("body",Transform.IDENTITY).translation();
         for(var e:pose.entrySet()){
             String bone=e.getKey();
             String target=leftHanded?swapSide(bone):bone;
             ModelPart part=part(model,target);
             if(part==null)continue;
             Transform t=e.getValue();
+            Vec3 delta=t.translation();
+            if(bone.equals("head")||bone.endsWith("_arm")) delta=delta.add(torsoShift);
             Vec3 angle=t.rotation().toEuler();
             float mirror=leftHanded?-1F:1F;
             // Vanilla ModelPart transformations use model-pixel translations.
             // Limit cosmetic pivot shifts to avoid armor/head separation.
-            part.x+=(float)Math.clamp(t.translation().x()*mirror,-1.5,1.5);
-            part.y+=(float)Math.clamp(t.translation().y(),-1.5,1.5);
-            part.z+=(float)Math.clamp(t.translation().z(),-1.5,1.5);
+            part.x+=(float)Math.clamp(delta.x()*mirror,-1.5,1.5);
+            part.y+=(float)Math.clamp(delta.y(),-1.5,1.5);
+            part.z+=(float)Math.clamp(delta.z(),-1.5,1.5);
             part.xRot+=(float)angle.x();
             part.yRot+=(float)angle.y()*mirror;
             part.zRot+=(float)angle.z()*mirror;
