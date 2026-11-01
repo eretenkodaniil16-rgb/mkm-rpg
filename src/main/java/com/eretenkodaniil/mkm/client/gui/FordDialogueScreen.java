@@ -49,8 +49,16 @@ public final class FordDialogueScreen extends Screen {
         if (submitted || !ClientPlayNetworking.canSend(FordChoiceRequest.TYPE)) return;
         submitted = true;
         submittedTicks = 0;
-        ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(), action));
+        ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(), action, view.sessionId()));
         if (action == FordChoiceRequest.LEAVE) onClose();
+    }
+
+    @Override public void onClose() {
+        if (!submitted && ClientPlayNetworking.canSend(FordChoiceRequest.TYPE)) {
+            ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(),
+                    FordChoiceRequest.CLOSE, view.sessionId()));
+        }
+        super.onClose();
     }
 
     @Override public void tick() {

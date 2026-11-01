@@ -11,9 +11,9 @@ final class FordNetworkCodecTest {
         for (int stage=-128; stage<=127; stage+=13) {
             ByteBuf bytes=Unpooled.buffer();
             try {
-                var input=new FordChoiceRequest(12345,(byte)stage,(byte)127);
+                var input=new FordChoiceRequest(12345,(byte)stage,(byte)127, 9837483374242L);
                 FordChoiceRequest.CODEC.encode(bytes,input);
-                assertEquals(6,bytes.readableBytes());
+                assertEquals(14,bytes.readableBytes());
                 assertEquals(input,FordChoiceRequest.CODEC.decode(bytes));
             } finally { bytes.release(); }
         }
@@ -37,7 +37,7 @@ final class FordNetworkCodecTest {
     @Test void npcDialogueViewRoundtripIncludesServerPerception() {
         ByteBuf bytes=Unpooled.buffer();
         try {
-            var view=new FordDialogueView(732,(byte)0,false,12);
+            var view=new FordDialogueView(732,(byte)0,false,12, 239482349048L);
             FordDialogueView.CODEC.encode(bytes,view);
             assertEquals(view,FordDialogueView.CODEC.decode(bytes));
         } finally { bytes.release(); }

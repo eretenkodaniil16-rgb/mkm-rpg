@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.quests.net;
 
 import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.quests.FordQuestState;
+import com.eretenkodaniil.mkm.quests.FordDialogueSessions;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
@@ -37,8 +38,11 @@ public final class FordQuestNetworking {
     public static boolean showDialogue(ServerPlayer player, Villager npc) {
         if (!ServerPlayNetworking.canSend(player, FordDialogueView.TYPE)) return false;
         var quest = FordQuestService.get(player);
-        ServerPlayNetworking.send(player, new FordDialogueView(npc.getId(), stage(quest),
-                quest.foundTracks(), CharacterService.get(player).perception()));
+        byte state = stage(quest);
+        long session = FordDialogueSessions.open(player, npc.getUUID(), npc.getId(),
+                state, player.level().getGameTime()).id();
+        ServerPlayNetworking.send(player, new FordDialogueView(npc.getId(), state,
+                quest.foundTracks(), CharacterService.get(player).perception(), session));
         return true;
     }
 

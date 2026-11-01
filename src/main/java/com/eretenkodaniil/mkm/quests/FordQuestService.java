@@ -73,6 +73,13 @@ public final class FordQuestService {
             showDialogue(player, npc); // stale packet: resync, do not mutate
             return;
         }
+        // Reject stale, forged and replayed choices. A valid session is consumed
+        // BEFORE any quest, XP or encounter mutation, even if the action fails.
+        if (!FordDialogueSessions.consume(player, npc.getUUID(), npc.getId(),
+                request.expectedStage(), request.sessionId(), level.getGameTime())) {
+            return;
+        }
+        if (request.choice() == FordChoiceRequest.CLOSE) return;
         if (!FordDialogueRules.permitted(request.expectedStage(),request.choice())) {
             showDialogue(player, npc);
             return;
@@ -416,6 +423,7 @@ public final class FordQuestService {
     }
 
     public static void onLogin(ServerPlayer player) {
+        FordDialogueSessions.invalidate(player);
         replayOfflineDeaths(player);
         // Legacy completed saves without a Character M2 receipt are ambiguous.
         // Do not invent historical XP by interpreting an obsolete reward floor.
