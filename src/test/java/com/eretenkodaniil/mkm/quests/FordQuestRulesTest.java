@@ -51,4 +51,23 @@ final class FordQuestRulesTest {
         assertSame(start, FordQuestRules.onOwnedRaiderDefeated(start));
         assertEquals(FordQuestState.NOT_STARTED, start.stage());
     }
+
+    @Test
+    void persistentCodecRoundTripsClaimedAndFutureState() {
+        for (FordQuestState saved : new FordQuestState[] {
+                new FordQuestState(),
+                new FordQuestState(1, FordQuestState.REWARDED, true),
+                new FordQuestState(3, "future_stage", false) }) {
+            var encoded = FordQuestState.CODEC.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, saved).getOrThrow();
+            var restored = FordQuestState.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, encoded).getOrThrow();
+            assertEquals(saved, restored);
+        }
+    }
+
+    @Test
+    void legacyMissingOptionalFieldsDecodeToSafeInitialState() {
+        var encoded = com.google.gson.JsonParser.parseString("{}");
+        FordQuestState restored = FordQuestState.CODEC.parse(com.mojang.serialization.JsonOps.INSTANCE, encoded).getOrThrow();
+        assertEquals(new FordQuestState(), restored);
+    }
 }
