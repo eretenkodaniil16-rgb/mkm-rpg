@@ -19,7 +19,7 @@ public final class FordQuestAttachments {
                     .initializer(FordEncounterOutcomes::new)
                     .persistent(FordEncounterOutcomes.CODEC));
 
-    private FordQuestAttachments() {
+    private FordQuestAttachments() {}
 
     public static void initialize() {
         FORD_QUEST.identifier();
