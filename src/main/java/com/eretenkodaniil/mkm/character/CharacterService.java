@@ -40,11 +40,9 @@ public final class CharacterService {
         }
 
         CharacterData current = get(player);
-        long currentExperience = current.experience();
-        long updatedExperience = amount > Long.MAX_VALUE - currentExperience
-                ? Long.MAX_VALUE
-                : currentExperience + amount;
-        return setExperience(player, updatedExperience);
+        long newExperience = ProgressionRules.experienceAfterReward(current.experience(), amount);
+        if (newExperience == current.experience()) return current;
+        return setExperience(player, newExperience);
     }
 
     /**
