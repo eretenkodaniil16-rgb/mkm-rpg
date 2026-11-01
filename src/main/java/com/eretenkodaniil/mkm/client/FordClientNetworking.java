@@ -6,18 +6,23 @@ import com.eretenkodaniil.mkm.quests.net.FordDialogueView;
 import com.eretenkodaniil.mkm.quests.net.FordJournalRequest;
 import com.eretenkodaniil.mkm.quests.net.FordJournalView;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
-import net.minecraft.client.Minecraft;
 
 /** Player-local UI snapshots; never modifies quest stage, awards, combat or animation. */
 public final class FordClientNetworking {
-    private static boolean journalRequested;
+    private static int awaitedJournalRequestId;
+    private static int nextJournalRequestId = 1;
 
     private FordClientNetworking() {}
 
     public static void requestJournal() {
         if (!ClientPlayNetworking.canSend(FordJournalRequest.TYPE)) return;
-        journalRequested = true;
-        ClientPlayNetworking.send(new FordJournalRequest((byte) 1));
+        int id = nextJournalRequestId++;
+        if (id <= 0) {
+            nextJournalRequestId = 2;
+            id = 1;
+        }
+        awaitedJournalRequestId = id;
+        ClientPlayNetworking.send(new FordJournalRequest((byte) 1, id));
     }
 
     public static void initialize() {
@@ -33,16 +38,20 @@ public final class FordClientNetworking {
         ClientPlayNetworking.registerGlobalReceiver(FordJournalView.TYPE,
                 (payload, context) -> context.client().execute(() -> {
                     if (context.client().player == null) {
-                        journalRequested = false;
+                        awaitedJournalRequestId = 0;
                         return;
                     }
+                    // Only responses matching an explicit J press may open a closed UI.
+                    // Push snapshots (requestId=0) update an already visible journal.
+                    if (payload.requestId() != 0
+                            && payload.requestId() != awaitedJournalRequestId) return;
                     var active = context.client().gui.screen();
                     if (active instanceof FordJournalScreen) {
                         context.client().gui.setScreen(new FordJournalScreen(payload));
-                    } else if (journalRequested && active == null) {
+                    } else if (payload.requestId() > 0 && active == null) {
                         context.client().gui.setScreen(new FordJournalScreen(payload));
                     }
-                    journalRequested = false;
+                    if (payload.requestId() > 0) awaitedJournalRequestId = 0;
                 }));
     }
 }

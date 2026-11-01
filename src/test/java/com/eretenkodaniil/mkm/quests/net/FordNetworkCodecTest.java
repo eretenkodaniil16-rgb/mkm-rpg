@@ -23,11 +23,11 @@ final class FordNetworkCodecTest {
         ByteBuf request=Unpooled.buffer();
         ByteBuf response=Unpooled.buffer();
         try {
-            var q=new FordJournalRequest((byte)1);
+            var q=new FordJournalRequest((byte)1,34543);
             FordJournalRequest.CODEC.encode(request,q);
             assertEquals(q,FordJournalRequest.CODEC.decode(request));
             for (int stage=0;stage<=4;stage++) {
-                var view=new FordJournalView((byte)stage,true,stage==1);
+                var view=new FordJournalView((byte)stage,true,stage==1,34543);
                 FordJournalView.CODEC.encode(response,view);
                 assertEquals(view,FordJournalView.CODEC.decode(response));
             }

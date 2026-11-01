@@ -20,7 +20,8 @@ public final class FordQuestNetworking {
         ServerPlayNetworking.registerGlobalReceiver(FordChoiceRequest.TYPE,
                 (packet, context) -> FordQuestService.handleChoice(context.player(), packet));
         ServerPlayNetworking.registerGlobalReceiver(FordJournalRequest.TYPE, (packet, context) -> {
-            if (packet.version() == 1) sendJournal(context.player());
+            if (packet.version() == 1 && packet.requestId() > 0)
+                sendJournal(context.player(), packet.requestId());
         });
     }
 
@@ -46,10 +47,15 @@ public final class FordQuestNetworking {
         return true;
     }
 
+    /** Unsolicited owner-only update: correlation 0 never opens a closed journal. */
     public static void sendJournal(ServerPlayer player) {
+        sendJournal(player, 0);
+    }
+
+    public static void sendJournal(ServerPlayer player, int requestId) {
         if (!ServerPlayNetworking.canSend(player, FordJournalView.TYPE)) return;
         var quest = FordQuestService.get(player);
         ServerPlayNetworking.send(player, new FordJournalView(stage(quest), quest.foundTracks(),
-                FordQuestService.isEncounterLoaded(player)));
+                FordQuestService.isEncounterLoaded(player), requestId));
     }
 }
