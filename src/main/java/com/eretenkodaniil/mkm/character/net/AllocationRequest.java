@@ -6,23 +6,34 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 
 /**
- * Seven bounded, absolute spent-point counters in canonical PrimaryAttribute enum order.
- * No XP, earned points, target player or derived stats are accepted from the client.
+ * Untrusted intent: canonical seven absolute allocation counters, optimistic expected-spent
+ * revision, and a UI correlation ID. No authoritative balance or character ID is transmitted.
  */
-public record AllocationRequest(int str, int dex, int vit, int end, int intelligence, int wil, int per)
+public record AllocationRequest(
+        int requestId, int expectedSpent,
+        int str, int dex, int vit, int end, int intelligence, int wil, int per)
         implements CustomPacketPayload {
+
     public static final Type<AllocationRequest> TYPE = new Type<>(MkmMod.id("allocate_attributes"));
     public static final StreamCodec<ByteBuf, AllocationRequest> STREAM_CODEC = new StreamCodec<>() {
         @Override
         public AllocationRequest decode(ByteBuf buf) {
-            return new AllocationRequest(buf.readUnsignedByte(), buf.readUnsignedByte(),
+            return new AllocationRequest(buf.readInt(), buf.readVarInt(),
                     buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte(),
-                    buf.readUnsignedByte(), buf.readUnsignedByte());
+                    buf.readUnsignedByte(), buf.readUnsignedByte(), buf.readUnsignedByte(),
+                    buf.readUnsignedByte());
         }
 
         @Override
         public void encode(ByteBuf buf, AllocationRequest packet) {
-            for (int count : packet.totals()) buf.writeByte(count);
+            buf.writeInt(packet.requestId());
+            buf.writeVarInt(packet.expectedSpent());
+            for (int count : packet.totals()) {
+                if (count < 0 || count > 255) {
+                    throw new IllegalArgumentException("Allocation counter out of wire range");
+                }
+                buf.writeByte(count);
+            }
         }
     };
 
