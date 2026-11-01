@@ -49,9 +49,10 @@ public final class MkmCombatHud {
         graphics.fill(x, y, x + Math.round(barWidth * ratio), y + BAR_HEIGHT,
                 ratio >= 0.25F ? STAMINA_FILL : STAMINA_LOW);
 
-        graphics.text(client.font, Component.literal(
-                (layout.narrow() ? "SP " : "MKM  ") + Math.round(combat.stamina())
-                + " / " + Math.round(max)), x, y - 12, TEXT);
+        String staminaLabel = (layout.narrow() ? "SP " : "MKM  ")
+                + Math.round(combat.stamina()) + " / " + Math.round(max);
+        graphics.text(client.font, Component.literal(ResourceHudText.fit(
+                staminaLabel, barWidth, client.font::width)), x, y - 12, TEXT);
 
         ActionTimeline timeline = client.player.getAttached(CombatAttachments.TIMELINE);
         String description = timeline == null || timeline.idle()
@@ -68,7 +69,8 @@ public final class MkmCombatHud {
                     ? "R / G" : "ACT " + timeline.phase().name();
             if (description.length() > 12) description = "BUSY";
         }
-        graphics.text(client.font, Component.literal(description), x, y + 12,
+        graphics.text(client.font, Component.literal(ResourceHudText.fit(
+                description, barWidth, client.font::width)), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
     }
 }
