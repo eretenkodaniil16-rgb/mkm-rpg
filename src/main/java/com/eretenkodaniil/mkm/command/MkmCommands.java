@@ -125,7 +125,7 @@ public final class MkmCommands {
         source.sendSuccess(() -> Component.literal(
                 "MKM rewards audit | schema=" + data.schemaVersion()
                         + " | receipts=" + data.claimedRewardIds().size()
-                        + " | ford_warden/complete=" + (ford ? "PAID" : "ABSENT")
+                        + " | ford_warden/complete=" + (ford ? "REDEEMED" : "ABSENT")
                         + " | XP=" + data.experience()
                         + " | points=" + data.availablePoints() + "/" + data.earnedPoints()
                         + " | READ-ONLY; compare with /mkmworld status"), false);
