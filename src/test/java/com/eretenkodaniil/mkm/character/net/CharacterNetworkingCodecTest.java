@@ -13,7 +13,7 @@ final class CharacterNetworkingCodecTest {
             AllocationRequest outgoing = new AllocationRequest(
                     42, 18, 0, 1, 2, 3, 4, 5, 30);
             AllocationRequest.STREAM_CODEC.encode(buf, outgoing);
-            assertEquals(12, buf.readableBytes(), "four-byte ID + varint revision + seven stats");
+            assertEquals(15, buf.readableBytes(), "four-byte ID + four-byte revision + seven stats");
             AllocationRequest actual = AllocationRequest.STREAM_CODEC.decode(buf);
             assertEquals(outgoing, actual);
             assertArrayEquals(new int[] {0, 1, 2, 3, 4, 5, 30}, actual.totals());
