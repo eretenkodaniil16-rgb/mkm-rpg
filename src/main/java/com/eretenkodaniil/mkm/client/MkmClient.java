@@ -54,6 +54,7 @@ public final class MkmClient implements ClientModInitializer {
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            AbilityVisualInbox.onClientTick(client);
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();
