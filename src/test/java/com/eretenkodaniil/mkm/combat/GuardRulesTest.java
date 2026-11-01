@@ -27,7 +27,7 @@ final class GuardRulesTest {
     @Test
     void guardBreakCannotSpendNegativeStamina() {
         var poor = new CombatState(2F, 100, 0, 0, 0);
-        var result = GuardRules.block(poor, 102, 40F,
+        var result = GuardRules.block(poor, 100, 40F,
                 1D, 1D, 100F, 10F, 30L);
         assertTrue(result.broken());
         assertEquals(0F, result.state().stamina(), 0.0001);
