@@ -25,6 +25,14 @@ public final class CharacterEvents {
                 || !(source.getEntity() instanceof ServerPlayer player)
                 || player == victim
                 || REWARDED_DEATHS.putIfAbsent(victim, Boolean.TRUE) != null) return;
-        CharacterService.addExperience(player, HOSTILE_KILL_XP);
+        CharacterData before = CharacterService.get(player);
+        CharacterData after = CharacterService.addExperience(player, HOSTILE_KILL_XP);
+        if (after.level() > before.level()) {
+            player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.mkm.level_up", after.level(), after.availablePoints()));
+        } else {
+            player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
+                    "message.mkm.xp_gained", HOSTILE_KILL_XP));
+        }
     }
 }
