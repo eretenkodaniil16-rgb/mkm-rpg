@@ -82,7 +82,13 @@ This integration branch vendors **upstream unchanged** Character M2/M1 Character
 
 ## PR #39 follow-up changes (2026-11-01)
 
-- Added `FordDialogueSessions` with a random 64-bit one-shot token, 60-second tick TTL, exact actor UUID/entity ID/stage validation and consumption before mutation. Client `CLOSE` releases its session even when the world stage changed while the screen was open. Existing commands still invoke full server authority for test fallback.
+- Added `FordDialogueSessions` with a random 64-bit one-shot token, 60-second tick TTL, exact actor UUID/entity ID/stage validation and consumption **before any stale-stage resync or mutation**. A forged mismatch cannot repeatedly open the UI or produce greeting events. Client `CLOSE` releases its session even when the world stage changed while the screen was open. Existing commands still invoke full server authority for test fallback.
 - Journal request/response correlation prevents unsolicited push or stale answers from opening a closed GUI. The server continues to recompute owner-only stage and encounter load state from the authoritative player.
 - Added `FordEncounterRegistry` world-persistent owner→(raider,warden,home) reservation. A partial save no longer unconditionally causes an extra raider when an existing reservation survives. Missing loaded entities never count as dead.
 - Added pure registry owner-isolation, codec persistence and session/packet tests. These tests **do not** substitute for two real simultaneous clients or abrupt server termination/save replay. Equipment item grant and genuine deleted-entity recovery remain blocked pending separate contracts.
+
+### CI vs actual gameplay evidence
+
+Pure tests include `FordEpisodeContractTest` (two independent quest owners, PER 10/12, encounter reservations, wrong-kill isolation, Character M2 receipt/replay, codec roundtrips), `FordDialogueSessionTest`, `FordEncounterRegistryTest`, `FordDialogueContractTest` and the packet codec suite. Green CI verifies these rules and dedicated-server startup only. **No proof of real GUI capture, two connected clients, world reload during a fight, or hard power-loss durability has been produced.**
+
+Test the following failure injection manually before declaring the scenario shippable: save with `mkm:ford_encounter_registry` updated but `mkm:ford_quest` still not_started; relog and re-accept must rebind the original loaded UUID, not spawn a duplicate. Repeat with the enemy's chunk unloaded: reaccept must refuse spawning and show the home coordinates. Kill another owner's raider and verify only that owner's quest advances. Confirm `grantExperienceOnce` returns ALREADY_GRANTED on retry and the new World stage is reconciled without +XP. Simulate a renderer observer throwing an exception: quest state must still progress. Live multiplayer validation still belongs to control QA.
