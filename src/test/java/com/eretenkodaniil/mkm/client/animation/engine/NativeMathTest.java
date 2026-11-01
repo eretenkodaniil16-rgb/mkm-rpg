@@ -26,4 +26,22 @@ class NativeMathTest {
         assertEquals(3,world.translation().z(),1e-7);
         assertThrows(IllegalArgumentException.class,()->new Transform(Vec3.ZERO,Quat.IDENTITY,new Vec3(-1,1,1)));
     }
+    @Test void internalKeysRetainVelocityWithoutTranslationOvershoot() {
+        var track=java.util.List.of(
+                new NativeClip.Key(0,new Transform(new Vec3(0,0,0),Quat.euler(0,0,0),Vec3.ONE)),
+                new NativeClip.Key(.5,new Transform(new Vec3(1,0,0),Quat.euler(0,.3,0),Vec3.ONE)),
+                new NativeClip.Key(1,new Transform(new Vec3(2,0,0),Quat.euler(0,.6,0),Vec3.ONE)));
+        var clip=new NativeClip("mkm:test/continuous",14,java.util.Map.of("body",track),java.util.List.of());
+        double e=.0001;
+        var before=PoseSampler.sample(clip,.5-e).get("body");
+        var after=PoseSampler.sample(clip,.5+e).get("body");
+        assertEquals(1,PoseSampler.sample(clip,.5).get("body").translation().x(),1e-8);
+        assertTrue((after.translation().x()-before.translation().x())/(2*e)>1.5);
+        assertTrue((after.rotation().toEuler().y()-before.rotation().toEuler().y())/(2*e)>.35);
+        for(int i=0;i<=1000;i++){
+            double x=PoseSampler.sample(clip,i/1000D).get("body").translation().x();
+            assertTrue(x>=0&&x<=2);
+        }
+    }
+
 }
