@@ -184,6 +184,7 @@ public record CharacterData(
     }
 
     public CharacterData withExperience(long xp) {
+        requireWritableSchema();
         long safeXp = Math.max(0L, xp);
         int credits = Math.max(earnedPoints, ProgressionRules.earnedPointsForLevel(
                 ProgressionRules.levelForExperience(safeXp)));
@@ -193,6 +194,7 @@ public record CharacterData(
 
     /** Administrative baseline adjustment only, never used to spend build credits. */
     public CharacterData withAttribute(PrimaryAttribute attribute, int newValue) {
+        requireWritableSchema();
         return new CharacterData(schemaVersion, experience,
                 attribute == PrimaryAttribute.STRENGTH ? newValue : strength,
                 attribute == PrimaryAttribute.DEXTERITY ? newValue : dexterity,
@@ -206,6 +208,7 @@ public record CharacterData(
 
     /** Package-local: allocation rules are the sole runtime caller. */
     CharacterData withAllocatedPoints(List<Integer> newAllocations) {
+        requireWritableSchema();
         return new CharacterData(schemaVersion, experience, strength, dexterity, vitality,
                 endurance, intelligence, willpower, perception, earnedPoints, newAllocations,
                 claimedRewardIds);
@@ -213,9 +216,17 @@ public record CharacterData(
 
     /** Package-local atomic receipt replacement, called only by CharacterRewardRules. */
     CharacterData withClaimedRewardIds(List<String> rewardIds) {
+        requireWritableSchema();
         return new CharacterData(schemaVersion, experience, strength, dexterity, vitality,
                 endurance, intelligence, willpower, perception, earnedPoints, allocatedPoints,
                 rewardIds);
+    }
+
+    private void requireWritableSchema() {
+        if (schemaVersion != CURRENT_SCHEMA_VERSION) {
+            throw new IllegalStateException("Cannot mutate unsupported future character schema: "
+                    + schemaVersion);
+        }
     }
 
     private static int clampAttribute(int value) {
