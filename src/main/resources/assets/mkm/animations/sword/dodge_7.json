@@ -1,7 +1,7 @@
 {
   "format": 1,
   "id": "mkm:sword/dodge_7",
-  "duration_ticks": 8,
+  "duration_ticks": 10,
   "layer": "full_body",
   "tracks": {
     "body": [
