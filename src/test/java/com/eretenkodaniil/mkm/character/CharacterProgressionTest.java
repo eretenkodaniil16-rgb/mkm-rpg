@@ -62,7 +62,7 @@ final class CharacterProgressionTest {
         oldSave.addProperty("strength", 27);
         CharacterData migrated = CharacterData.CODEC.codec()
                 .parse(JsonOps.INSTANCE, oldSave).result().orElseThrow();
-        assertEquals(3, migrated.schemaVersion());
+        assertEquals(4, migrated.schemaVersion());
         assertEquals(27, migrated.strength());
         assertEquals(10, migrated.perception());
         assertEquals(4, migrated.earnedPoints());
@@ -111,14 +111,14 @@ final class CharacterProgressionTest {
     void gameplayCapDoesNotSilentlyClampLegacyAttributes() {
         CharacterData legacy = new CharacterData(2, 100, 63, 10, 10, 10, 10, 10, 10, 0, List.of());
         assertEquals(63, legacy.strength());
-        assertEquals(3, legacy.schemaVersion());
+        assertEquals(4, legacy.schemaVersion());
         assertNull(AllocationRules.tryAllocate(legacy, new int[] {1, 0, 0, 0, 0, 0, 0}));
         assertNotNull(AllocationRules.tryAllocate(legacy, new int[] {0, 1, 0, 0, 0, 0, 0}));
     }
 
     @Test
     void futureSchemaAndOverspentLedgerFailClosed() {
-        CharacterData future = new CharacterData(4, 300, 10, 10, 10, 10, 10, 10, 10,
+        CharacterData future = new CharacterData(5, 300, 10, 10, 10, 10, 10, 10, 10,
                 4, List.of(0, 0, 0, 0, 0, 0, 0));
         assertNull(AllocationRules.tryAllocate(future, new int[] {1, 0, 0, 0, 0, 0, 0}));
         CharacterData broken = new CharacterData(3, 100, 10, 10, 10, 10, 10, 10, 10,
