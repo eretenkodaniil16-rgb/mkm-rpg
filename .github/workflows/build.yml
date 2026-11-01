@@ -10,6 +10,7 @@ on:
       - 'feature/action-combat-c2-state-hud'
       - 'feature/abilities-m1-renewal'
       - 'feature/abilities-m2-crosscore-contracts'
+      - 'feature/abilities-m3-mnae-renewal-events'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -21,6 +22,7 @@ on:
       - 'foundation/project-bootstrap'
       - 'feature/action-combat-c2-state-hud'
       - 'feature/abilities-m1-renewal'
+      - 'feature/abilities-m2-crosscore-contracts'
       - 'main'
 jobs:
   build:
