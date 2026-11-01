@@ -47,7 +47,7 @@ the enum or the seven packet bytes without a migration/protocol change.
 - Server-to-client: owner-only Fabric attachment sync; all writes replace the immutable
   `CharacterData`. `.copyOnDeath()` preserves XP, stats and points on respawn.
 - Client-to-server `mkm:allocate_attributes`: one four-byte correlation ID,
-  an expected server spent-point revision (VarInt) and seven one-byte absolute
+  a four-byte expected server spent-point revision and seven one-byte absolute
   cumulative allocation counters. No XP, claimed credit balance, target player ID
   or damage are client-controlled. Server verifies alive/non-spectator, schema,
   **exact spent revision**, monotonic counters, sufficient earned credits and cap 40.
