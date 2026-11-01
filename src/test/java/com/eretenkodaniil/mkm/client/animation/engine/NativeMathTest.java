@@ -25,6 +25,7 @@ class NativeMathTest {
         assertEquals(4,world.translation().y(),1e-7);
         assertEquals(3,world.translation().z(),1e-7);
         assertThrows(IllegalArgumentException.class,()->new Transform(Vec3.ZERO,Quat.IDENTITY,new Vec3(-1,1,1)));
+        assertThrows(IllegalArgumentException.class,()->new Transform(Vec3.ZERO,Quat.IDENTITY,new Vec3(1,2,1)));
     }
     @Test void internalKeysRetainVelocityWithoutTranslationOvershoot() {
         var track=java.util.List.of(

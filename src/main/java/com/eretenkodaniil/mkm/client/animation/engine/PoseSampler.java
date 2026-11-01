@@ -6,6 +6,18 @@ public final class PoseSampler {
     public static Map<String,Transform> sample(NativeClip clip,double normalized) {
         Objects.requireNonNull(clip);
         double t=Double.isFinite(normalized)?Math.clamp(normalized,0,1):0;
+        if(clip.legacyC3Source()!=null) {
+            // Preserve the old six-part additive Euler PCHIP exactly at every
+            // time. New v2 clips remain free to use quaternion SQUAD.
+            Map<String,Transform> legacy=new HashMap<>();
+            for(var entry:clip.legacyC3Source().sample(t).entrySet()) {
+                var euler=entry.getValue();
+                legacy.put(entry.getKey().name().toLowerCase(Locale.ROOT),
+                        new Transform(Vec3.ZERO,
+                                Quat.euler(euler.x(),euler.y(),euler.z()),Vec3.ONE));
+            }
+            return Map.copyOf(legacy);
+        }
         Map<String,Transform> result=new HashMap<>();
         for(var e:clip.tracks().entrySet()){
             List<NativeClip.Key> keys=e.getValue();

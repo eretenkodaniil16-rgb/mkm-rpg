@@ -59,14 +59,18 @@ final class NativeAnimationCoreContractTest {
 
     @Test
     void nonUniformScaleAndChildRotationCannotSilentlyLoseShear() {
-        Transform parent = new Transform(Vec3.ZERO,
-            Quat.euler(0, 0, Math.PI / 2), new Vec3(2, 1, 1));
-        Transform child = new Transform(Vec3.ZERO,
-            Quat.euler(0, 0, Math.PI / 2), Vec3.ONE);
-        Vec3 point = new Vec3(1, 0, 0);
-        Vec3 expected = apply(parent, apply(child, point));
-        Vec3 actual = apply(parent.compose(child), point);
-        assertVec(expected, actual, EPS);
+        assertThrows(IllegalArgumentException.class,
+            () -> new Transform(Vec3.ZERO, Quat.IDENTITY, new Vec3(2, 1, 1)),
+            "A quaternion+vector+scale TRS cannot encode child shear");
+        Transform parent = new Transform(new Vec3(2, 3, 4),
+            Quat.euler(0, 0, Math.PI / 2), new Vec3(2, 2, 2));
+        Transform child = new Transform(new Vec3(1, 0, 0),
+            Quat.euler(0, 0, Math.PI / 2), new Vec3(1.5, 1.5, 1.5));
+        for (Vec3 point : List.of(new Vec3(1, 0, 0), new Vec3(0, 1, 0),
+                new Vec3(.5, .25, 2))) {
+            assertVec(apply(parent, apply(child, point)),
+                    apply(parent.compose(child), point), EPS);
+        }
     }
 
     @Test
