@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 public final class FordDialogueScreen extends Screen {
     private final FordDialogueView view;
     private boolean submitted;
+    private int submittedTicks;
     private static final int TEXT = 0xFFE8DDC5, MUTED = 0xFFB7B4A6;
     public FordDialogueScreen(FordDialogueView view) {
         super(Component.literal("Ильра — смотрительница брода"));
@@ -47,8 +48,22 @@ public final class FordDialogueScreen extends Screen {
     private void choose(byte action) {
         if (submitted || !ClientPlayNetworking.canSend(FordChoiceRequest.TYPE)) return;
         submitted = true;
+        submittedTicks = 0;
         ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(), action));
         if (action == FordChoiceRequest.LEAVE) onClose();
+    }
+
+    @Override public void tick() {
+        super.tick();
+        if (minecraft == null || minecraft.player == null) {
+            onClose();
+            return;
+        }
+        if (submitted && ++submittedTicks > 100) {
+            // A lost response must not permanently freeze all choices.
+            submitted = false;
+            submittedTicks = 0;
+        }
     }
 
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {

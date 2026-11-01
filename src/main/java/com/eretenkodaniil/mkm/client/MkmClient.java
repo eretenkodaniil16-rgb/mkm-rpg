@@ -7,7 +7,6 @@ import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
 import com.eretenkodaniil.mkm.combat.DodgeDirection;
 import com.eretenkodaniil.mkm.registry.MkmItems;
-import com.eretenkodaniil.mkm.quests.net.FordJournalRequest;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -56,8 +55,8 @@ public final class MkmClient implements ClientModInitializer {
             }
             while (JOURNAL.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null
-                        && ClientPlayNetworking.canSend(FordJournalRequest.TYPE)) {
-                    ClientPlayNetworking.send(new FordJournalRequest((byte) 1));
+                        && ClientPlayNetworking.canSend(com.eretenkodaniil.mkm.quests.net.FordJournalRequest.TYPE)) {
+                    FordClientNetworking.requestJournal();
                 }
             }
             while (COMBO.consumeClick()) {
