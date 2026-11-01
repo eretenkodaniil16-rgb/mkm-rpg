@@ -79,7 +79,8 @@ public final class MkmCommands {
                         + " | END: " + data.endurance()
                         + " | INT: " + data.intelligence()
                         + " | WIL: " + data.willpower()
-                        + " | PER: " + data.perception()), false);
+                        + " | PER: " + data.perception()
+                        + " | Points: " + data.availablePoints() + "/" + data.earnedPoints()), false);
         return Command.SINGLE_SUCCESS;
     }
 
