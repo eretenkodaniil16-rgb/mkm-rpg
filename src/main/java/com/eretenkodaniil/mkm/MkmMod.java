@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.CharacterEvents;
+import com.eretenkodaniil.mkm.character.net.CharacterNetworking;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
@@ -38,6 +39,7 @@ public final class MkmMod implements ModInitializer {
         MkmItems.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
+        CharacterNetworking.initialize();
         FordQuestNetworking.initialize();
         FordQuestService.initialize();
 
@@ -53,6 +55,7 @@ public final class MkmMod implements ModInitializer {
         });
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);
+        ServerLivingEntityEvents.AFTER_DEATH.register(CharacterEvents::onEntityDeath);
         ServerLivingEntityEvents.AFTER_DEATH.register(FordQuestService::onDeath);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));

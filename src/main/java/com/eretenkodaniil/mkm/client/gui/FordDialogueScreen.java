@@ -12,6 +12,7 @@ import net.minecraft.network.chat.Component;
 public final class FordDialogueScreen extends Screen {
     private final FordDialogueView view;
     private boolean submitted;
+    private int submittedTicks;
     private static final int TEXT = 0xFFE8DDC5, MUTED = 0xFFB7B4A6;
     public FordDialogueScreen(FordDialogueView view) {
         super(Component.literal("Ильра — смотрительница брода"));
@@ -26,29 +27,60 @@ public final class FordDialogueScreen extends Screen {
         super.init();
         int x = panelLeft() + 16, y = panelTop() + 80, w = panelWidth() - 32;
         if (view.stage() == 0) {
-            addChoice("Исследовать следы (PER 12)", FordChoiceRequest.INSPECT, x, y, w);
+            Button inspect = addChoice(view.tracks() ? "Следы уже изучены"
+                    : (view.perception() >= 12 ? "Исследовать следы (PER 12)"
+                       : "Требуется PER 12 (" + view.perception() + ")"),
+                    FordChoiceRequest.INSPECT, x, y, w);
+            inspect.active = !view.tracks() && view.perception() >= 12;
             addChoice("Я помогу каравану", FordChoiceRequest.ACCEPT, x, y + 24, w);
             addChoice("Сейчас не могу", FordChoiceRequest.LEAVE, x, y + 48, w);
         } else if (view.stage() == 1) {
-            addChoice("Где искать противника?", FordChoiceRequest.LOCATE, x, y, w);
-            addChoice("Я вернусь после боя", FordChoiceRequest.LEAVE, x, y + 24, w);
+            Button inspect = addChoice(view.tracks() ? "Следы уже изучены"
+                    : (view.perception() >= 12 ? "Исследовать следы (PER 12)"
+                    : "Требуется PER 12 (" + view.perception() + ")"),
+                    FordChoiceRequest.INSPECT, x, y, w);
+            inspect.active = !view.tracks() && view.perception() >= 12;
+            addChoice("Где искать противника?", FordChoiceRequest.LOCATE, x, y + 24, w);
+            addChoice("Я вернусь после боя", FordChoiceRequest.LEAVE, x, y + 48, w);
         } else if (view.stage() == 2) {
-            addChoice("Вернуть найденное и получить награду", FordChoiceRequest.CLAIM, x, y, w);
+            addChoice("Получить награду", FordChoiceRequest.CLAIM, x, y, w);
         }
         addRenderableWidget(Button.builder(Component.literal("Закрыть"), button -> onClose())
                 .size(Math.min(100,w), 20).pos(x, panelTop() + 179).build());
     }
 
-    private void addChoice(String title, byte action, int x, int y, int width) {
-        addRenderableWidget(Button.builder(Component.literal(title), button -> choose(action))
+    private Button addChoice(String title, byte action, int x, int y, int width) {
+        return addRenderableWidget(Button.builder(Component.literal(title), button -> choose(action))
                 .size(width, 20).pos(x,y).build());
     }
 
     private void choose(byte action) {
         if (submitted || !ClientPlayNetworking.canSend(FordChoiceRequest.TYPE)) return;
         submitted = true;
-        ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(), action));
+        submittedTicks = 0;
+        ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(), action, view.sessionId()));
         if (action == FordChoiceRequest.LEAVE) onClose();
+    }
+
+    @Override public void onClose() {
+        if (!submitted && ClientPlayNetworking.canSend(FordChoiceRequest.TYPE)) {
+            ClientPlayNetworking.send(new FordChoiceRequest(view.entityId(), view.stage(),
+                    FordChoiceRequest.CLOSE, view.sessionId()));
+        }
+        super.onClose();
+    }
+
+    @Override public void tick() {
+        super.tick();
+        if (minecraft == null || minecraft.player == null) {
+            onClose();
+            return;
+        }
+        if (submitted && ++submittedTicks > 100) {
+            // A lost response must not permanently freeze all choices.
+            submitted = false;
+            submittedTicks = 0;
+        }
     }
 
     @Override public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
@@ -73,7 +105,8 @@ public final class FordDialogueScreen extends Screen {
         };
         graphics.centeredText(font,Component.literal(line1),width/2,top+37,TEXT);
         graphics.centeredText(font,Component.literal(line2),width/2,top+52,MUTED);
-        if (view.stage() == 0) graphics.centeredText(font,Component.literal(
+        if (view.stage() == 0 || view.stage() == 1)
+            graphics.centeredText(font,Component.literal(
                 "Восприятие: " + view.perception() + " / 12" + (view.tracks() ? " · следы найдены" : "")
         ), width/2,top+66,view.perception()>=12?0xFF88D7A3:0xFFFFC17E);
         super.extractRenderState(graphics,mouseX,mouseY,partialTick);

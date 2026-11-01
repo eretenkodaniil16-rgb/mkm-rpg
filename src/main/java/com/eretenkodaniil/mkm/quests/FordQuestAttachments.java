@@ -19,10 +19,17 @@ public final class FordQuestAttachments {
                     .initializer(FordEncounterOutcomes::new)
                     .persistent(FordEncounterOutcomes.CODEC));
 
+    public static final AttachmentType<FordEncounterRegistry> ENCOUNTER_REGISTRY = AttachmentRegistry.create(
+            MkmMod.id("ford_encounter_registry"),
+            builder -> builder
+                    .initializer(FordEncounterRegistry::new)
+                    .persistent(FordEncounterRegistry.CODEC));
+
     private FordQuestAttachments() {}
 
     public static void initialize() {
         FORD_QUEST.identifier();
         ENCOUNTER_OUTCOMES.identifier();
+        ENCOUNTER_REGISTRY.identifier();
     }
 }

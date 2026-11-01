@@ -2,11 +2,11 @@ package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
+import com.eretenkodaniil.mkm.character.net.AllocationResult;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
 import com.eretenkodaniil.mkm.combat.DodgeDirection;
 import com.eretenkodaniil.mkm.registry.MkmItems;
-import com.eretenkodaniil.mkm.quests.net.FordJournalRequest;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -33,6 +33,12 @@ public final class MkmClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
+                context.client().execute(() -> {
+                    if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
+                        sheet.onAllocationResult(result);
+                    }
+                }));
         KeyMappingHelper.registerKeyMapping(OPEN_SHEET);
         KeyMappingHelper.registerKeyMapping(DODGE);
         KeyMappingHelper.registerKeyMapping(COMBO);
@@ -49,8 +55,8 @@ public final class MkmClient implements ClientModInitializer {
             }
             while (JOURNAL.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null
-                        && ClientPlayNetworking.canSend(FordJournalRequest.TYPE)) {
-                    ClientPlayNetworking.send(new FordJournalRequest((byte) 1));
+                        && ClientPlayNetworking.canSend(com.eretenkodaniil.mkm.quests.net.FordJournalRequest.TYPE)) {
+                    FordClientNetworking.requestJournal();
                 }
             }
             while (COMBO.consumeClick()) {
