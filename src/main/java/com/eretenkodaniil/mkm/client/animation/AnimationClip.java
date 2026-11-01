@@ -120,13 +120,74 @@ public final class AnimationClip {
                     Key left = keys.get(i - 1);
                     double u = (t - left.time()) / (right.time() - left.time());
                     u = Math.max(0D, Math.min(1D, u));
-                    u = u * u * (3D - 2D * u);
-                    value = Rotation.interpolate(left.rotation(), right.rotation(), u);
+                    value = interpolateContinuous(keys, i - 1, u);
                     break;
                 }
             }
             sampled.put(entry.getKey(), value);
         }
         return Collections.unmodifiableMap(sampled);
+    }
+
+    /**
+     * Shape-preserving cubic Hermite interpolation (PCHIP-style interior slopes).
+     * Conventional per-segment smoothstep artificially stops at every key. Here
+     * velocity remains continuous through monotone authored keys, while motion
+     * eases to rest at a peak, reversal, clip start or clip end.
+     *
+     * Tangents are in radians / normalized clip time and use nonuniform keys.
+     * This is visual-only: no damage, movement or server hit timing is changed.
+     */
+    private static Rotation interpolateContinuous(List<Key> keys, int left, double u) {
+        double h = keys.get(left + 1).time() - keys.get(left).time();
+        return new Rotation(
+                interpolateAxis(keys, left, u, h, 0),
+                interpolateAxis(keys, left, u, h, 1),
+                interpolateAxis(keys, left, u, h, 2));
+    }
+
+    private static double interpolateAxis(List<Key> keys, int left, double u, double h, int axis) {
+        double first = axisValue(keys.get(left).rotation(), axis);
+        double last = axisValue(keys.get(left + 1).rotation(), axis);
+        double t0 = tangent(keys, left, axis);
+        double t1 = tangent(keys, left + 1, axis);
+        double u2 = u * u;
+        double u3 = u2 * u;
+        double result = (2D * u3 - 3D * u2 + 1D) * first
+                + (u3 - 2D * u2 + u) * h * t0
+                + (-2D * u3 + 3D * u2) * last
+                + (u3 - u2) * h * t1;
+        // Floating point tolerance must never turn a valid authored rotation
+        // into an overshooting pose (or a rejected +/-2pi Rotation).
+        return Math.max(Math.min(first, last), Math.min(Math.max(first, last), result));
+    }
+
+    private static double tangent(List<Key> keys, int index, int axis) {
+        if (index == 0 || index == keys.size() - 1) return 0D;
+        Key prev = keys.get(index - 1);
+        Key current = keys.get(index);
+        Key next = keys.get(index + 1);
+        double h0 = current.time() - prev.time();
+        double h1 = next.time() - current.time();
+        double d0 = (axisValue(current.rotation(), axis) - axisValue(prev.rotation(), axis)) / h0;
+        double d1 = (axisValue(next.rotation(), axis) - axisValue(current.rotation(), axis)) / h1;
+        if (!Double.isFinite(d0) || !Double.isFinite(d1)
+                || d0 == 0D || d1 == 0D || Math.signum(d0) != Math.signum(d1)) {
+            return 0D;
+        }
+        double w0 = 2D * h1 + h0;
+        double w1 = h1 + 2D * h0;
+        double denominator = w0 / d0 + w1 / d1;
+        if (!Double.isFinite(denominator) || denominator == 0D) return 0D;
+        double slope = (w0 + w1) / denominator;
+        return Double.isFinite(slope) ? slope : 0D;
+    }
+
+    private static double axisValue(Rotation rotation, int axis) {
+        return switch (axis) {
+            case 0 -> rotation.x();
+            case 1 -> rotation.y();
+            default -> rotation.z();
+        };
     }
 }
