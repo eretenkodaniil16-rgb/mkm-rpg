@@ -25,8 +25,8 @@ public final class AllocationRules {
             int requested = requestedTotals[i];
             int delta = requested - previous;
             if (delta < 0 || requested > ProgressionRules.ALLOCATION_ATTRIBUTE_CAP
-                    || (long) current.attribute(attributes[i]) + delta
-                            > ProgressionRules.ALLOCATION_ATTRIBUTE_CAP) return null;
+                    || (delta > 0 && (long) current.attribute(attributes[i]) + delta
+                            > ProgressionRules.ALLOCATION_ATTRIBUTE_CAP)) return null;
             increases[i] = delta;
             totalIncrease += delta;
         }
