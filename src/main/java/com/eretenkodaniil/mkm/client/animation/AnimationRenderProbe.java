@@ -13,6 +13,8 @@ public final class AnimationRenderProbe {
     private static long lastAppliedTick = Long.MIN_VALUE;
     private static String lastClip = "";
     private static double lastMaxAngleDelta = 0D;
+    private static String lastRenderer = "UNKNOWN";
+    private static String lastSelection = "";
 
     private AnimationRenderProbe() {}
 
@@ -22,6 +24,30 @@ public final class AnimationRenderProbe {
         lastAppliedTick = gameTick;
         lastClip = clipId;
         lastMaxAngleDelta = maxAngleDeltaRadians;
+    }
+
+    /**
+     * Detailed outcome is written by the actual model setup, not guessed by
+     * the HUD. ModelPart setup is NOT proof of framebuffer/item-layer output.
+     */
+    public static void markDecision(long tick, String actualClip, double changed,
+                                    String renderer, WeaponPresentationResolver.Selection selected,
+                                    String fallbackReason) {
+        if (tick < 0L || selected == null) return;
+        String clip=(actualClip == null || actualClip.isBlank()) ? "NONE" : actualClip;
+        mark(tick,clip,Double.isFinite(changed) && changed>=0D ? changed : 0D);
+        lastRenderer=renderer;
+        lastSelection="main="+selected.mainFamily()
+                +" off="+selected.offFamily()
+                +" active="+selected.activeHand()+"/"+selected.activeArm()
+                +" step="+selected.comboStep()
+                +" reason="+fallbackReason;
+    }
+
+    public static String diagnostic(long tick) {
+        if (tick < 0 || lastAppliedTick < 0 || tick < lastAppliedTick || tick-lastAppliedTick>1)
+            return "renderer=NOT_OBSERVED (use F5)";
+        return "renderer="+lastRenderer+" clip="+lastClip+" "+lastSelection;
     }
 
     public static double maxAngleDelta(float[] before, float[] after) {
