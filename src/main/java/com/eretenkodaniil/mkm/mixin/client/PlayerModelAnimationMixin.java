@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.mixin.client;
 import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
 import com.eretenkodaniil.mkm.client.animation.AnimationClip;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
+import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.VanillaAvatarAdapter;
 import net.minecraft.client.Minecraft;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import net.minecraft.client.model.player.PlayerModel;
@@ -34,12 +36,22 @@ public abstract class PlayerModelAnimationMixin {
             // C3's validated immutable data is the primary animation system.
             // Its rotations are additive; vanilla locomotion/head tracking remain.
             float[] vanillaAngles = snapshotAngles(model);
-            applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());
+            String applied = null;
+            if (NativeAnimationToggle.enabled()) {
+                // New engine and old C3 are mutually exclusive for this frame.
+                // Other clips (combo 2/3 and all dodges) intentionally fall back.
+                applied = VanillaAvatarAdapter.apply(model, state, frame,
+                        Minecraft.getInstance().player.getMainHandItem().isEmpty());
+            }
+            if (applied == null) {
+                applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());
+                applied = frame.sampledClip().clipId();
+            }
             if (Minecraft.getInstance().level != null) {
                 double changed = AnimationRenderProbe.maxAngleDelta(
                         vanillaAngles, snapshotAngles(model));
                 AnimationRenderProbe.mark(Minecraft.getInstance().level.getGameTime(),
-                        frame.sampledClip().clipId(), changed);
+                        applied, changed);
             }
         } else if (action.phase() == ActionTimeline.Phase.DODGING) {
             // Tuck the body into a crouched roll, then release naturally.
@@ -142,6 +154,9 @@ public abstract class PlayerModelAnimationMixin {
     }
 
     private static void copyAngles(ModelPart overlay, ModelPart source) {
+        overlay.x = source.x;
+        overlay.y = source.y;
+        overlay.z = source.z;
         overlay.xRot = source.xRot;
         overlay.yRot = source.yRot;
         overlay.zRot = source.zRot;
