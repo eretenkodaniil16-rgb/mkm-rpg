@@ -190,7 +190,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.5-fabric.0.jar
+          path: build/libs/mkm-rpg-0.0.5-fabric.1.jar
           if-no-files-found: error
           retention-days: 14
 
