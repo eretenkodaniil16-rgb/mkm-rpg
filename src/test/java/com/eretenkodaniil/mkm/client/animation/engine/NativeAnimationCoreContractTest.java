@@ -108,14 +108,25 @@ final class NativeAnimationCoreContractTest {
     @Test
     void importingLegacyC3MustPreserveSampledPoseBetweenKeyframes() {
         var library = AnimationLibrary.loadClasspath();
-        for (String id : List.of("mkm:sword/light_1", "mkm:unarmed/jab")) {
+        // Frozen C3.8 library has 15 clips, including all eight dodge directions.
+        java.util.ArrayList<String> ids = new java.util.ArrayList<>(List.of(
+                "mkm:sword/light_1", "mkm:sword/light_2",
+                "mkm:sword/light_3", "mkm:sword/combat_idle",
+                "mkm:unarmed/jab", "mkm:unarmed/cross",
+                "mkm:unarmed/uppercut"));
+        for (int direction = 0; direction < 8; direction++) {
+            ids.add("mkm:sword/dodge_" + direction);
+        }
+        assertEquals(15, ids.size());
+        assertEquals(15, library.clipCount());
+        for (String id : ids) {
             AnimationClip original = library.clip(id);
             assertNotNull(original);
             NativeClip imported = LegacyC3Importer.convert(original);
             assertEquals(original.id(), imported.id());
             double maxAngleError = 0D;
-            for (int step = 0; step <= 100; step++) {
-                double time = step / 100D;
+            for (int step = 0; step <= 200; step++) {
+                double time = step / 200D;
                 Map<AnimationClip.Bone, AnimationClip.Rotation> expected = original.sample(time);
                 Map<String, Transform> actual = PoseSampler.sample(imported, time);
                 for (var e : expected.entrySet()) {
