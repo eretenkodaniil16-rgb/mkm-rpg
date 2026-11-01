@@ -16,12 +16,25 @@ public final class GuardRules {
             CombatState state, long now, float blockedDamage,
             double blockStability, double staminaCostMultiplier,
             float maximumStamina, float regenerationPerSecond, long regenerationDelayTicks) {
+        return block(state, now, blockedDamage, blockStability, staminaCostMultiplier,
+                maximumStamina, regenerationPerSecond, regenerationDelayTicks,
+                GuardCostExperiment.CONTROL);
+    }
+
+    /** Bounded experimental cost factor; 1.0 baseline or 1.5 opt-in. */
+    public static Result block(
+            CombatState state, long now, float blockedDamage,
+            double blockStability, double staminaCostMultiplier,
+            float maximumStamina, float regenerationPerSecond, long regenerationDelayTicks,
+            double experimentalFactor) {
         if (!Float.isFinite(blockedDamage) || blockedDamage < 0.0F
                 || !Double.isFinite(blockStability) || blockStability <= 0.0D
                 || !Double.isFinite(staminaCostMultiplier) || staminaCostMultiplier < 0.0D
                 || !Float.isFinite(maximumStamina) || maximumStamina < 0.0F
                 || !Float.isFinite(regenerationPerSecond) || regenerationPerSecond < 0.0F
-                || regenerationDelayTicks < 0L) {
+                || regenerationDelayTicks < 0L
+                || !(experimentalFactor == GuardCostExperiment.CONTROL
+                        || experimentalFactor == GuardCostExperiment.EXPERIMENTAL)) {
             throw new IllegalArgumentException("Invalid guard resource parameters");
         }
 
@@ -30,7 +43,8 @@ public final class GuardRules {
         double rawCost = Math.min(BLOCK_MAX_COST, BLOCK_BASE_COST
                 + boundedDamage * BLOCK_DAMAGE_COST_FACTOR);
         float cost = (float) Math.min(100000.0D,
-                rawCost * staminaCostMultiplier / Math.max(0.25D, blockStability));
+                rawCost * staminaCostMultiplier * experimentalFactor
+                        / Math.max(0.25D, blockStability));
         boolean broken = current.stamina() + 0.0001F < cost;
         float spent = Math.min(current.stamina(), cost);
         CombatState next = new CombatState(

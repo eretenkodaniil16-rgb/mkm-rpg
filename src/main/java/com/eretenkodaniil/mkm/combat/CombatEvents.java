@@ -71,7 +71,7 @@ public final class CombatEvents {
         boolean heavy = PENDING_HEAVY.consume(entity, source, entity.level().getGameTime());
         if (blocked) {
             if (entity instanceof ServerPlayer defender) {
-                ShieldGuardService.onBlocked(defender, baseDamage);
+                ShieldGuardService.onBlocked(defender, source, baseDamage);
             }
             return;
         }
