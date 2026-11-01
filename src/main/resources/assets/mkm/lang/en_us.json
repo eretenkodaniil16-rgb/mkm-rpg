@@ -47,5 +47,17 @@
   "screen.mkm.character.points": "Unspent points: %s · staged: %s",
   "screen.mkm.character.apply": "Confirm",
   "screen.mkm.character.reset": "Reset",
-  "screen.mkm.character.derived_preview": "Modifiers · preview"
+  "screen.mkm.character.derived_preview": "Modifiers · preview",
+  "screen.mkm.character.allocation_sending": "Submitting…",
+  "screen.mkm.character.allocation_accepted": "Accepted · synchronizing…",
+  "screen.mkm.character.allocation_rejected": "Server rejected allocation",
+  "screen.mkm.character.allocation_timeout": "Sync timeout · reopen sheet",
+  "screen.mkm.character.synced_allocation": "Attributes updated",
+  "screen.mkm.character.compact_max_health": "HP: %s",
+  "screen.mkm.character.compact_physical_power": "Physical: %s",
+  "screen.mkm.character.compact_attack_speed": "Speed: %s",
+  "screen.mkm.character.compact_max_stamina": "Stamina: %s",
+  "screen.mkm.character.compact_magic_power": "Magic: %s",
+  "screen.mkm.character.compact_max_mana": "Mana: %s",
+  "screen.mkm.character.compact_weak_point_damage": "Weak point: %s"
 }
