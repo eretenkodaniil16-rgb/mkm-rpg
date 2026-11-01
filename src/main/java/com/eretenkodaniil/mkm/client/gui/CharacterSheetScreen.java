@@ -344,8 +344,13 @@ public final class CharacterSheetScreen extends Screen {
                 : Math.round(combat.stamina()) + " / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA);
 
         if (!layout.narrow()) {
-            graphics.text(font, Component.translatable(pendingTotal() > 0
-                    ? "screen.mkm.character.derived_preview" : "screen.mkm.character.derived"),
+            graphics.text(font, Component.translatable(layout.compact()
+                    ? pendingTotal() > 0
+                            ? "screen.mkm.character.derived_preview_compact"
+                            : "screen.mkm.character.derived_compact"
+                    : pendingTotal() > 0
+                            ? "screen.mkm.character.derived_preview"
+                            : "screen.mkm.character.derived"),
                     split, statsTop, BORDER);
         }
         if (!layout.narrow()) {
