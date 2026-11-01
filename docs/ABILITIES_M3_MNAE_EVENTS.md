@@ -65,9 +65,14 @@ Current successful Renewal payload:
 - `visualDurationTicks = 14`, about 0.7 s at 20 TPS
 - `actorEntityId`, `sequence`, `serverTick` supplied only by the server.
 
+The decoder also rejects **trailing bytes and any frame over 153 bytes**
+instead of tolerating ambiguous packet extensions. New fields require an
+explicit protocol version rather than appending unversioned data.
+
 The client validates the exact Renewal action ID/phase/hand/duration, local
 actor ID and monotonically increasing sequence, then presents one visual event.
-It resets replay state on join/disconnect. Sending a duplicate or reordered
+It resets replay state on join/disconnect **and when the client replaces
+its local player or level (respawn/dimension travel)**. Sending a duplicate or reordered
 S2C event cannot spawn another owner-local effect. This does not constitute
 a crypto replay defence against a malicious or compromised server; the
 server remains the trusted authority. Owner-only sync is sufficient for
@@ -79,7 +84,12 @@ implicitly enabled by this change.
 It receives only owner-verified server-confirmed events on the client thread.
 `latestConfirmed()` is an optional diagnostic getter. MNAE owns clip
 selection, pose blending, left-handed transforms, masking and first-person
-rendering. No animation-engine math/classes live inside `abilities`.
+rendering. The `mkm:renewal_cast` field is a **semantic action ID**, not
+a guaranteed asset path. The current native MNAE M1 (PR #40) uses authored
+asset IDs such as `mkm:mnae/sword_cut`; its future action resolver should map
+`mkm:renewal_cast` to e.g. `mkm:mnae/renewal_cast` (authoring decision) rather
+than embedding clip paths in server packet semantics. This is an MNAE-3
+implementation obligation, not an asset currently present in PR #37. No animation-engine math/classes live inside `abilities`.
 
 ## First Renewal look — for the animation team
 
@@ -113,7 +123,13 @@ viewports. Mana sits **70 GUI px above** stamina, with room for labels and
 readiness, while each bar ends strictly before the vertical screen center.
 At 200x200 the bar is 76 px wide; at 320x240, 136 px; at 480x270 and
 larger, max 148 px. Compact abbreviated text is used on narrow viewports.
-This improves F5 line of sight without moving the model or camera.
+All visible labels, localized statuses and dynamically rebound hotkeys now
+pass through `ResourceHudText.fit` measured with Minecraft's **real font
+pixel width**; this prevents text escaping the left-side column even for
+multi-key mappings, Cyrillic, or narrow 120–200px scaled viewports. The
+truncation utility respects Unicode code points and uses ellipsis only
+when it fits. This improves F5 line of sight without moving the model or
+camera.
 
 **Integration requirement for #30/#31:** C3.7 adds extra version/render
 diagnostics in `MkmCombatHud`. During merge retain those diagnostics but
@@ -126,8 +142,9 @@ workstream's character/equipment code.
 ## Tests and limitations
 
 JUnit: successful/failed healing eligibility, well-formed and adversarial
-network decode (version, ID, enums, truncation, duration), replay/actor
-filter, viewport bounds and spacing. Existing M1 tests cover mana,
+network decode (version, ID, enums, truncation, duration, trailing/oversized
+frames), replay/actor filter, viewport bounds and spacing, measured-pixel
+text clamping and Unicode. Existing M1 tests cover mana,
 cooldown, save migration, world rollback and server eligibility.
 
 CI Java 25 build, JUnit, bundled Fabric API, dedicated-server boot,
