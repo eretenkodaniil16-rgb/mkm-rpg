@@ -5,7 +5,7 @@ import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
-import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatState;
@@ -184,7 +184,7 @@ public final class CharacterSheetScreen extends Screen {
         graphics.text(font, Component.translatable("screen.mkm.character.wil", data.willpower()), contentLeft, statsTop + 87, TEXT);
         graphics.text(font, Component.translatable("screen.mkm.character.per", data.perception()), contentLeft, statsTop + 101, TEXT);
 
-        PlayerModifierSnapshot modifiers = PlayerModifierCalculator.calculate(data);
+        PlayerModifierSnapshot modifiers = EquipmentSnapshots.snapshot(minecraft.player, data);
         CombatState combat = minecraft.player.getAttached(CombatAttachments.PLAYER);
         String stamina = combat == null
                 ? "? / " + modifiers.formatted(PlayerModifierId.MAX_STAMINA)
