@@ -2,7 +2,7 @@ package com.eretenkodaniil.mkm.mixin.client;
 
 import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
-import com.eretenkodaniil.mkm.combat.CombatAnimationMath;
+import com.eretenkodaniil.mkm.combat.DirectionalRollChoreography;
 import com.eretenkodaniil.mkm.combat.ForwardRollChoreography;
 import com.eretenkodaniil.mkm.combat.DodgeDirection;
 import com.mojang.blaze3d.vertex.PoseStack;
@@ -43,14 +43,16 @@ public abstract class AvatarRollAnimationMixin {
             return;
         }
 
-        // Retain previously user-verified backward, sideways and diagonal rolls.
-        float axisX = CombatAnimationMath.rollAxisX(frame.timeline().dodgeDirection());
-        float axisZ = CombatAnimationMath.rollAxisZ(frame.timeline().dodgeDirection());
-        float norm = (float) Math.hypot(axisX, axisZ);
-        if (norm < 0.001F) return;
-        stack.translate(0F, 0.75F * entityScale, 0F);
+        // Non-forward dodges also need a grounded visual pivot. Model-local
+        // forward is -Z, so invert X on forward/backward components to make
+        // diagonal rolls tumble in their actual travel direction.
+        DirectionalRollChoreography.Pose pose =
+                DirectionalRollChoreography.sample(frame.timeline().dodgeDirection(), p);
+        stack.translate(0F,
+                DirectionalRollChoreography.PIVOT_HEIGHT * entityScale
+                        + pose.visualYOffset() * entityScale, 0F);
         stack.rotate(new Quaternionf().rotationAxis(
-                CombatAnimationMath.rollRadians(p), axisX / norm, 0F, axisZ / norm));
-        stack.translate(0F, -0.75F * entityScale, 0F);
+                pose.radians(), pose.axisX(), 0F, pose.axisZ()));
+        stack.translate(0F, -DirectionalRollChoreography.PIVOT_HEIGHT * entityScale, 0F);
     }
 }
