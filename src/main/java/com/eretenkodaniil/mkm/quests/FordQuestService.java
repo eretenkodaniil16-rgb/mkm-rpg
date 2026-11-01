@@ -39,11 +39,13 @@ public final class FordQuestService {
             if (!entity.entityTags().contains(NPC_TAG)) {
                 return InteractionResult.PASS;
             }
-            // Consume on both sides to prevent vanilla villager trading or spectator bypass.
-            if (hand == InteractionHand.MAIN_HAND && player instanceof ServerPlayer serverPlayer) {
-                if (!serverPlayer.isSpectator() && serverPlayer.distanceToSqr(entity) <= TALK_RANGE_SQUARED) {
-                    showDialogue(serverPlayer, entity);
-                }
+            // On the client let the normal interact packet reach the server.
+            // Only the server consumes the tagged villager interaction, preventing trading.
+            if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
+            if (hand == InteractionHand.MAIN_HAND
+                    && !serverPlayer.isSpectator() && serverPlayer.isAlive()
+                    && serverPlayer.distanceToSqr(entity) <= TALK_RANGE_SQUARED) {
+                showDialogue(serverPlayer, entity);
             }
             return InteractionResult.SUCCESS;
         });
