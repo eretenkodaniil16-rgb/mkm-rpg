@@ -2,6 +2,9 @@ package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
+import com.eretenkodaniil.mkm.client.animation.AnimationController;
+import com.eretenkodaniil.mkm.client.animation.AnimationLibrary;
+import com.eretenkodaniil.mkm.client.animation.AnimationProfile;
 import net.fabricmc.loader.api.FabricLoader;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
@@ -39,7 +42,7 @@ public final class MkmCombatHud {
         String version = FabricLoader.getInstance().getModContainer("mkm")
                 .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
-        graphics.text(client.font, Component.literal("MKM RPG " + version + "  [C3.7]"),
+        graphics.text(client.font, Component.literal("MKM RPG " + version + "  [C3.8]"),
                 x, y - 24, TEXT);
         CombatState combat = client.player.getAttached(CombatAttachments.PLAYER);
         var character = client.player.getAttached(CharacterAttachments.CHARACTER);
@@ -75,8 +78,15 @@ public final class MkmCombatHud {
         graphics.text(client.font, Component.literal(description), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
         if (timeline != null && !timeline.idle() && client.level != null) {
+            String selected = AnimationController.profileForEmptyMainHand(
+                    client.player.getMainHandItem().isEmpty());
+            AnimationProfile profile = AnimationLibrary.embedded().profile(selected);
+            String action = AnimationController.actionKey(timeline);
+            String expectedClip = profile == null || action == null
+                    ? null : profile.clipFor(action);
             graphics.text(client.font,
-                    Component.literal(AnimationRenderProbe.status(client.level.getGameTime())),
+                    Component.literal(AnimationRenderProbe.status(
+                            client.level.getGameTime(), expectedClip)),
                     x, y + 24, TEXT);
         }
     }
