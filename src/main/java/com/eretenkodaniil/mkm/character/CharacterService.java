@@ -75,9 +75,11 @@ public final class CharacterService {
      * Runs on the logical server. No other player's state, credits or total attributes are
      * controlled by an incoming packet. A duplicate absolute request is a strict no-op.
      */
-    public static boolean allocate(ServerPlayer player, int[] requestedTotals) {
+    public static boolean allocate(ServerPlayer player, int[] requestedTotals, int expectedSpent) {
         if (!player.isAlive() || player.isSpectator()) return false;
         CharacterData current = get(player);
+        // Reject stale snapshots instead of potentially combining two different pending builds.
+        if (expectedSpent != current.spentPoints()) return false;
         CharacterData updated = AllocationRules.tryAllocate(current, requestedTotals);
         if (updated == null) return false;
         player.setAttached(CharacterAttachments.CHARACTER, updated);
