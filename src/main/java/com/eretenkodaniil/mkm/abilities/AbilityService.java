@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.abilities;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
@@ -91,6 +92,6 @@ public final class AbilityService {
     }
 
     private static PlayerModifierSnapshot stats(ServerPlayer player) {
-        return PlayerModifierCalculator.calculate(CharacterService.get(player));
+        return EquipmentSnapshots.snapshot(player, CharacterService.get(player));
     }
 }
