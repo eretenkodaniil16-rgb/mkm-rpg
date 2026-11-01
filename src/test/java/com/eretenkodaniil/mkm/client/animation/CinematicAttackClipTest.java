@@ -24,7 +24,7 @@ class CinematicAttackClipTest {
             double hitTime = ActionTimelineRules.windupTicks(step) / (double) full;
             double left = clip.sample(hitTime).get(AnimationClip.Bone.LEFT_LEG).x();
             double right = clip.sample(hitTime).get(AnimationClip.Bone.RIGHT_LEG).x();
-            assertTrue(Math.abs(left) + Math.abs(right) > .15D, clips[i]);
+            assertTrue(Math.abs(left) + Math.abs(right) > .30D, clips[i]);
             assertTrue(clip.markers().stream().anyMatch(m -> m.name().equals("impact")
                     && Math.abs(m.time() - hitTime) < .001D), clips[i]);
             for (int k = 0; k <= 200; k++) {
@@ -32,8 +32,8 @@ class CinematicAttackClipTest {
                 for (AnimationClip.Bone leg : new AnimationClip.Bone[]{
                         AnimationClip.Bone.LEFT_LEG, AnimationClip.Bone.RIGHT_LEG}) {
                     AnimationClip.Rotation r = clip.sample(t).get(leg);
-                    assertTrue(Math.abs(r.x()) <= .25D && Math.abs(r.y()) <= .06D
-                            && Math.abs(r.z()) <= .10D,
+                    assertTrue(Math.abs(r.x()) <= .52D && Math.abs(r.y()) <= .09D
+                            && Math.abs(r.z()) <= .16D,
                             clips[i] + " excessive leg rotation at " + t);
                 }
             }
