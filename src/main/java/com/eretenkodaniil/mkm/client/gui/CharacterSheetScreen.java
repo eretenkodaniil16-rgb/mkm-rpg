@@ -135,9 +135,9 @@ public final class CharacterSheetScreen extends Screen {
         CharacterData data = currentCharacter();
         if (data == null || index < 0 || index >= pending.length) return;
         int next = pending[index] + increment;
-        if (next < 0 || next + data.attribute(PrimaryAttribute.values()[index])
+        if (next < 0 || (increment > 0 && (next + data.attribute(PrimaryAttribute.values()[index])
                 > ProgressionRules.ALLOCATION_ATTRIBUTE_CAP
-                || pendingTotal() + increment > data.availablePoints()) return;
+                || pendingTotal() + increment > data.availablePoints()))) return;
         if (awaitingReply || awaitingSync) return;
         pending[index] = next;
         statusMessage = null;
@@ -174,6 +174,7 @@ public final class CharacterSheetScreen extends Screen {
             allocations[i] = data.allocatedPoints().get(i) + pending[i];
         }
         // The server validates against its current attachment, never the client preview.
+        observedLedger = data.allocatedPoints();
         requestId++;
         awaitingReply = true;
         pendingTicks = 0;
@@ -275,12 +276,11 @@ public final class CharacterSheetScreen extends Screen {
         int contentTop = layout.contentTop();
         int contentLeft = left + 22;
 
-        graphics.text(
-                font,
-                Component.translatable("screen.mkm.character.name", minecraft.player.getName()),
-                contentLeft,
-                contentTop,
-                TEXT);
+        if (!layout.micro()) {
+            graphics.text(font,
+                    Component.translatable("screen.mkm.character.name", minecraft.player.getName()),
+                    contentLeft, contentTop, TEXT);
+        }
 
         if (data == null) {
             graphics.text(
@@ -303,7 +303,7 @@ public final class CharacterSheetScreen extends Screen {
                     contentLeft, contentTop + 16, GOOD);
         }
         graphics.text(font, Component.translatable("screen.mkm.character.level", data.level()),
-                contentLeft, contentTop + (layout.micro() ? 12 : layout.compact() ? 14 : 36), TEXT);
+                contentLeft, layout.micro() ? top + 19 : contentTop + (layout.compact() ? 14 : 36), TEXT);
         if (!layout.micro()) {
             graphics.text(font,
                     Component.translatable("screen.mkm.character.xp", data.experience()),
@@ -315,7 +315,7 @@ public final class CharacterSheetScreen extends Screen {
         Component points = Component.translatable("screen.mkm.character.points",
                 data.availablePoints(), pendingTotal());
         graphics.text(font, layout.compact() && statusMessage != null ? statusMessage : points,
-                contentLeft, contentTop + (layout.micro() ? 25 : layout.compact() ? 53 : 81),
+                contentLeft, layout.micro() ? top + 33 : contentTop + (layout.compact() ? 53 : 81),
                 statusMessage != null && layout.compact() ? WARNING
                         : pendingTotal() > 0 ? GOOD : TEXT);
 
