@@ -1,7 +1,6 @@
 package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
-import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
 import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
 import java.util.UUID;
@@ -370,40 +369,38 @@ public final class FordQuestService {
     }
 
     /**
-     * Save a repairable cumulative XP floor in the same quest state as 'rewarded'.
-     * Character Core remains the only writer of XP. Login/respawn repairs shortfalls.
-     * This is not a general cross-file transaction protocol.
+     * Character M2 authoritative keyed receipt is recorded BEFORE the quest stage.
+     * The old E2 reward floor is legacy-only and NEVER auto-redeemed.
      */
     public static void claim(ServerPlayer player) {
         if (!requireWarden(player)) {
             return;
         }
         FordQuestState previous = get(player);
-        long before = CharacterService.get(player).experience();
-        FordQuestState rewarded = FordQuestRules.claimAtExperience(
-                previous, before, ProgressionRules.experienceForLevel(ProgressionRules.MAX_LEVEL));
+        FordQuestState rewarded = FordQuestRules.claim(previous);
         if (rewarded == previous) {
             message(player, "MKM: Награда пока недоступна или уже получена.");
             return;
         }
+        // The M2 receipt, XP and build credits are ONE immutable character write.
+        // A crash after this write but before the quest stage update is safely retryable.
+        var result = CharacterService.grantExperienceOnce(
+                player, "mkm:ford_warden/complete", FordQuestRules.rewardExperience(previous));
+        if (!result.confirmed()) {
+            message(player, "MKM: Награда недоступна (" + result.status()
+                    + "), квест остаётся готовым к выдаче.");
+            return;
+        }
         update(player, rewarded);
-        repairReward(player);
-        message(player, "[Ильра] Спасибо! Награда — до " + FordQuestRules.rewardExperience(previous)
-                + " MKM XP. Завершение сохранено, повторная выдача запрещена.");
+        message(player, result.creditedExperience() > 0L
+                ? "[Ильра] Получено " + result.creditedExperience() + " MKM XP."
+                : "[Ильра] Твоя награда уже была учтена или достигнут предел опыта.");
     }
 
     public static void onLogin(ServerPlayer player) {
         replayOfflineDeaths(player);
-        repairReward(player);
-    }
-
-    /** Also run during an authorized claim, never from an untrusted client payload. */
-    private static void repairReward(ServerPlayer player) {
-        FordQuestState quest = get(player);
-        long missing = FordQuestRules.missingExperience(quest, CharacterService.get(player).experience());
-        if (missing > 0L) {
-            CharacterService.addExperience(player, missing);
-        }
+        // Legacy completed saves without a Character M2 receipt are ambiguous.
+        // Do not invent historical XP by interpreting an obsolete reward floor.
     }
 
     public static void status(ServerPlayer player) {
