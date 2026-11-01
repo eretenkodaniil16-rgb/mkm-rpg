@@ -16,3 +16,7 @@ Baseline: native MNAE draft PR #40 (`e8f40441`), independent QA PR #38. **Do not
 - No full matrix hierarchy, first-person viewmodel, normal LMB combat presentation, independent observer support, Blender armature-to-ModelPart coordinate golden fixture or real in-game 60fps filmstrip has been demonstrated.
 - Legacy C3 class contains no Minecraft API and is referenced here only from the pure compatibility bridge; MNAE runtime remains client-side.
 - No damage/stamina/timeline/magic/character/world changes. Only validation, compatibility policy, test assertions and this QA document changed.
+
+## Resource loading byte cap
+
+The v2 `NativeClipLoader` additionally rejects JSON inputs over 1 MiB **before** building Gson objects. Track/bone/marker counts are still checked by `NativeClip` after parsing. This is a per-resource bound, not a global reload budget; external resource-pack support and atomic reload remain future work.

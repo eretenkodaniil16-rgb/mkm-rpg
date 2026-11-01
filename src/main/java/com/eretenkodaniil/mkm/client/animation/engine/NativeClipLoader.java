@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.function.Function;
 /** Strict declarative MNAE format v2 loader; no user-supplied executable code. */
 public final class NativeClipLoader {
+    /** Reject oversized input BEFORE Gson builds a JSON object tree. */
+    static final int MAX_CLIP_BYTES = 1024 * 1024;
     private NativeClipLoader(){}
     public static NativeClip read(String path) {
         return load(path,p->NativeClipLoader.class.getClassLoader().getResourceAsStream(p));
@@ -15,7 +17,13 @@ public final class NativeClipLoader {
                 ||path.contains(".."))throw new IllegalArgumentException("Resource path");
         try(InputStream in=opener.apply(path)){
             if(in==null)throw new IllegalArgumentException("Missing "+path);
-            try(Reader input=new InputStreamReader(in,StandardCharsets.UTF_8)){
+            // The track/key-count limits below apply only AFTER JSON parsing.
+            // Enforce an independent byte ceiling before allocation/parsing.
+            byte[] encoded=in.readNBytes(MAX_CLIP_BYTES+1);
+            if(encoded.length>MAX_CLIP_BYTES)
+                throw new IllegalArgumentException("MNAE clip exceeds 1 MiB");
+            try(Reader input=new InputStreamReader(
+                    new ByteArrayInputStream(encoded),StandardCharsets.UTF_8)){
                 JsonObject j=JsonParser.parseReader(input).getAsJsonObject();
                 if(j.get("format").getAsInt()!=2||!"model_pixels".equals(j.get("units").getAsString())
                     ||!"xyz_radians".equals(j.get("rotation").getAsString()))
