@@ -47,5 +47,17 @@
   "screen.mkm.character.points": "Свободных очков: %s · выбрано: %s",
   "screen.mkm.character.apply": "Подтвердить",
   "screen.mkm.character.reset": "Сброс",
-  "screen.mkm.character.derived_preview": "Модификаторы · предварительно"
+  "screen.mkm.character.derived_preview": "Модификаторы · предварительно",
+  "screen.mkm.character.allocation_sending": "Отправка…",
+  "screen.mkm.character.allocation_accepted": "Принято · синхронизация…",
+  "screen.mkm.character.allocation_rejected": "Сервер отклонил запрос",
+  "screen.mkm.character.allocation_timeout": "Нет синхронизации · откройте снова",
+  "screen.mkm.character.synced_allocation": "Характеристики обновлены",
+  "screen.mkm.character.compact_max_health": "Здоровье: %s",
+  "screen.mkm.character.compact_physical_power": "Физ. сила: %s",
+  "screen.mkm.character.compact_attack_speed": "Скорость: %s",
+  "screen.mkm.character.compact_max_stamina": "Выносл.: %s",
+  "screen.mkm.character.compact_magic_power": "Магия: %s",
+  "screen.mkm.character.compact_max_mana": "Мана: %s",
+  "screen.mkm.character.compact_weak_point_damage": "Слабое место: %s"
 }
