@@ -25,6 +25,10 @@ Base: `feature/action-combat-c2-state-hud`; Minecraft 26.3 / Fabric Loader 0.20.
   PvP or deaths not credited to a player. Repeated callback on the same entity cannot
   pay twice. This reward is deliberately a temporary source until enemy tiers, quest
   rewards and anti-farm rules are designed.
+- Normal gameplay reward additions stop at the level-100 XP threshold; amounts already
+  above the cap from historical saves or admin commands are preserved. This prevents
+  repeated server attachment writes and owner-sync packets after max level. Admin
+  `/mkm xp set` remains able to adjust stored XP for diagnostics.
 - At 25 XP per qualifying kill, levels 2/3/10 require cumulative 4/12/180 kills.
   Level 100 would require 19,800 kills without other XP sources: **not acceptable as a
   final progression economy**. Add graded enemies/quests before long-form release.
