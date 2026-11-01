@@ -11,10 +11,10 @@ import net.minecraft.world.InteractionHand;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.damagesource.DamageSource;
 import net.minecraft.world.entity.Entity;
-import net.minecraft.world.entity.EntityType;
+import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.LivingEntity;
-import net.minecraft.world.entity.monster.Husk;
-import net.minecraft.world.entity.npc.Villager;
+import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.entity.npc.villager.Villager;
 
 import java.util.List;
 
@@ -32,7 +32,7 @@ public final class FordQuestService {
 
     public static void initialize() {
         UseEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
-            if (!entity.getTags().contains(NPC_TAG)) {
+            if (!entity.entityTags().contains(NPC_TAG)) {
                 return InteractionResult.PASS;
             }
             // Consume on both sides to prevent vanilla villager trading or spectator bypass.
@@ -62,7 +62,7 @@ public final class FordQuestService {
         if (!(player.level() instanceof ServerLevel level)) {
             return false;
         }
-        Villager npc = new Villager(EntityType.VILLAGER, level);
+        Villager npc = new Villager(EntityTypes.VILLAGER, level);
         npc.moveTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
         npc.addTag(NPC_TAG);
         npc.setCustomName(Component.literal("Ильра — смотрительница брода"));
@@ -83,7 +83,7 @@ public final class FordQuestService {
         }
         List<Villager> nearby = level.getEntitiesOfClass(
                 Villager.class, player.getBoundingBox().inflate(6.0),
-                npc -> npc.isAlive() && npc.getTags().contains(NPC_TAG)
+                npc -> npc.isAlive() && npc.entityTags().contains(NPC_TAG)
                         && player.distanceToSqr(npc) <= TALK_RANGE_SQUARED);
         return nearby.isEmpty() ? null : nearby.getFirst();
     }
@@ -182,7 +182,7 @@ public final class FordQuestService {
             if (!level.getBlockState(feet.below()).isSolid()) {
                 continue;
             }
-            Husk raider = new Husk(EntityType.HUSK, level);
+            Husk raider = new Husk(EntityTypes.HUSK, level);
             raider.moveTo(x, y, z, 0.0F, 0.0F);
             if (!level.noCollision(raider)) {
                 continue;
@@ -213,8 +213,8 @@ public final class FordQuestService {
         }
         // Local safety check: never spawn another owned raider if the original is nearby.
         boolean exists = !level.getEntitiesOfClass(Husk.class, npc.getBoundingBox().inflate(48.0),
-                husk -> husk.isAlive() && husk.getTags().contains(RAIDER_TAG)
-                        && husk.getTags().contains(ownerTag(player))).isEmpty();
+                husk -> husk.isAlive() && husk.entityTags().contains(RAIDER_TAG)
+                        && husk.entityTags().contains(ownerTag(player))).isEmpty();
         if (exists) {
             message(player, "MKM: Твой противник ещё существует поблизости. Новый не создаётся.");
         } else if (spawnRaider(player, npc)) {
@@ -226,9 +226,9 @@ public final class FordQuestService {
 
     /** Combat is vanilla + MKM CombatService. This listener only consumes confirmed deaths. */
     public static void onDeath(LivingEntity entity, DamageSource source) {
-        if (!(entity instanceof Husk) || !entity.getTags().contains(RAIDER_TAG)
+        if (!(entity instanceof Husk) || !entity.entityTags().contains(RAIDER_TAG)
                 || !(source.getEntity() instanceof ServerPlayer killer)
-                || !entity.getTags().contains(ownerTag(killer))) {
+                || !entity.entityTags().contains(ownerTag(killer))) {
             return;
         }
         FordQuestState previous = get(killer);
