@@ -135,3 +135,7 @@ MNAE's first-stage native demo routing permits only real mainhand sword and real
 ### P0 deterministic test fixtures
 
 Added pure and light integration JUnit fixtures for: mainhand sword; offhand sword with selected empty mainhand; axe; mace; pickaxe; bow; crossbow; shield both hands; true unarmed; left-hand preference; explicit OFF_HAND arm direction; weapon swap; steps 1/2/3; generic fallback; actual `LOCAL_PREDICTED` status; unchanged offhand equipment bonuses. This is **not** a controlled F8 renderer A/B or a multiplayer gameplay acceptance. Next required audit: actual F5 frames for identical mainhand sword in both F8 modes and the live HUD reporting resolved families and fallback reason, owned by animation chat (#43).
+
+### Neutral fallback must stop before model mixin
+
+**P0 correction:** merely returning null from `AnimationController.profileForHands` was not sufficient, since historical `PlayerModelAnimationMixin` has a generic `LIGHT_COMBO` pose fallback when `sampledClip == null`, which looks sword-like. `LocalCombatAnimation.frame` now returns **null frame for unsupported LIGHT_COMBO profiles** so the model mixin leaves those player parts in unmodified vanilla animation for this tick. This intentionally does not change server R damage, stamina, phase/timings, render mixin, or any authored clip. It is a neutral placeholder until the MNAE owner implements correct axe/mace and other weapon poses; don't mistake it for a completed weapon animation.
