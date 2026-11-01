@@ -36,6 +36,9 @@ public final class MkmCommands {
                         .executes(context -> showStats(context.getSource())))
                 .then(Commands.literal("modifiers")
                         .executes(context -> showModifiers(context.getSource())))
+                .then(Commands.literal("rewards")
+                        .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
+                        .executes(context -> showRewardReceipts(context.getSource())))
                 .then(Commands.literal("xp")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("add")
@@ -53,7 +56,7 @@ public final class MkmCommands {
 
     private static int showHelp(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal(
-                "MKM commands: /mkm ping, /mkm stats, /mkm modifiers. Admin/cheats: /mkm xp add <amount>, /mkm xp set <amount>."), false);
+                "MKM commands: /mkm ping, /mkm stats, /mkm modifiers. Admin/cheats: /mkm xp add <amount>, /mkm xp set <amount>, /mkm rewards (read-only audit)."), false);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -107,6 +110,25 @@ public final class MkmCommands {
                         + " | Mana regen " + modifiers.formatted(PlayerModifierId.MANA_REGENERATION)
                         + " | Magic resistance " + modifiers.formatted(PlayerModifierId.MAGIC_RESISTANCE)
                         + " | Weak point " + modifiers.formatted(PlayerModifierId.WEAK_POINT_DAMAGE)), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    /**
+     * Read-only operator diagnostic for World E2 migration/audit.
+     * Compares with /mkmworld status; NEVER guesses an XP amount or changes quest state.
+     * Suppressed for ordinary players because reward receipts are server-private.
+     */
+    private static int showRewardReceipts(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        CharacterData data = CharacterService.get(player);
+        boolean ford = data.hasClaimedReward("mkm:ford_warden/complete");
+        source.sendSuccess(() -> Component.literal(
+                "MKM rewards audit | schema=" + data.schemaVersion()
+                        + " | receipts=" + data.claimedRewardIds().size()
+                        + " | ford_warden/complete=" + (ford ? "PAID" : "ABSENT")
+                        + " | XP=" + data.experience()
+                        + " | points=" + data.availablePoints() + "/" + data.earnedPoints()
+                        + " | READ-ONLY; compare with /mkmworld status"), false);
         return Command.SINGLE_SUCCESS;
     }
 
