@@ -404,7 +404,7 @@ public final class CharacterSheetScreen extends Screen {
             graphics.text(font,
                     statusMessage == null
                             ? Component.translatable("screen.mkm.character.derived_note") : statusMessage,
-                    contentLeft, top + panelHeight - 48,
+                    contentLeft, top + layout.height() - 48,
                     statusMessage == null ? MUTED : WARNING);
         }
     }
