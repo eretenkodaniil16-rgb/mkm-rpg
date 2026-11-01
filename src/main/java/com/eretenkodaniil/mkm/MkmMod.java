@@ -1,5 +1,8 @@
 package com.eretenkodaniil.mkm;
 
+import com.eretenkodaniil.mkm.abilities.AbilityAttachments;
+import com.eretenkodaniil.mkm.abilities.AbilityService;
+import com.eretenkodaniil.mkm.abilities.net.AbilityNetworking;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.CharacterEvents;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
@@ -30,18 +33,22 @@ public final class MkmMod implements ModInitializer {
     public void onInitialize() {
         // Explicit static initialization registers Fabric attachments before player data is read.
         CharacterAttachments.initialize();
+        AbilityAttachments.initialize();
         CombatAttachments.initialize();
         MkmItems.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
+        AbilityNetworking.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
             CombatService.onLogin(handler.player);
+            AbilityService.onLogin(handler.player);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
                 CombatService.onPlayerTick(player);
+                AbilityService.onPlayerTick(player);
             }
         });
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
