@@ -257,7 +257,7 @@ jobs:
       - name: Generate editable Blender scene and visible ten-frame preview
         run: |
           python3 tools/animation/blender/mnae_two_strikes.py --verify
-          blender -b --factory-startup --python tools/animation/blender/mnae_two_strikes.py -- --verify --blender --render
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a blender -b --factory-startup --python tools/animation/blender/mnae_two_strikes.py -- --verify --blender --render
           test -s tools/animation/blender/mnae_m1_source.blend
           test "$(find build/reports/mnae-blender -name '*.png' -size +10k | wc -l)" -eq 10
       - uses: actions/upload-artifact@v4
