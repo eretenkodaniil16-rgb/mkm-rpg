@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.attribute.PrimaryAttribute;
 import com.eretenkodaniil.mkm.character.net.AllocationRequest;
+import com.eretenkodaniil.mkm.character.net.AllocationResult;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
@@ -43,6 +44,11 @@ public final class CharacterSheetScreen extends Screen {
     private Button applyButton;
     private Button resetButton;
     private List<Integer> observedLedger;
+    private boolean awaitingReply;
+    private boolean awaitingSync;
+    private int requestId;
+    private int pendingTicks;
+    private Component statusMessage;
 
     public CharacterSheetScreen() {
         super(Component.translatable("screen.mkm.character.title"));
@@ -83,7 +89,7 @@ public final class CharacterSheetScreen extends Screen {
                 .build());
         resetButton = addRenderableWidget(Button.builder(
                         Component.translatable("screen.mkm.character.reset"),
-                        button -> { Arrays.fill(pending, 0); refreshButtons(); })
+                        button -> { Arrays.fill(pending, 0); statusMessage = null; refreshButtons(); })
                 .size(82, 20).pos(panelLeft + panelWidth - 180, panelTop + panelHeight - 30)
                 .build());
         refreshButtons();
@@ -96,8 +102,16 @@ public final class CharacterSheetScreen extends Screen {
         if (data != null) {
             if (observedLedger != null && !observedLedger.equals(data.allocatedPoints())) {
                 Arrays.fill(pending, 0);
+                awaitingReply = false;
+                awaitingSync = false;
+                statusMessage = Component.translatable("screen.mkm.character.synced_allocation");
             }
             observedLedger = data.allocatedPoints();
+        }
+        if ((awaitingReply || awaitingSync) && ++pendingTicks > 100) {
+            awaitingReply = false;
+            awaitingSync = false;
+            statusMessage = Component.translatable("screen.mkm.character.allocation_timeout");
         }
         refreshButtons();
     }
@@ -120,7 +134,9 @@ public final class CharacterSheetScreen extends Screen {
         if (next < 0 || next + data.attribute(PrimaryAttribute.values()[index])
                 > ProgressionRules.ALLOCATION_ATTRIBUTE_CAP
                 || pendingTotal() + increment > data.availablePoints()) return;
+        if (awaitingReply || awaitingSync) return;
         pending[index] = next;
+        statusMessage = null;
         refreshButtons();
     }
 
@@ -129,31 +145,51 @@ public final class CharacterSheetScreen extends Screen {
         int total = pendingTotal();
         for (int i = 0; i < plusButtons.length; i++) {
             if (plusButtons[i] == null || minusButtons[i] == null) continue;
-            plusButtons[i].active = data != null && data.schemaVersion() == CharacterData.CURRENT_SCHEMA_VERSION
+            plusButtons[i].active = !awaitingReply && !awaitingSync && data != null
+                    && data.schemaVersion() == CharacterData.CURRENT_SCHEMA_VERSION
                     && total < data.availablePoints()
                     && data.attribute(PrimaryAttribute.values()[i]) + pending[i]
                             < ProgressionRules.ALLOCATION_ATTRIBUTE_CAP;
-            minusButtons[i].active = pending[i] > 0;
+            minusButtons[i].active = !awaitingReply && !awaitingSync && pending[i] > 0;
         }
         if (applyButton != null) {
-            applyButton.active = data != null && total > 0 && total <= data.availablePoints()
+            applyButton.active = !awaitingReply && !awaitingSync && data != null
+                    && total > 0 && total <= data.availablePoints()
                     && ClientPlayNetworking.canSend(AllocationRequest.TYPE);
         }
-        if (resetButton != null) resetButton.active = total > 0;
+        if (resetButton != null) resetButton.active = !awaitingReply && !awaitingSync && total > 0;
     }
 
     private void submitAllocation() {
         CharacterData data = currentCharacter();
-        if (data == null || pendingTotal() == 0 || pendingTotal() > data.availablePoints()
+        if (awaitingReply || awaitingSync || data == null || pendingTotal() == 0
+                || pendingTotal() > data.availablePoints()
                 || !ClientPlayNetworking.canSend(AllocationRequest.TYPE)) return;
         int[] allocations = new int[pending.length];
         for (int i = 0; i < allocations.length; i++) {
             allocations[i] = data.allocatedPoints().get(i) + pending[i];
         }
         // The server validates against its current attachment, never the client preview.
+        requestId++;
+        awaitingReply = true;
+        pendingTicks = 0;
+        statusMessage = Component.translatable("screen.mkm.character.allocation_sending");
         ClientPlayNetworking.send(new AllocationRequest(
-                allocations[0], allocations[1], allocations[2], allocations[3],
-                allocations[4], allocations[5], allocations[6]));
+                requestId, data.spentPoints(), allocations[0], allocations[1], allocations[2],
+                allocations[3], allocations[4], allocations[5], allocations[6]));
+        refreshButtons();
+    }
+
+    /** Acknowledgement never mutates stats; synchronized attachments are authoritative. */
+    public void onAllocationResult(AllocationResult result) {
+        if (!awaitingReply || result.requestId() != requestId) return;
+        awaitingReply = false;
+        awaitingSync = result.accepted();
+        pendingTicks = 0;
+        statusMessage = Component.translatable(result.accepted()
+                ? "screen.mkm.character.allocation_accepted"
+                : "screen.mkm.character.allocation_rejected");
+        refreshButtons();
     }
 
     private int previewAttribute(CharacterData data, PrimaryAttribute attribute) {
@@ -355,10 +391,11 @@ public final class CharacterSheetScreen extends Screen {
 
         graphics.text(
                 font,
-                Component.translatable("screen.mkm.character.derived_note"),
+                statusMessage == null
+                        ? Component.translatable("screen.mkm.character.derived_note") : statusMessage,
                 contentLeft,
                 top + panelHeight() - 48,
-                MUTED);
+                statusMessage == null ? MUTED : WARNING);
     }
 
     private void drawExperienceBar(GuiGraphicsExtractor graphics, CharacterData data, int x, int y, int barWidth) {
