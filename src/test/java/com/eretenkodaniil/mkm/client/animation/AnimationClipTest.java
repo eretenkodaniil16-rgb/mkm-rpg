@@ -46,4 +46,42 @@ class AnimationClipTest {
                                         new AnimationClip.Key(1, rot(1)))),
                         List.of()));
     }
+
+    @Test
+    void monotoneIntermediateKeyDoesNotArtificiallyStopMotion() {
+        AnimationClip clip = new AnimationClip("mkm:sword/continuous", 14,
+                AnimationClip.Layer.UPPER_BODY,
+                Map.of(AnimationClip.Bone.RIGHT_ARM, List.of(
+                        new AnimationClip.Key(0D, rot(0D)),
+                        new AnimationClip.Key(0.5D, rot(0.5D)),
+                        new AnimationClip.Key(1D, rot(1D)))), List.of());
+        double epsilon = 0.0001D;
+        double before = clip.sample(0.5D - epsilon).get(AnimationClip.Bone.RIGHT_ARM).x();
+        double at = clip.sample(0.5D).get(AnimationClip.Bone.RIGHT_ARM).x();
+        double after = clip.sample(0.5D + epsilon).get(AnimationClip.Bone.RIGHT_ARM).x();
+        assertEquals(0.5D, at, 1e-10);
+        assertTrue(before < at && after > at);
+        assertTrue((after - before) / (2D * epsilon) > 0.9D,
+                "Intermediate monotone key must retain velocity, not smoothstep to a stop");
+        assertEquals((at - before) / epsilon, (after - at) / epsilon, 0.002D);
+    }
+
+    @Test
+    void nonUniformReversalAndConstantAxesStayWithinAuthoredBounds() {
+        AnimationClip clip = new AnimationClip("mkm:sword/reversal", 18,
+                AnimationClip.Layer.UPPER_BODY,
+                Map.of(AnimationClip.Bone.RIGHT_ARM, List.of(
+                        new AnimationClip.Key(0D, new AnimationClip.Rotation(0D, .2D, 0D)),
+                        new AnimationClip.Key(.15D, new AnimationClip.Rotation(1D, .2D, 0D)),
+                        new AnimationClip.Key(.43D, new AnimationClip.Rotation(.2D, .2D, 0D)),
+                        new AnimationClip.Key(1D, new AnimationClip.Rotation(.7D, .2D, 0D)))), List.of());
+        for (int i = 0; i <= 1000; i++) {
+            AnimationClip.Rotation pose = clip.sample(i / 1000D).get(AnimationClip.Bone.RIGHT_ARM);
+            assertTrue(pose.x() >= 0D && pose.x() <= 1D);
+            assertEquals(.2D, pose.y(), 1e-12);
+            assertEquals(0D, pose.z(), 1e-12);
+        }
+        assertEquals(1D, clip.sample(.15D).get(AnimationClip.Bone.RIGHT_ARM).x(), 1e-12);
+        assertEquals(.2D, clip.sample(.43D).get(AnimationClip.Bone.RIGHT_ARM).x(), 1e-12);
+    }
 }
