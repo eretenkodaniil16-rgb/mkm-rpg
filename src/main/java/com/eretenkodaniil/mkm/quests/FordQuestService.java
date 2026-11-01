@@ -257,6 +257,9 @@ public final class FordQuestService {
             raider.setPersistenceRequired();
             raider.setCustomName(Component.literal("Разоритель брода"));
             raider.setCustomNameVisible(true);
+            // Initial authored AI intent: pursue the accepting player, then fall back
+            // to the vanilla Husk goal scheduler (no alternate combat system).
+            raider.setTarget(player);
             if (level.addFreshEntity(raider)) {
                 return raider;
             }
