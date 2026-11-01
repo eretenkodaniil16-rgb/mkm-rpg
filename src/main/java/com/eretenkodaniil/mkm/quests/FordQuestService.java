@@ -368,9 +368,20 @@ public final class FordQuestService {
                     + ". Противник НЕ создан повторно.");
             return;
         }
-        message(player, "MKM: Противник сейчас не загружен или потерян. "
-                + "Вернитесь в район встречи для загрузки чанка и повторите поиск. "
-                + "Новый моб автоматически НЕ создаётся во избежание дубликатов.");
+        ActiveEncounter reserved = findReservedEncounter(player);
+        if (reserved != null) {
+            FordEncounterRegistry.Entry anchor = reserved.entry();
+            message(player, "MKM: Противник не загружен. Место встречи: "
+                    + anchor.x() + ", " + anchor.y() + ", " + anchor.z()
+                    + "; измерение: " + reserved.level().dimension()
+                    + ". Посетите это место, чтобы Minecraft загрузил чанк. "
+                    + "Новая сущность автоматически НЕ создаётся.");
+        } else {
+            message(player, "MKM: Встреча не найдена в загруженных сущностях или реестре. "
+                    + "Это возможно для старого сохранения E1/E2. "
+                    + "Проверьте первоначальное место появления или обратитесь к администратору; "
+                    + "безопасное автоматическое возрождение запрещено.");
+        }
     }
 
     private static Entity findEncounter(ServerPlayer player, FordQuestState quest, ServerLevel level) {
