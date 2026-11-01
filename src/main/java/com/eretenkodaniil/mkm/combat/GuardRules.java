@@ -18,7 +18,10 @@ public final class GuardRules {
             float maximumStamina, float regenerationPerSecond, long regenerationDelayTicks) {
         if (!Float.isFinite(blockedDamage) || blockedDamage < 0.0F
                 || !Double.isFinite(blockStability) || blockStability <= 0.0D
-                || !Double.isFinite(staminaCostMultiplier) || staminaCostMultiplier < 0.0D) {
+                || !Double.isFinite(staminaCostMultiplier) || staminaCostMultiplier < 0.0D
+                || !Float.isFinite(maximumStamina) || maximumStamina < 0.0F
+                || !Float.isFinite(regenerationPerSecond) || regenerationPerSecond < 0.0F
+                || regenerationDelayTicks < 0L) {
             throw new IllegalArgumentException("Invalid guard resource parameters");
         }
 

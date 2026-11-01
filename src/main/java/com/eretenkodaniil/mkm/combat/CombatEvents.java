@@ -5,8 +5,6 @@ import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.equipment.PhysicalDamageType;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
-import java.util.Map;
-import java.util.WeakHashMap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.damagesource.DamageSource;
@@ -21,7 +19,8 @@ import net.minecraft.world.entity.Mob;
  * direct melee damage scaling is delegated to the minimal LivingEntityCombatMixin.
  */
 public final class CombatEvents {
-    private static final Map<LivingEntity, Boolean> PENDING_HEAVY = new WeakHashMap<>();
+    private static final PendingHitProvenance<LivingEntity, DamageSource> PENDING_HEAVY =
+            new PendingHitProvenance<>();
 
     private CombatEvents() {}
 
@@ -31,9 +30,10 @@ public final class CombatEvents {
         if (source.is(DamageTypes.PLAYER_ATTACK)
                 && source.getEntity() instanceof ServerPlayer attacker
                 && source.getDirectEntity() == attacker) {
+            PENDING_HEAVY.begin(target);
             PlayerModifierSnapshot offense = stats(attacker);
             boolean heavy = attacker.isShiftKeyDown() && CombatService.tryHeavy(attacker);
-            if (heavy) PENDING_HEAVY.put(target, Boolean.TRUE);
+            if (heavy) PENDING_HEAVY.record(target, source, target.level().getGameTime());
             float scaled = CombatRules.scaleIncomingMelee(
                     amount, offense.get(PlayerModifierId.PHYSICAL_POWER),
                     offense.get(PlayerModifierId.MELEE_DAMAGE), heavy);
@@ -66,7 +66,7 @@ public final class CombatEvents {
 
     public static void afterDamage(
             LivingEntity entity, DamageSource source, float baseDamage, float damageTaken, boolean blocked) {
-        boolean heavy = PENDING_HEAVY.remove(entity) != null;
+        boolean heavy = PENDING_HEAVY.consume(entity, source, entity.level().getGameTime());
         if (blocked) {
             if (entity instanceof ServerPlayer defender) {
                 ShieldGuardService.onBlocked(defender, baseDamage);
@@ -115,6 +115,6 @@ public final class CombatEvents {
     }
 
     public static void afterDeath(LivingEntity entity, DamageSource source) {
-        PENDING_HEAVY.remove(entity);
+        PENDING_HEAVY.clear(entity);
     }
 }

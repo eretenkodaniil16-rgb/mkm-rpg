@@ -18,6 +18,7 @@ public final class ShieldGuardService {
     private ShieldGuardService() {}
 
     public static void onBlocked(ServerPlayer defender, float blockedDamage) {
+        if (!Float.isFinite(blockedDamage) || blockedDamage < 0.0F) return;
         ItemStack shield = defender.getUseItem();
         if (!shield.is(Items.SHIELD)) return;
 
