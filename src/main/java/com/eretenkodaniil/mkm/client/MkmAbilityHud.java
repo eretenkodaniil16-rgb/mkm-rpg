@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.abilities.AbilityRules;
 import com.eretenkodaniil.mkm.abilities.ManaLedger;
 import com.eretenkodaniil.mkm.abilities.RenewalEligibility;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
@@ -35,7 +36,7 @@ public final class MkmAbilityHud {
         var combat = client.player.getAttached(CombatAttachments.PLAYER);
         if (attached == null || character == null || timeline == null || combat == null) return;
 
-        var stats = PlayerModifierCalculator.calculate(character);
+        var stats = EquipmentSnapshots.snapshot(client.player, character);
         double maximum = stats.get(PlayerModifierId.MAX_MANA);
         double ratio = maximum > 0D ? Math.clamp(attached.mana() / maximum, 0D, 1D) : 0D;
         int x = (client.getWindow().getGuiScaledWidth() - WIDTH) / 2;

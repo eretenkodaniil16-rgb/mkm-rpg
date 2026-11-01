@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
 import net.fabricmc.loader.api.FabricLoader;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -49,7 +50,7 @@ public final class MkmCombatHud {
             return;
         }
 
-        double max = PlayerModifierCalculator.calculate(character).get(PlayerModifierId.MAX_STAMINA);
+        double max = EquipmentSnapshots.snapshot(client.player, character).get(PlayerModifierId.MAX_STAMINA);
         if (!Double.isFinite(max) || max <= 0) return;
         float ratio = (float) Math.clamp(combat.stamina() / max, 0D, 1D);
         // Keep the model unobscured in F5; diagnostics stay at bottom left.
