@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
+import com.eretenkodaniil.mkm.character.net.AllocationResult;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
 import com.eretenkodaniil.mkm.combat.DodgeDirection;
@@ -30,6 +31,12 @@ public final class MkmClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
+                context.client().execute(() -> {
+                    if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
+                        sheet.onAllocationResult(result);
+                    }
+                }));
         KeyMappingHelper.registerKeyMapping(OPEN_SHEET);
         KeyMappingHelper.registerKeyMapping(DODGE);
         KeyMappingHelper.registerKeyMapping(COMBO);
