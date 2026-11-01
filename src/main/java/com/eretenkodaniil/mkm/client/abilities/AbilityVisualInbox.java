@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.client.abilities;
 
 import com.eretenkodaniil.mkm.abilities.visual.AbilityVisualEvent;
+import com.eretenkodaniil.mkm.abilities.visual.AbilityVisualLease;
 import com.eretenkodaniil.mkm.abilities.visual.AbilityVisualReceiptGate;
 import java.util.function.Consumer;
 import net.minecraft.client.Minecraft;
@@ -66,8 +67,8 @@ public final class AbilityVisualInbox {
             reset();
         }
         if (latest != null && acceptedAtClientTick >= 0) {
-            long elapsed = client.level.getGameTime() - acceptedAtClientTick;
-            if (elapsed < 0 || elapsed >= latest.visualDurationTicks()) {
+            if (AbilityVisualLease.expired(
+                    acceptedAtClientTick, client.level.getGameTime(), latest.visualDurationTicks())) {
                 // Sequence gate is intentionally retained: retransmissions cannot
                 // restart a finished visual within the same connection/scope.
                 clearPresentation();
