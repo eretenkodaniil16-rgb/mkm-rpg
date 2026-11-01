@@ -108,4 +108,18 @@ class AbilityBoundaryRegressionTest {
         assertNull(AbilityRules.spend(paid, AbilityCatalog.RENEWAL,
                 100L, 20D, 60L, 40L));
     }
+    @Test void abilityIdsRejectPathTraversalAndIllegalNamespace() {
+        assertTrue(AbilityIds.valid("mkm:magic/restoration"));
+        assertFalse(AbilityIds.valid("mkm:../renewal"));
+        assertFalse(AbilityIds.valid("mkm:magic//renewal"));
+        assertFalse(AbilityIds.valid("mkm:/renewal"));
+        assertFalse(AbilityIds.valid("mkm:magic/."));
+        assertFalse(AbilityIds.valid("other:renewal"));
+        assertFalse(AbilityIds.valid(null));
+        assertThrows(IllegalArgumentException.class, () -> new AbilityDefinition(
+                "mkm:../renewal", AbilityDefinition.Kind.ACTIVE, AbilityDefinition.TargetMode.SELF,
+                AbilityDefinition.Resource.MANA, AbilityDefinition.Effect.HEAL,
+                10D, 0, 20, 3D));
+    }
+
 }
