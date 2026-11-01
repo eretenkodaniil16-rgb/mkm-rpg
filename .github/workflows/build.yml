@@ -10,6 +10,7 @@ on:
       - 'feature/action-combat-c2-state-hud'
   pull_request:
     branches:
+      - 'feature/action-combat-c2-state-hud'
       - 'port/fabric-26.3'
       - 'feature/fabric-26.3-bundled-api'
       - 'feature/fabric-26.3-oneclick-installer'
