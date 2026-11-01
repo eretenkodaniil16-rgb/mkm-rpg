@@ -102,6 +102,34 @@ final class FordQuestRulesTest {
     }
 
     @Test
+    void savedRewardFloorRepairsAnInterruptedClaimWithoutPayingAgain() {
+        FordQuestState active = FordQuestRules.accept(new FordQuestState());
+        FordQuestState completed = FordQuestRules.onOwnedRaiderDefeated(active);
+        FordQuestState rewarded = FordQuestRules.claimAtExperience(completed, 25L, 495000L);
+        assertEquals(FordQuestState.REWARDED, rewarded.stage());
+        assertEquals(100L, rewarded.rewardXpFloor());
+        assertEquals(75L, FordQuestRules.missingExperience(rewarded, 25L));
+        assertEquals(0L, FordQuestRules.missingExperience(rewarded, 100L));
+        assertEquals(0L, FordQuestRules.missingExperience(rewarded, 150L));
+        assertSame(rewarded, FordQuestRules.claimAtExperience(rewarded, 25L, 495000L));
+        var encoded = FordQuestState.CODEC.encodeStart(JsonOps.INSTANCE, rewarded).getOrThrow();
+        var decoded = FordQuestState.CODEC.parse(JsonOps.INSTANCE, encoded).getOrThrow();
+        assertEquals(rewarded, decoded);
+        assertEquals(75L, FordQuestRules.missingExperience(decoded, 25L));
+    }
+
+    @Test
+    void identifiersBlockUnrelatedRaiderFromAdvancingQuest() {
+        FordQuestState active = FordQuestRules.accept(new FordQuestState())
+                .withEncounter("11111111-2222-3333-4444-555555555555",
+                        "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+        assertTrue(FordQuestRules.matchesEncounter(active, "11111111-2222-3333-4444-555555555555"));
+        assertFalse(FordQuestRules.matchesEncounter(active, "99999999-2222-3333-4444-555555555555"));
+        assertFalse(FordQuestRules.matchesEncounter(FordQuestRules.onOwnedRaiderDefeated(active),
+                "11111111-2222-3333-4444-555555555555"));
+    }
+
+    @Test
     void oldOrEmptyCodecDefaultsSafely() {
         FordQuestState restored = FordQuestState.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("{}")).getOrThrow();
         assertEquals(new FordQuestState(), restored);

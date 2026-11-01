@@ -42,6 +42,7 @@ public final class MkmMod implements ModInitializer {
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
             CombatService.onLogin(handler.player);
+            FordQuestService.onLogin(handler.player);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
