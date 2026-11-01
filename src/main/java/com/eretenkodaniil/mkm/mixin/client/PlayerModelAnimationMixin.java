@@ -2,6 +2,8 @@ package com.eretenkodaniil.mkm.mixin.client;
 
 import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
 import com.eretenkodaniil.mkm.client.animation.AnimationClip;
+import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
+import net.minecraft.client.Minecraft;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import net.minecraft.client.model.player.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
@@ -32,6 +34,10 @@ public abstract class PlayerModelAnimationMixin {
             // C3's validated immutable data is the primary animation system.
             // Its rotations are additive; vanilla locomotion/head tracking remain.
             applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());
+            if (Minecraft.getInstance().level != null) {
+                AnimationRenderProbe.mark(Minecraft.getInstance().level.getGameTime(),
+                        frame.sampledClip().clipId());
+            }
         } else if (action.phase() == ActionTimeline.Phase.DODGING) {
             // Tuck the body into a crouched roll, then release naturally.
             model.body.xRot -= 0.70F * w;
