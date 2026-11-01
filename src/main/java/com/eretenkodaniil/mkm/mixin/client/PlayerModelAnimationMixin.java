@@ -99,6 +99,14 @@ public abstract class PlayerModelAnimationMixin {
             }
         }
 
+        if (frame.sampledClip() == null
+                && selection.renderer() == WeaponPresentationResolver.Renderer.C3
+                && (action.kind() == ActionTimeline.Kind.LIGHT_COMBO
+                        || action.phase() == ActionTimeline.Phase.DODGING)) {
+            renderer="C2_FALLBACK";
+            applied="mkm:c2/legacy_pose";
+            reason="C3_ASSET_MISSING";
+        }
         if(Minecraft.getInstance().level!=null){
             double changed=AnimationRenderProbe.maxAngleDelta(
                     vanillaAngles,snapshotAngles(model));
