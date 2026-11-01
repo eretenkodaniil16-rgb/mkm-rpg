@@ -32,7 +32,7 @@ or another newer schema. Use a copied/disposable test world.
   exactly as C3.7 Combat Core does. There is no second gear or primary
   stat calculator, and no duplicate application of deltas.
 - `AbilityNetworking`: original narrow C2S cast request + strictly bounded
-  clientbound-only `mkm:ability_visual_event`.
+  clientbound-only `mkm:ability_visual_event` **v2** (v1 is rejected).
 - `MkmClient`: **preserves** Character allocation receipts and C3.6
   `HitConfirm` VFX, while adding MNAE Renewal confirmation listener and
   per-client-session reset.
@@ -83,3 +83,11 @@ Manual checks on copied integrated v3 world:
 - Do not merge into main or release the preview installer.
 - Resolve branch ancestry and all save migrations in a future
   Control/QA-approved integration before public use.
+
+## November 1 M3.1 stabilisation / hard QA boundary
+
+- Existing PR #42 commit `d72f3690` passed all CI steps in [run 41268543666](https://github.com/eretenkodaniil16-rgb/mkm-rpg/actions/runs/41268543666): Java25 build/JUnit, Fabric API bundling, dedicated server startup, Xvfb client startup and Windows artifact packaging. **That success applies to the original commit only.** Latest v2 changes require a new green build before integrator use.
+- v2 confirmation includes the server dimension identifier. The client tests exact local world/actor before advancing its replay sequence; old-dimension events can no longer fire after a portal travel. V1 is intentionally incompatible.
+- The MNAE listener now optionally includes an `onStop` callback. It is invoked when the 14-tick cosmetic lease expires, an event is superseded or client player/world changes. There is no parallel gameplay cast timeline. MNAE owns the actual visual fade.
+- **Character v4 is not in this branch:** the v4 character record has a persistent `claimedRewardIds` ledger absent from v3. Loading a v4 save with this v3-based preview could silently discard reward receipts on save. **Do not upgrade/downgrade v4 worlds using this JAR.** Testing must use a disposable backed-up v3 world and retain independent migration review before any release.
+- Equipment snapshot uses `EquipmentSnapshots.snapshot(player, CharacterService.get(player))` and is shared with integrated Combat. A later v4 merge must preserve that single source rather than recompute magical item deltas separately.
