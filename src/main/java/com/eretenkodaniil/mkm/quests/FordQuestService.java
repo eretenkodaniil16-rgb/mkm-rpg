@@ -63,12 +63,12 @@ public final class FordQuestService {
             return false;
         }
         Villager npc = new Villager(EntityTypes.VILLAGER, level);
-        npc.moveTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
+        npc.snapTo(player.getX(), player.getY(), player.getZ(), 0.0F, 0.0F);
         npc.addTag(NPC_TAG);
         npc.setCustomName(Component.literal("Ильра — смотрительница брода"));
         npc.setCustomNameVisible(true);
         npc.setNoAi(true);
-        npc.setInvulnerable(true);
+        npc.setPermanentlyInvulnerable(true);
         npc.setPersistenceRequired();
         boolean placed = level.addFreshEntity(npc);
         if (placed) {
@@ -183,7 +183,7 @@ public final class FordQuestService {
                 continue;
             }
             Husk raider = new Husk(EntityTypes.HUSK, level);
-            raider.moveTo(x, y, z, 0.0F, 0.0F);
+            raider.snapTo(x, y, z, 0.0F, 0.0F);
             if (!level.noCollision(raider)) {
                 continue;
             }
