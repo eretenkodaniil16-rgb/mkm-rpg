@@ -18,6 +18,7 @@ on:
       - 'feature/c3-6-authoritative-hit-feedback'
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'integration/fabric-26.3-c3.7-all-systems-v1'
+      - 'integration/abilities-m3-mnae-c3-7-qa-preview'
   pull_request:
     branches:
       - 'port/fabric-26.3'
