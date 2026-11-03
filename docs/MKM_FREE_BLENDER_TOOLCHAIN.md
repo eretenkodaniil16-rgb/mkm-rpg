@@ -53,6 +53,7 @@ Rigify активировать в расширениях Blender. Retarget ус
     npx skills add https://github.com/RobLe3/cc-blender-skill --skill animation-quality-gate
     npx skills add https://github.com/RobLe3/cc-blender-skill --skill quality-refinement-autoloop
     npx skills add https://github.com/RobLe3/cc-blender-skill --skill blender-export
+    npx skills add https://github.com/ra100/blender-claude-plugin --skill blender-animation-rigging
 
 Требуются Node.js и установленный Skills CLI (npx загружает пакет при запуске); интерфейс может запросить выбор ассистента и область установки. Не выполнять неизвестные скрипты без проверки. Готовые навыки не гарантируют корректность Minecraft-экспорта.
 
