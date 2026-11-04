@@ -63,7 +63,9 @@ def slerp_sword_direction(keys, frame):
     for a, b in zip(keys, keys[1:]):
         if a["frame"] <= frame <= b["frame"]:
             alpha = (frame-a["frame"])/(b["frame"]-a["frame"])
-            t = alpha*alpha*(3-2*alpha)
+            # Constant angular progression avoids the ~1.5x mid-segment
+            # peak angular speed of smoothstep across short impact phases.
+            t = alpha
             left=Vector(a["sword_tip_direction"]).normalized()
             right=Vector(b["sword_tip_direction"]).normalized()
             dot=max(-1.0,min(1.0,left.dot(right)))
