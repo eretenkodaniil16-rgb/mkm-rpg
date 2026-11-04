@@ -10,7 +10,8 @@
     "up": "+Z",
     "character_height_scene": 1.8,
     "blade_length_scene": 0.62,
-    "units": "authoring_scene_units_not_minecraft_block"
+    "units": "authoring_scene_units_not_minecraft_block",
+    "pose_targets_refined_from_real_blender_qa": true
   },
   "weapon_binding": {
     "attacking_hand": "RIGHT",
@@ -42,7 +43,7 @@
           -0.16,
           0.81
         ],
-        "pelvis_drop_scene": 0.085,
+        "pelvis_drop_scene": 0.02,
         "pelvis_yaw_deg": -7,
         "spine_relative_yaw_deg": -9,
         "trunk_forward_incline_deg": 2,
@@ -53,7 +54,7 @@
         ],
         "right_ankle_xyz": [
           0.24,
-          0.01,
+          0.15,
           0.07
         ],
         "left_knee_flexion_deg_range": [
@@ -82,7 +83,7 @@
           -0.75,
           0.19
         ],
-        "pelvis_drop_scene": 0.075,
+        "pelvis_drop_scene": 0.015,
         "pelvis_yaw_deg": -3,
         "spine_relative_yaw_deg": 5,
         "trunk_forward_incline_deg": 2,
@@ -93,7 +94,7 @@
         ],
         "right_ankle_xyz": [
           0.21,
-          0.01,
+          0.12,
           0.07
         ],
         "left_knee_flexion_deg_range": [
@@ -122,7 +123,7 @@
           -0.43,
           -0.885
         ],
-        "pelvis_drop_scene": 0.18,
+        "pelvis_drop_scene": 0.16,
         "pelvis_yaw_deg": -8,
         "spine_relative_yaw_deg": 7,
         "trunk_forward_incline_deg": 10,
@@ -133,7 +134,7 @@
         ],
         "right_ankle_xyz": [
           0.25,
-          0.04,
+          0.22,
           0.07
         ],
         "left_knee_flexion_deg_range": [
