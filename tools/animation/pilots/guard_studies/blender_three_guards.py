@@ -237,6 +237,7 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
         "wrist_ik_error":round((w-wrist.location).length,5),
         "sword_axis_dot":round(direction.dot(desired),6),
         "sword_head_proxy_clearance":round(clearance,5),
+        "sword_grip_xyz":[round(float(a),5) for a in grip],
         "sword_tip_xyz":[round(float(a),5) for a in tip],
         "knee_flexion_deg":bends,
         "toe_xyz":toe,
@@ -264,6 +265,37 @@ def new_camera(name,pos):
     data.type="ORTHO"
     data.ortho_scale=2.65
     return obj
+
+
+def screen_space_audit(cameras, poses):
+    """Evaluate actual rendered camera-space blade angle, not only 3D axis dot.
+
+    Blender camera local X is image right, local Y is image up. This is
+    independent of the chosen world-space XYZ component sign assumptions.
+    """
+    allowed_front = {
+        "MKM_GUARD_HIGH_OUTER_01": (22., 55.),   # outward and upward
+        "MKM_GUARD_MID_02": (110., 157.),        # diagonal left and upward
+        "MKM_GUARD_LOW_MOBILE_03": (-80., -30.), # forward and downward
+    }
+    for pose in poses:
+        grip=Vector(pose["sword_grip_xyz"])
+        tip=Vector(pose["sword_tip_xyz"])
+        angles={}
+        xy_deltas={}
+        for view,cam in cameras.items():
+            local=cam.matrix_world.inverted().to_3x3() @ (tip-grip)
+            if math.hypot(local.x,local.y)<.05:
+                raise ValueError(f"Blade projects as a point in {view} for {pose['id']}")
+            angles[view]=round(math.degrees(math.atan2(local.y,local.x)),2)
+            xy_deltas[view]=[round(local.x,5),round(local.y,5)]
+        a,b=allowed_front[pose["id"]]
+        pose["screen_angle_deg"]=angles
+        pose["screen_blade_delta"]=xy_deltas
+        pose["checks"]["front_camera_sword_angle_matches_design"]=a<=angles["front"]<=b
+        pose["angle_expected_front_range_deg"]=[a,b]
+        print("GUARD-PROJECTION:",pose["id"],"front/back/side",angles,
+              "front_target", [a,b], "match",pose["checks"]["front_camera_sword_angle_matches_design"])
 
 
 def run():
@@ -317,6 +349,7 @@ def run():
     }
     scene.frame_start=1
     scene.frame_end=40
+    screen_space_audit(cams, report)
 
     if opt.render:
         for stance in data["stances"]:
