@@ -113,9 +113,9 @@
       "alias_ru": "Низкая подвижная",
       "pose_targets": {
         "wrist_xyz": [
-          0.5,
-          -0.37,
-          0.8
+          0.48,
+          -0.31,
+          0.84
         ],
         "blade_direction_world": [
           0.18,
