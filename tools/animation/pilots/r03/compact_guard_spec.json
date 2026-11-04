@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "id": "mkm:sword_r03_compact_ready_guard",
+  "status": "SOURCE_POSE_REVIEW_ONLY",
+  "frame": 1,
+  "character_forward_axis": "-Y",
+  "right_axis": "+X",
+  "unit": "blender_unit",
+  "active_hand": "RIGHT",
+  "weapon_family": "one_handed_sword",
+  "pose": {
+    "right_wrist_ik_target": [
+      0.54,
+      -0.23,
+      1.17
+    ],
+    "sword_tip_direction_world": [
+      0.55,
+      -0.18,
+      0.81
+    ],
+    "blade_length": 0.62,
+    "pelvis_rotation_deg": [
+      0,
+      -7,
+      0
+    ],
+    "spine_rotation_deg": [
+      0,
+      -9,
+      0
+    ],
+    "head_rotation_deg": [
+      0,
+      4,
+      0
+    ],
+    "left_arm_rotation_deg": [
+      -7,
+      0,
+      0
+    ],
+    "left_ankle_target": [
+      -0.13,
+      -0.105,
+      0.07
+    ],
+    "right_ankle_target": [
+      0.13,
+      -0.045,
+      0.07
+    ]
+  },
+  "constraints": {
+    "hand_sword_transform": "constant_bone_local_bind",
+    "max_head_proxy_overlap": false,
+    "max_right_foot_xy_drift_at_static": 0,
+    "max_ik_stretch": false,
+    "requires_visual_review": [
+      "front",
+      "right_side",
+      "three_quarter"
+    ],
+    "release_ready": false
+  },
+  "sources": [
+    "https://www.gutenberg.org/cache/epub/67257/pg67257-images.html",
+    "https://sydneysabre.com/2022/10/10/week-0-intro-to-sabre/",
+    "https://www.wiktenauer.com/wiki/Joachim_Meyer/Rebecca_L._R._Garber_Rapier_Ch3_2023"
+  ]
+}
