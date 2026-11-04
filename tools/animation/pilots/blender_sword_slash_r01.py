@@ -18,6 +18,8 @@ import sys
 import bpy
 from mathutils import Vector
 
+# Blender background mode does not guarantee the script folder is on sys.path.
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from validate_sword_pilot import SPEC_PATH, load_spec
 
 ARMATURE_NAME = "MKM_PILOT_RIG"
