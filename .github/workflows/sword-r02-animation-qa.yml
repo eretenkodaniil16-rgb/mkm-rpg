@@ -1,0 +1,93 @@
+name: MKM Sword R02 — reference-first Blender movie QA
+
+on:
+  push:
+    branches:
+      - tools/mkm-sword-strike-r02-reference-first
+    paths:
+      - "tools/animation/pilots/r02/**"
+      - "docs/workflow/MKM_SWORD_SLASH_R02_MOTION_PLAN.md"
+      - ".github/workflows/sword-r02-animation-qa.yml"
+  pull_request:
+    paths:
+      - "tools/animation/pilots/r02/**"
+      - "docs/workflow/MKM_SWORD_SLASH_R02_MOTION_PLAN.md"
+      - ".github/workflows/sword-r02-animation-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  r02-source-contract:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m compileall -q tools/animation/pilots/r02
+      - run: python tools/animation/pilots/r02/validate_r02.py
+      - run: python -m unittest discover -s tools/animation/pilots/r02/tests -p "test_*.py" -v
+
+  r02-blender-movie:
+    needs: r02-source-contract
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install free Blender, Xvfb and ffmpeg
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender xvfb ffmpeg
+          blender --version | head -3
+      - name: Create editable Blender rig, bake wrist socket and render 43 frames
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          xvfb-run -a blender -b --factory-startup --python tools/animation/pilots/r02/blender_sword_slash_r02.py -- --output-dir build/reports/sword-r02 --render
+          test -s build/reports/sword-r02/mkm_sword_slash_r02.blend
+          test -s build/reports/sword-r02/manifest.json
+          test "$(find build/reports/sword-r02 -name 'frame_*.png' -size +2k | wc -l)" -eq 43
+      - name: Make actual native-speed and slow-review MP4 animation
+        run: |
+          out=build/reports/sword-r02
+          ffmpeg -hide_banner -loglevel error -y -framerate 60 -start_number 1 -i "$out/frame_%03d.png" -frames:v 43 -c:v libx264 -crf 20 -pix_fmt yuv420p -r 60 "$out/mkm_sword_slash_r02_60fps.mp4"
+          ffmpeg -hide_banner -loglevel error -y -i "$out/mkm_sword_slash_r02_60fps.mp4" -vf "setpts=3*PTS,fps=60" -c:v libx264 -crf 20 -pix_fmt yuv420p "$out/mkm_sword_slash_r02_slow_review.mp4"
+          ffmpeg -hide_banner -loglevel error -y -stream_loop 2 -i "$out/mkm_sword_slash_r02_slow_review.mp4" -c:v libx264 -crf 21 -pix_fmt yuv420p "$out/mkm_sword_slash_r02_repeat.mp4"
+          for f in 001 004 008 010 013 016 021 027 035 043; do cp "$out/frame_$f.png" "$out/review_$f.png"; done
+          ffmpeg -hide_banner -loglevel error -y -framerate 1 -pattern_type glob -i "$out/review_*.png" -vf "scale=320:320,tile=5x2" -frames:v 1 "$out/mkm_sword_slash_r02_contact_sheet.png"
+          test -s "$out/mkm_sword_slash_r02_60fps.mp4"
+          test -s "$out/mkm_sword_slash_r02_repeat.mp4"
+          test -s "$out/mkm_sword_slash_r02_contact_sheet.png"
+      - name: Independently test evaluated Blender motion metrics
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          out=Path("build/reports/sword-r02")
+          report=json.loads((out/"manifest.json").read_text())
+          audit=report["audit"]
+          assert report["source_only"]=="NOT_GAMEPLAY_OR_MNAE_ACCEPTED"
+          assert report["visual_contact_tick"]==5 and report["visual_contact_frame"]==16
+          assert len(report["armature_bones"])==17
+          assert len(audit["frames"])==43
+          for name,pass_status in audit["source_pass_candidates"].items():
+              print(name,pass_status)
+          assert all(audit["source_pass_candidates"].values()),"R02 measured rig geometry failed source gate; inspect the actual frames"
+          assert audit["max_wrist_target_ik_error_m"]<.16,"IK wrist target unreachable"
+          print("PASS: source geometry proxies; actual gameplay and subjective animation QA still unverified")
+          PY
+      - name: Upload editable .blend, full motion video, reference contact sheet and audit
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mkm-sword-r02-editable-blender-and-animation
+          path: |
+            build/reports/sword-r02/*.blend
+            build/reports/sword-r02/*.mp4
+            build/reports/sword-r02/*.json
+            build/reports/sword-r02/*contact_sheet.png
+            build/reports/sword-r02/review_*.png
+          retention-days: 14
+          if-no-files-found: warn
