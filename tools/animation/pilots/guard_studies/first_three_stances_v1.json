@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "mkm:sword_stances_first_three_v1",
-  "status": "DESIGN_APPROVED_FOR_BLENDER_PROTOTYPE_ONLY",
+  "status": "PROPOSED_FOR_USER_DESIGN_SIGNOFF",
   "source": "approved_conversation_concept_sheet_01_02_03",
   "render_target": "one voxel warrior / one sword / one 17-bone authoring rig",
   "coordinates": {
