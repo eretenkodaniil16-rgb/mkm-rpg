@@ -1,0 +1,88 @@
+name: MKM R03 Compact Guard Pose Study
+
+on:
+  push:
+    branches:
+      - tools/mkm-r03-compact-guard-v1
+    paths:
+      - "tools/animation/pilots/r03/**"
+      - "docs/workflow/MKM_R03_COMPACT_GUARD.md"
+      - ".github/workflows/mkm-r03-guard-study.yml"
+  pull_request:
+    paths:
+      - "tools/animation/pilots/r03/**"
+      - "docs/workflow/MKM_R03_COMPACT_GUARD.md"
+      - ".github/workflows/mkm-r03-guard-study.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  static-guard-spec:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile and validate static input geometry
+        run: |
+          python -m compileall -q tools/animation/pilots/r03
+          python - <<'PY'
+          import json,math
+          from pathlib import Path
+          p=json.loads(Path("tools/animation/pilots/r03/compact_guard_spec.json").read_text())
+          assert p["status"]=="SOURCE_POSE_REVIEW_ONLY"
+          assert p["active_hand"]=="RIGHT"
+          assert p["constraints"]["hand_sword_transform"]=="constant_bone_local_bind"
+          h=p["pose"]["right_wrist_ik_target"]
+          d=p["pose"]["sword_tip_direction_world"]
+          assert h[0]>.45 and h[2]>1.10
+          assert .98<math.sqrt(sum(x*x for x in d))<1.02
+          assert d[0]>.4 and d[2]>.7
+          print("PASS: static proposed guard coordinates and single-bone hand binding contract")
+          PY
+
+  blender-three-view-review:
+    needs: static-guard-spec
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install free Blender and Xvfb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender xvfb
+          blender --version | head -3
+      - name: Generate R03 compact guard scene and three fixed views
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          xvfb-run -a blender -b --factory-startup --python tools/animation/pilots/r03/blender_r03_guard_study.py -- --output-dir build/reports/r03-guard --render
+          test -s build/reports/r03-guard/mkm_r03_compact_guard.blend
+          test -s build/reports/r03-guard/manifest.json
+          for view in front right_side three_quarter; do test -s "build/reports/r03-guard/r03_guard_$view.png"; done
+      - name: Check actual evaluated static pose
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+          p=Path("build/reports/r03-guard/manifest.json")
+          x=json.loads(p.read_text())
+          a=x["pose_audit"]
+          assert x["no_full_animation"]
+          assert x["authoring_only"]
+          for key,passed in a["source_geometry_preflight"].items():
+              print(key,passed)
+          assert all(a["source_geometry_preflight"].values()), "Rejected static guard: inspect actual armature in Blender"
+          print("PASS: 3D static source geometry only. Visual and game evidence still required.")
+          PY
+      - name: Upload editable .blend, three views and audit
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mkm-r03-static-guard-3views-and-source
+          path: build/reports/r03-guard/
+          retention-days: 14
+          if-no-files-found: warn
