@@ -121,3 +121,20 @@ Use MKM_WORK_ITEM_TEMPLATE.md and the repository PR template. For unverified out
 - Code agent: root AGENTS.md, then relevant domain sources and these normative process documents.
 
 All other historical MKM design documents remain domain references; this workflow does not automatically mark any existing draft PR complete.
+
+
+## 7. Formal boundaries: G0 and G8
+
+The seven creative/development stages S1–S7 are enclosed by **G0 Context** and **G8 Integration**. This is a nine-gate life cycle, not a demand for nine expensive ceremonies.
+
+### G0 — Context and safe starting point
+
+Before any nontrivial work: name the owning subsystem, actual branch/base SHA, running Minecraft/Fabric/Java version, persisted schema and prerequisite source PRs that are **actually integrated**. Read the relevant code before deciding to invent a new implementation. Reject unsafe downgrades or unowned changes early.
+
+**Exit:** no hidden dependency, conflicting data owner, incompatible save migration or incorrect runtime target; if unknown, mark BLOCKED rather than guessing.
+
+### G8 — Cross-system integration and release decision
+
+After S7, hand the exact source SHA, test matrix and P0/P1/P2 issues to integrator/QA. Integrate only reviewed prerequisites on a disposable Fabric candidate; test exact combined build, real client/server, gameplay, data migration and rollback according to [MKM_INTEGRATION_QA.md](MKM_INTEGRATION_QA.md). For animation and UX, user-observed aesthetic acceptance is separate from unit tests.
+
+**Exit:** documented ACCEPTED/RELEASE CANDIDATE decision supported by exact evidence, or remain DRAFT/BLOCKED. An open PR and a green CI are never automatic authorization to merge, distribute a JAR or install it over a user's world.
