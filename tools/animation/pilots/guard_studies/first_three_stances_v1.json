@@ -34,14 +34,14 @@
       "alias_ru": "Высокая внешняя",
       "pose_targets": {
         "wrist_xyz": [
-          0.56,
-          -0.25,
-          1.44
+          0.63,
+          -0.23,
+          1.39
         ],
         "blade_direction_world": [
-          0.56,
-          -0.16,
-          0.81
+          0.76,
+          -0.1,
+          0.64
         ],
         "pelvis_drop_scene": 0.025,
         "pelvis_yaw_deg": -7,
@@ -64,7 +64,8 @@
         "right_knee_flexion_deg_range": [
           25,
           35
-        ]
+        ],
+        "weapon_silhouette_target": "Blade strongly outboard of right shoulder, rising right/up; high tierce silhouette"
       },
       "silhouette": "right hand above and lateral to right shoulder; sword high outward, left hand by waist"
     },
@@ -74,14 +75,14 @@
       "alias_ru": "Средняя защитная",
       "pose_targets": {
         "wrist_xyz": [
-          0.46,
-          -0.3,
+          0.5,
+          -0.28,
           1.14
         ],
         "blade_direction_world": [
-          -0.63,
-          -0.75,
-          0.19
+          -0.45,
+          -0.66,
+          0.6
         ],
         "pelvis_drop_scene": 0.01,
         "pelvis_yaw_deg": -3,
@@ -104,7 +105,8 @@
         "right_knee_flexion_deg_range": [
           20,
           30
-        ]
+        ],
+        "weapon_silhouette_target": "Blade diagonally forward-left/up across body, not a horizontal line"
       },
       "silhouette": "blade diagonal across chest in perspective, physically in front of armor; tip not obscuring face"
     },
@@ -114,14 +116,14 @@
       "alias_ru": "Низкая подвижная",
       "pose_targets": {
         "wrist_xyz": [
-          0.48,
-          -0.31,
+          0.54,
+          -0.41,
           0.84
         ],
         "blade_direction_world": [
-          0.18,
-          -0.43,
-          -0.885
+          0.4,
+          -0.73,
+          -0.55
         ],
         "pelvis_drop_scene": 0.135,
         "pelvis_yaw_deg": -8,
@@ -144,7 +146,8 @@
         "right_knee_flexion_deg_range": [
           40,
           60
-        ]
+        ],
+        "weapon_silhouette_target": "Blade forward-right/down, tip in front of lead foot rather than hanging vertically"
       },
       "silhouette": "deep staggered stance, visible knee flexion, sword tip ahead and down without ground contact"
     }
@@ -166,5 +169,17 @@
       "same_pose_with_only_sword_height_changed"
     ],
     "gameplay_status": "UNVERIFIED_PENDING_MNAE_ISSUE_43"
+  },
+  "weapon_angle_revision": {
+    "id": "R03_WEAPON_AXIS_R2",
+    "review_status": "PENDING_9_VIEW_BLENDER_INSPECTION",
+    "reason": "Old front/side renders proved sword axis cosmetically wrong despite previous world-vector dot=1.0",
+    "front_view_expected_angle_deg_from_screen_right_approx": [
+      40,
+      127,
+      -54
+    ],
+    "front_angles_must_be_verified_from_actual_camera": true,
+    "keep_fixed_bone_local_sword_bind": true
   }
 }
