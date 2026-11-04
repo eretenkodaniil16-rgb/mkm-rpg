@@ -162,10 +162,11 @@ def vec(rig,bone,p):
 
 
 def knee(rig,side):
-    x=.13 if side=="R" else -.13
-    hip=vec(rig,"thigh."+side,(x,0.,.68))
-    k=vec(rig,"shin."+side,(x,-.035,.37))
-    ankle=vec(rig,"shin."+side,(x,-.045,.07))
+    thigh=rig.data.bones["thigh."+side]
+    shin=rig.data.bones["shin."+side]
+    hip=vec(rig,"thigh."+side,thigh.head_local)
+    k=vec(rig,"shin."+side,shin.head_local)
+    ankle=vec(rig,"shin."+side,shin.tail_local)
     return round(180-math.degrees((hip-k).angle(ankle-k)),2)
 
 
