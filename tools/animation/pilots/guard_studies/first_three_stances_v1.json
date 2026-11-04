@@ -43,7 +43,7 @@
           -0.16,
           0.81
         ],
-        "pelvis_drop_scene": 0.02,
+        "pelvis_drop_scene": 0.025,
         "pelvis_yaw_deg": -7,
         "spine_relative_yaw_deg": -9,
         "trunk_forward_incline_deg": 2,
@@ -83,7 +83,7 @@
           -0.75,
           0.19
         ],
-        "pelvis_drop_scene": 0.015,
+        "pelvis_drop_scene": 0.01,
         "pelvis_yaw_deg": -3,
         "spine_relative_yaw_deg": 5,
         "trunk_forward_incline_deg": 2,
@@ -123,7 +123,7 @@
           -0.43,
           -0.885
         ],
-        "pelvis_drop_scene": 0.16,
+        "pelvis_drop_scene": 0.135,
         "pelvis_yaw_deg": -8,
         "spine_relative_yaw_deg": 7,
         "trunk_forward_incline_deg": 10,
@@ -134,7 +134,7 @@
         ],
         "right_ankle_xyz": [
           0.25,
-          0.22,
+          0.25,
           0.07
         ],
         "left_knee_flexion_deg_range": [
