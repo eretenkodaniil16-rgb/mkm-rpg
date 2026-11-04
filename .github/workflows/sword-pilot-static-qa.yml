@@ -1,0 +1,32 @@
+name: MKM Sword Pilot Static QA
+
+on:
+  push:
+    branches:
+      - tools/mkm-sword-strike-pilot-v1
+    paths:
+      - "tools/animation/pilots/**"
+      - ".github/workflows/sword-pilot-static-qa.yml"
+  pull_request:
+    paths:
+      - "tools/animation/pilots/**"
+      - ".github/workflows/sword-pilot-static-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  sword-pilot-offline-spec:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile Blender Python scripts (no Blender runtime)
+        run: python -m compileall -q tools/animation/pilots
+      - name: Check server-tick authoring reference and pose limits
+        run: python tools/animation/pilots/validate_sword_pilot.py
+      - name: Run independent pure-Python unit tests
+        run: python -m unittest discover -s tools/animation/pilots/tests -p "test_*.py" -v
