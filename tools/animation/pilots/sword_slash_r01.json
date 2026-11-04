@@ -1,0 +1,265 @@
+{
+  "schema_version": 1,
+  "name": "mkm:sword_slash_pilot_r01",
+  "purpose": "articulated Blender authoring preview; not a shippable MNAE clip",
+  "fps": 60,
+  "frame_start": 1,
+  "frame_end": 43,
+  "minecraft_action_ticks": 14,
+  "minecraft_impact_tick": 5,
+  "impact_frame": 16,
+  "render_frames": [
+    1,
+    6,
+    11,
+    14,
+    16,
+    20,
+    23,
+    32,
+    43
+  ],
+  "animated_bones": [
+    "pelvis",
+    "spine",
+    "neck",
+    "head",
+    "upper_arm.R",
+    "forearm.R",
+    "hand.R",
+    "upper_arm.L",
+    "forearm.L"
+  ],
+  "poses": [
+    {
+      "frame": 1,
+      "phase": "idle",
+      "degrees": {}
+    },
+    {
+      "frame": 5,
+      "phase": "anticipation",
+      "degrees": {
+        "pelvis": [
+          0,
+          0,
+          -9
+        ],
+        "spine": [
+          0,
+          0,
+          -11
+        ],
+        "upper_arm.R": [
+          12,
+          -11,
+          18
+        ],
+        "forearm.R": [
+          -12,
+          0,
+          -5
+        ],
+        "hand.R": [
+          0,
+          -8,
+          0
+        ],
+        "upper_arm.L": [
+          -5,
+          2,
+          3
+        ]
+      }
+    },
+    {
+      "frame": 11,
+      "phase": "windup",
+      "degrees": {
+        "pelvis": [
+          0,
+          0,
+          -19
+        ],
+        "spine": [
+          -2,
+          0,
+          -24
+        ],
+        "neck": [
+          0,
+          0,
+          7
+        ],
+        "upper_arm.R": [
+          -46,
+          -20,
+          42
+        ],
+        "forearm.R": [
+          -42,
+          0,
+          19
+        ],
+        "hand.R": [
+          -8,
+          4,
+          18
+        ],
+        "upper_arm.L": [
+          -14,
+          0,
+          8
+        ],
+        "forearm.L": [
+          -13,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "frame": 16,
+      "phase": "contact_reference",
+      "degrees": {
+        "pelvis": [
+          0,
+          0,
+          13
+        ],
+        "spine": [
+          -4,
+          0,
+          32
+        ],
+        "neck": [
+          0,
+          0,
+          -8
+        ],
+        "head": [
+          0,
+          0,
+          -5
+        ],
+        "upper_arm.R": [
+          -82,
+          12,
+          -66
+        ],
+        "forearm.R": [
+          -34,
+          -8,
+          -13
+        ],
+        "hand.R": [
+          8,
+          6,
+          -12
+        ],
+        "upper_arm.L": [
+          -17,
+          0,
+          -4
+        ],
+        "forearm.L": [
+          -20,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "frame": 23,
+      "phase": "follow_through",
+      "degrees": {
+        "pelvis": [
+          0,
+          0,
+          18
+        ],
+        "spine": [
+          -6,
+          0,
+          37
+        ],
+        "neck": [
+          0,
+          0,
+          -9
+        ],
+        "head": [
+          0,
+          0,
+          -4
+        ],
+        "upper_arm.R": [
+          -58,
+          19,
+          -97
+        ],
+        "forearm.R": [
+          -16,
+          -6,
+          -19
+        ],
+        "hand.R": [
+          15,
+          0,
+          -22
+        ],
+        "upper_arm.L": [
+          -20,
+          0,
+          -6
+        ],
+        "forearm.L": [
+          -20,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "frame": 32,
+      "phase": "recovery",
+      "degrees": {
+        "pelvis": [
+          0,
+          0,
+          7
+        ],
+        "spine": [
+          0,
+          0,
+          11
+        ],
+        "upper_arm.R": [
+          -20,
+          3,
+          -25
+        ],
+        "forearm.R": [
+          -10,
+          0,
+          -4
+        ],
+        "hand.R": [
+          0,
+          -4,
+          0
+        ],
+        "upper_arm.L": [
+          -6,
+          0,
+          0
+        ]
+      }
+    },
+    {
+      "frame": 43,
+      "phase": "idle_end",
+      "degrees": {}
+    }
+  ]
+}
