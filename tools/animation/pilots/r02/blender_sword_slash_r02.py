@@ -51,6 +51,31 @@ def lerp_keys(keys, frame, channel):
     raise RuntimeError("Missing interpolating key")
 
 
+def slerp_sword_direction(keys, frame):
+    # World-space **direction**, not Euler and not componentwise lerp.
+    # Linear normalization of nearly opposite vectors produced >0.7m
+    # one-frame blade-tip teleports in R02 first pass. Spherical interpolation
+    # preserves a continuous, shortest path of the blade direction.
+    if frame <= keys[0]["frame"]:
+        return Vector(keys[0]["sword_tip_direction"]).normalized()
+    if frame >= keys[-1]["frame"]:
+        return Vector(keys[-1]["sword_tip_direction"]).normalized()
+    for a, b in zip(keys, keys[1:]):
+        if a["frame"] <= frame <= b["frame"]:
+            alpha = (frame-a["frame"])/(b["frame"]-a["frame"])
+            t = alpha*alpha*(3-2*alpha)
+            left=Vector(a["sword_tip_direction"]).normalized()
+            right=Vector(b["sword_tip_direction"]).normalized()
+            dot=max(-1.0,min(1.0,left.dot(right)))
+            theta=math.acos(dot)
+            if theta<1.0e-5:
+                return left.lerp(right,t).normalized()
+            denom=math.sin(theta)
+            return (left*(math.sin((1-t)*theta)/denom)
+                    + right*(math.sin(t*theta)/denom)).normalized()
+    raise RuntimeError("Missing sword direction key interval")
+
+
 def create_ik_targets(rig):
     right = bpy.data.objects.new("R02_RIGHT_WRIST_TARGET", None)
     bpy.context.scene.collection.objects.link(right)
@@ -145,7 +170,7 @@ def bake_grip_socket(rig, socket, spec):
         scene.frame_set(f)
         bpy.context.view_layer.update()
         wrist = base.point_on_bone(rig, "hand.R", REST_WRIST)
-        desired = lerp_keys(spec["keys"], f, "sword_tip_direction").normalized()
+        desired = slerp_sword_direction(spec["keys"], f)
         socket.location = wrist
         socket.rotation_quaternion = Vector((0,0,-1)).rotation_difference(desired)
         socket.keyframe_insert(data_path="location",frame=f)
