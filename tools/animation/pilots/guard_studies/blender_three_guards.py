@@ -128,7 +128,8 @@ def solve_leg_two_bone_fk(rig,side,world_ankle):
 def set_stance(rig,wrist,feet,p,rest_dir=None):
     t=p["pose_targets"]
     pelvis=rig.pose.bones["pelvis"]
-    pelvis.location=(0.,0.,-t["pelvis_drop_scene"])
+    # Pelvis bone local Y follows world +Z; lower hip on -local-Y, not -Z.
+    pelvis.location=(0.,-t["pelvis_drop_scene"],0.)
     set_rot(pelvis,(0.,t["pelvis_yaw_deg"],0.))
     set_rot(rig.pose.bones["spine"],(t["trunk_forward_incline_deg"],t["spine_relative_yaw_deg"],0.))
     set_rot(rig.pose.bones["neck"],(0.,-t["spine_relative_yaw_deg"]*.25,0.))
