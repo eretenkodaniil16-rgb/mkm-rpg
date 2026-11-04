@@ -46,7 +46,13 @@ class SwordR02Tests(unittest.TestCase):
     def test_windup_head_clearance_strategy(self):
         a=self.data["keys"][3]
         self.assertGreater(a["right_hand_target"][0],0.52)
-        self.assertGreater(a["sword_tip_direction"][0],0.4)
+        # Even while the arc turns forward/left, the tip is still right of the head.
+        direction=a["sword_tip_direction"]
+        magnitude=sum(v*v for v in direction)**.5
+        tip_x=a["right_hand_target"][0]+0.62*direction[0]/magnitude
+        tip_z=a["right_hand_target"][2]+0.62*direction[2]/magnitude
+        self.assertGreater(tip_x,0.40)
+        self.assertGreater(tip_z,1.60)
 
     def test_reject_wrong_contact(self):
         x=copy.deepcopy(self.data);x["contact_frame"]=17
