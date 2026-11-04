@@ -20,6 +20,40 @@ HEAD=Vector(base.HEAD_CENTER_REST)
 LENGTH=.62
 
 
+def prebend_rest_legs(rig):
+    """The inherited R01 leg joints are almost collinear (IK singularity).
+    Define physically hinged knees with a small forward rest bend before skinning.
+    """
+    bpy.context.view_layer.objects.active=rig
+    bpy.ops.object.mode_set(mode="EDIT")
+    for side in ("L","R"):
+        eb=rig.data.edit_bones
+        knee=eb["thigh."+side].tail.copy()
+        knee.y=-.115
+        eb["thigh."+side].tail=knee
+        eb["shin."+side].head=knee
+        eb["shin."+side].tail=(knee.x,-.045,.07)
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.context.view_layer.update()
+
+
+def realign_leg_meshes_to_rest_bones(rig):
+    """Keep cuboid knees visibly hinged in the geometry source."""
+    for side in ("L","R"):
+        x=.13 if side=="R" else -.13
+        for label,bone,old in (
+            ("Thigh_"+side,"thigh."+side,Vector((x,-.02,.52))),
+            ("Shin_"+side,"shin."+side,Vector((x,-.04,.22))),
+        ):
+            obj=bpy.data.objects[label]
+            b=rig.data.bones[bone]
+            mid=(b.head_local+b.tail_local)*.5
+            rot=Vector((0,0,-1)).rotation_difference((b.tail_local-b.head_local).normalized())
+            for v in obj.data.vertices:
+                v.co=mid+rot @ (v.co-old)
+    bpy.context.view_layer.update()
+
+
 def controls(rig):
     base.add_foot_targets(rig)
     wrist=bpy.data.objects.new("TARGET_RIGHT_HAND",None)
@@ -198,7 +232,9 @@ def run():
     bpy.ops.object.select_all(action="SELECT")
     bpy.ops.object.delete(use_global=False)
     rig=base.create_armature()
+    prebend_rest_legs(rig)
     mats=base.build_character(rig)
+    realign_leg_meshes_to_rest_bones(rig)
     wrist,feet=controls(rig)
     first=data["stances"][0]
     bpy.context.scene.frame_set(FRAMES[0])
@@ -223,6 +259,9 @@ def run():
     scene.render.resolution_percentage=100
     scene.render.image_settings.file_format="PNG"
     scene.display.shading.color_type="MATERIAL"
+    scene.display.shading.background_type="VIEWPORT"
+    scene.display.shading.background_color=(.94,.95,.96)
+    mats["floor"].diffuse_color=(.79,.82,.85,1.0)
     scene.display.shading.show_shadows=True
     cams={
         "front":new_camera("CAM_FRONT",(0.,-4.5,1.9)),
