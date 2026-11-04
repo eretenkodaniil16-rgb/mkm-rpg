@@ -1,5 +1,11 @@
 # AGENTS.md
 
+## Active workflow and branch safety (Fabric 26.3)
+
+For every non-trivial MKM RPG task follow the seven-stage standard in docs/workflow/MKM_UNIFIED_WORKFLOW.md, select the domain protocol from docs/workflow/MKM_WORKSTREAM_PROTOCOLS.md, and use docs/workflow/MKM_WORK_ITEM_TEMPLATE.md. For Blender and animations also use docs/workflow/MKM_ANIMATION_WORKFLOW.md. These rules define when a task is only proposed, prototyped, static-tested, actually exercised in Minecraft, or accepted. Do not claim unperformed verification.
+
+**Important historical baseline warning:** the older NeoForge 26.2 and Java 25 guidance below applies to the original foundation/main and has NOT been silently erased. Current experimental cross-system integration PR #30 targets Minecraft 26.3 / Fabric / Java 25, with multiple separate unmerged drafts. For work on the active Fabric branch use the exact branch-specific platform, dependencies, API and save schema. Never merge to historical main or install an older CharacterData schema over a newer user world without an independently verified migration and backup.
+
 This repository is developed with substantial AI assistance. Agents must optimize for correctness, maintainability and compatibility, not for the amount of code produced.
 
 ## Read before changing code
