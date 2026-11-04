@@ -35,8 +35,8 @@ Limitations: H1/H2 do not validate target timing or full-body biomechanics; M1 i
 | 1 | 0 | READY | Sword low-right, both feet settled |
 | 4 | 1 | LOAD | Rear support, pelvis winds |
 | 8 | 2.33 | WINDUP | Wrist raised outside right silhouette |
-| 12 | 3.67 | HIGH GUARD | Tip clear above/right shoulder, left foot starts step |
-| 14 | 4.33 | ACCEL | Hip then shoulder acceleration and left foot plant |
+| 10 | 3 | HIGH GUARD | Tip clear above/right shoulder, left foot starts step |
+| 13 | 4 | ACCEL | Hip then shoulder acceleration and left foot plant |
 | **16** | **5** | **CONTACT REFERENCE** | Blade crosses in front of torso safely |
 | 21 | 6.67 | FOLLOW | Low-left sword tip and braked body turn |
 | 27 | 8.67 | BRAKE | Hand tracks sword finish |
