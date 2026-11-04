@@ -30,3 +30,47 @@ jobs:
         run: python tools/animation/pilots/validate_sword_pilot.py
       - name: Run independent pure-Python unit tests
         run: python -m unittest discover -s tools/animation/pilots/tests -p "test_*.py" -v
+
+  sword-pilot-blender-preview:
+    needs: sword-pilot-offline-spec
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install headless Blender
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender xvfb
+          blender --version | head -3
+      - name: Render articulated sword authoring test
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          xvfb-run -a blender -b --factory-startup --python tools/animation/pilots/blender_sword_slash_r01.py -- --output-dir build/reports/sword-pilot --render
+          test -s build/reports/sword-pilot/mkm_sword_slash_r01.blend
+          test -s build/reports/sword-pilot/manifest.json
+          test "$(find build/reports/sword-pilot -name 'review_*.png' -size +2k | wc -l)" -eq 9
+      - name: Check authored Blender manifest
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          output = Path("build/reports/sword-pilot")
+          report = json.loads((output/"manifest.json").read_text())
+          assert report["shipping_status"] == "AUTHORING_ONLY_NOT_MNAE_COMPATIBLE"
+          assert report["impact_frame"] == 16
+          assert report["minecraft_impact_tick_reference"] == 5
+          assert len(report["rig_bones"]) == 17
+          assert len(report["rendered_review_frames"]) == 9
+          assert len(report["qa"]["frames"]) == 9
+          print("PASS: Blender generated 17-bone source, manifest and nine authoring frames")
+          print("Sampling note:", report["qa"]["warning"])
+          PY
+      - name: Upload Blender source, contact audit and previews
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mkm-sword-pilot-blender-source-and-nine-frames
+          path: build/reports/sword-pilot/
+          if-no-files-found: warn
+          retention-days: 14
