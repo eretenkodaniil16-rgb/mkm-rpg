@@ -69,21 +69,60 @@ def controls(rig):
     for side in ("L","R"):
         feet[side]=bpy.data.objects["IK_ANKLE_TARGET_"+side]
         feet[side].hide_render=True
-        knee=bpy.data.objects.new("POLE_KNEE_"+side,None)
-        bpy.context.scene.collection.objects.link(knee)
-        knee.location=(.13 if side=="R" else -.13,-.55,.37)
-        knee.hide_render=True
-        ik=next(x for x in rig.pose.bones["shin."+side].constraints if x.type=="IK")
-        ik.pole_target=knee
-        ik.pole_angle=0.
-        ik.iterations=96
-        ik.use_stretch=False
+        # Disable the old nearly straight-leg IK. Each leg is analytically
+        # solved into actual thigh/shin FK bone rotations at every pose frame.
+        for c in list(rig.pose.bones["shin."+side].constraints):
+            rig.pose.bones["shin."+side].constraints.remove(c)
     return wrist,feet
 
 
 def set_rot(pb,xyz):
     pb.rotation_mode="XYZ"
     pb.rotation_euler=[math.radians(v) for v in xyz]
+
+
+def turn_bone_towards(rig,pb,desired_world):
+    bpy.context.view_layer.update()
+    current=(rig.matrix_world.to_3x3() @ (pb.tail-pb.head)).normalized()
+    target=Vector(desired_world).normalized()
+    delta=current.rotation_difference(target)
+    current_frame=(rig.matrix_world @ pb.matrix).to_quaternion()
+    pb.rotation_quaternion = pb.rotation_quaternion @ (
+        current_frame.inverted() @ delta @ current_frame
+    )
+    bpy.context.view_layer.update()
+
+
+def solve_leg_two_bone_fk(rig,side,world_ankle):
+    # Exact two-segment geometry: hip -> knee -> planted ankle.
+    # The pole is the character's forward (-Y) direction, not an ambiguous
+    # numerical IK solution from the nearly straight inherited R01 leg.
+    thigh=rig.pose.bones["thigh."+side]
+    shin=rig.pose.bones["shin."+side]
+    foot=rig.pose.bones["foot."+side]
+    for pb in (thigh,shin,foot):
+        pb.rotation_mode="QUATERNION"
+        pb.rotation_quaternion=(1.,0.,0.,0.)
+    bpy.context.view_layer.update()
+    hip=rig.matrix_world @ thigh.head
+    ankle=Vector(world_ankle)
+    a=thigh.bone.length
+    b=shin.bone.length
+    v=ankle-hip
+    d=v.length
+    if d > a+b-1e-5 or d < abs(a-b)+1e-5:
+        raise ValueError(f"Unreachable ankle for {side}: distance {d:.4f}, leg lengths {a:.4f}+{b:.4f}")
+    axis=v.normalized()
+    h=(a*a-b*b+d*d)/(2*d)
+    bend=math.sqrt(max(0.,a*a-h*h))
+    front=Vector((0.,-1.,0.))
+    pole=(front-axis*front.dot(axis)).normalized()
+    knee_target=hip+h*axis+bend*pole
+    turn_bone_towards(rig,thigh,knee_target-hip)
+    actual_knee=rig.matrix_world @ shin.head
+    turn_bone_towards(rig,shin,ankle-actual_knee)
+    turn_bone_towards(rig,foot,Vector((0.,-1.,0.)))
+    return (rig.matrix_world @ shin.tail-ankle).length
 
 
 def set_stance(rig,wrist,feet,p,rest_dir=None):
@@ -99,6 +138,8 @@ def set_stance(rig,wrist,feet,p,rest_dir=None):
     wrist.location=t["wrist_xyz"]
     feet["L"].location=t["left_ankle_xyz"]
     feet["R"].location=t["right_ankle_xyz"]
+    for side in ("L","R"):
+        solve_leg_two_bone_fk(rig,side,feet[side].location)
     hand=rig.pose.bones["hand.R"]
     hand.rotation_mode="QUATERNION"
     hand.rotation_quaternion=(1.,0.,0.,0.)
@@ -144,6 +185,10 @@ def mark_key(rig,wrist,feet,frame,id):
         pb.keyframe_insert(data_path="rotation_euler",frame=frame,group=name)
     rig.pose.bones["pelvis"].keyframe_insert(data_path="location",frame=frame,group="pelvis")
     rig.pose.bones["hand.R"].keyframe_insert(data_path="rotation_quaternion",frame=frame,group="hand.R")
+    for side in ("L","R"):
+        for part in ("thigh","shin","foot"):
+            pb=rig.pose.bones[part+"."+side]
+            pb.keyframe_insert(data_path="rotation_quaternion",frame=frame,group=pb.name)
     for obj in (wrist,feet["L"],feet["R"]):
         obj.keyframe_insert(data_path="location",frame=frame)
     bpy.context.scene.timeline_markers.new(id,frame=frame)
