@@ -1,0 +1,40 @@
+name: MKM Workflow Docs QA
+
+on:
+  push:
+    branches:
+      - docs/mkm-unified-workflow-v1
+    paths:
+      - "docs/workflow/**"
+      - "AGENTS.md"
+      - ".agents/skills/mkm-workflow-governor/**"
+      - ".github/pull_request_template.md"
+      - ".github/ISSUE_TEMPLATE/mkm-work-item.md"
+      - "tools/workflow/**"
+      - ".github/workflows/mkm-workflow-docs-qa.yml"
+  pull_request:
+    paths:
+      - "docs/workflow/**"
+      - "AGENTS.md"
+      - ".agents/skills/mkm-workflow-governor/**"
+      - ".github/pull_request_template.md"
+      - ".github/ISSUE_TEMPLATE/mkm-work-item.md"
+      - "tools/workflow/**"
+      - ".github/workflows/mkm-workflow-docs-qa.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  workflow-document-consistency:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Compile process validator
+        run: python -m py_compile tools/workflow/verify_workflow_docs.py
+      - name: Verify cross-domain process artifacts and local links
+        run: python tools/workflow/verify_workflow_docs.py
