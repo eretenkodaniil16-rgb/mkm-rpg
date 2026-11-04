@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "id": "mkm:sword_stances_first_three_v1",
+  "status": "DESIGN_APPROVED_FOR_BLENDER_PROTOTYPE_ONLY",
+  "source": "approved_conversation_concept_sheet_01_02_03",
+  "render_target": "one voxel warrior / one sword / one 17-bone authoring rig",
+  "coordinates": {
+    "forward": "-Y",
+    "right": "+X",
+    "up": "+Z",
+    "character_height_scene": 1.8,
+    "blade_length_scene": 0.62,
+    "units": "authoring_scene_units_not_minecraft_block"
+  },
+  "weapon_binding": {
+    "attacking_hand": "RIGHT",
+    "family": "one_handed_sword",
+    "binding": "fixed_hand_bone_local_transform",
+    "world_quaternion_animation": false
+  },
+  "shared_restrictions": [
+    "no_gameplay_changes",
+    "no_mnae_runtime_export",
+    "preserve_identical_character_and_sword_between_stances",
+    "three_fixed_cameras",
+    "bilateral_planted_feet",
+    "actual_knee_bend_not_visual_cheat"
+  ],
+  "stances": [
+    {
+      "id": "MKM_GUARD_HIGH_OUTER_01",
+      "index": 1,
+      "alias_ru": "Высокая внешняя",
+      "pose_targets": {
+        "wrist_xyz": [
+          0.56,
+          -0.25,
+          1.44
+        ],
+        "blade_direction_world": [
+          0.56,
+          -0.16,
+          0.81
+        ],
+        "pelvis_drop_scene": 0.085,
+        "pelvis_yaw_deg": -7,
+        "spine_relative_yaw_deg": -9,
+        "trunk_forward_incline_deg": 2,
+        "left_ankle_xyz": [
+          -0.24,
+          -0.16,
+          0.07
+        ],
+        "right_ankle_xyz": [
+          0.24,
+          0.01,
+          0.07
+        ],
+        "left_knee_flexion_deg_range": [
+          25,
+          35
+        ],
+        "right_knee_flexion_deg_range": [
+          25,
+          35
+        ]
+      },
+      "silhouette": "right hand above and lateral to right shoulder; sword high outward, left hand by waist"
+    },
+    {
+      "id": "MKM_GUARD_MID_02",
+      "index": 2,
+      "alias_ru": "Средняя защитная",
+      "pose_targets": {
+        "wrist_xyz": [
+          0.46,
+          -0.3,
+          1.14
+        ],
+        "blade_direction_world": [
+          -0.63,
+          -0.75,
+          0.19
+        ],
+        "pelvis_drop_scene": 0.075,
+        "pelvis_yaw_deg": -3,
+        "spine_relative_yaw_deg": 5,
+        "trunk_forward_incline_deg": 2,
+        "left_ankle_xyz": [
+          -0.21,
+          -0.14,
+          0.07
+        ],
+        "right_ankle_xyz": [
+          0.21,
+          0.01,
+          0.07
+        ],
+        "left_knee_flexion_deg_range": [
+          20,
+          30
+        ],
+        "right_knee_flexion_deg_range": [
+          20,
+          30
+        ]
+      },
+      "silhouette": "blade diagonal across chest in perspective, physically in front of armor; tip not obscuring face"
+    },
+    {
+      "id": "MKM_GUARD_LOW_MOBILE_03",
+      "index": 3,
+      "alias_ru": "Низкая подвижная",
+      "pose_targets": {
+        "wrist_xyz": [
+          0.5,
+          -0.37,
+          0.8
+        ],
+        "blade_direction_world": [
+          0.18,
+          -0.43,
+          -0.885
+        ],
+        "pelvis_drop_scene": 0.18,
+        "pelvis_yaw_deg": -8,
+        "spine_relative_yaw_deg": 7,
+        "trunk_forward_incline_deg": 10,
+        "left_ankle_xyz": [
+          -0.25,
+          -0.24,
+          0.07
+        ],
+        "right_ankle_xyz": [
+          0.25,
+          0.04,
+          0.07
+        ],
+        "left_knee_flexion_deg_range": [
+          50,
+          65
+        ],
+        "right_knee_flexion_deg_range": [
+          40,
+          60
+        ]
+      },
+      "silhouette": "deep staggered stance, visible knee flexion, sword tip ahead and down without ground contact"
+    }
+  ],
+  "acceptance": {
+    "fixed_camera_views": [
+      "front",
+      "right_side",
+      "three_quarter"
+    ],
+    "images_required": 9,
+    "real_blender_ik_required": true,
+    "geometry_acceptance_before_animation": true,
+    "stop_conditions": [
+      "joint_stretch",
+      "head_or_armor_intersection",
+      "weapon_not_bound_to_palm",
+      "foot_not_planted",
+      "same_pose_with_only_sword_height_changed"
+    ],
+    "gameplay_status": "UNVERIFIED_PENDING_MNAE_ISSUE_43"
+  }
+}
