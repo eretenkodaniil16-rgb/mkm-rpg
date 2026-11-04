@@ -1,0 +1,525 @@
+{
+  "schema_version": 2,
+  "id": "mkm:sword_slash_r02_authoring",
+  "source_only": true,
+  "fps": 60,
+  "frame_start": 1,
+  "frame_end": 43,
+  "action_ticks": 14,
+  "visual_contact_tick": 5,
+  "contact_frame": 16,
+  "mainhand": "RIGHT",
+  "weapon_family": "one_handed_sword",
+  "direction": "right_high_to_left_low",
+  "source_refs": [
+    "H1",
+    "H2",
+    "M1",
+    "M2",
+    "I1"
+  ],
+  "review_frames": [
+    1,
+    4,
+    8,
+    12,
+    14,
+    16,
+    21,
+    27,
+    35,
+    43
+  ],
+  "keys": [
+    {
+      "frame": 1,
+      "phase": "ready",
+      "pelvis_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "spine_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -6,
+        0,
+        0
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.43,
+        -0.3,
+        0.93
+      ],
+      "sword_tip_direction": [
+        0.28,
+        -0.2,
+        -0.94
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.045,
+        0.07
+      ]
+    },
+    {
+      "frame": 4,
+      "phase": "load",
+      "pelvis_euler_deg": [
+        0,
+        -8,
+        0
+      ],
+      "spine_euler_deg": [
+        -2,
+        -8,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        1.44,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        1.6,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -14,
+        0,
+        0
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.51,
+        -0.29,
+        1.01
+      ],
+      "sword_tip_direction": [
+        0.4,
+        -0.18,
+        -0.89
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.045,
+        0.07
+      ]
+    },
+    {
+      "frame": 8,
+      "phase": "windup",
+      "pelvis_euler_deg": [
+        0,
+        -14,
+        0
+      ],
+      "spine_euler_deg": [
+        -3,
+        -12,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        2.16,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        2.4000000000000004,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -18,
+        0,
+        4
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.56,
+        -0.29,
+        1.18
+      ],
+      "sword_tip_direction": [
+        0.57,
+        -0.22,
+        0.79
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.045,
+        0.105
+      ]
+    },
+    {
+      "frame": 12,
+      "phase": "high_guard",
+      "pelvis_euler_deg": [
+        0,
+        -17,
+        0
+      ],
+      "spine_euler_deg": [
+        -4,
+        -16,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        2.88,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        3.2,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -17,
+        0,
+        6
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.59,
+        -0.3,
+        1.29
+      ],
+      "sword_tip_direction": [
+        0.58,
+        -0.25,
+        0.77
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.12,
+        0.105
+      ]
+    },
+    {
+      "frame": 14,
+      "phase": "acceleration",
+      "pelvis_euler_deg": [
+        -1,
+        2,
+        0
+      ],
+      "spine_euler_deg": [
+        -4,
+        8,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        -1.44,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        -1.6,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -15,
+        0,
+        -2
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.48,
+        -0.4,
+        1.29
+      ],
+      "sword_tip_direction": [
+        0.18,
+        -0.24,
+        0.95
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.2,
+        0.07
+      ]
+    },
+    {
+      "frame": 16,
+      "phase": "contact",
+      "pelvis_euler_deg": [
+        -2,
+        12,
+        0
+      ],
+      "spine_euler_deg": [
+        -6,
+        22,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        -3.96,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        -4.4,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -13,
+        0,
+        -10
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.24,
+        -0.45,
+        1.15
+      ],
+      "sword_tip_direction": [
+        -0.84,
+        -0.38,
+        -0.4
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.245,
+        0.07
+      ]
+    },
+    {
+      "frame": 21,
+      "phase": "follow_through",
+      "pelvis_euler_deg": [
+        -3,
+        17,
+        0
+      ],
+      "spine_euler_deg": [
+        -5,
+        23,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        -4.14,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        -4.6000000000000005,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -12,
+        0,
+        -11
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.06,
+        -0.43,
+        1.02
+      ],
+      "sword_tip_direction": [
+        -0.78,
+        -0.3,
+        -0.55
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.245,
+        0.07
+      ]
+    },
+    {
+      "frame": 27,
+      "phase": "brake",
+      "pelvis_euler_deg": [
+        -3,
+        10,
+        0
+      ],
+      "spine_euler_deg": [
+        -3,
+        13,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        -2.34,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        -2.6,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -12,
+        0,
+        -6
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.14,
+        -0.35,
+        0.86
+      ],
+      "sword_tip_direction": [
+        -0.4,
+        -0.2,
+        -0.89
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.245,
+        0.07
+      ]
+    },
+    {
+      "frame": 35,
+      "phase": "recovery",
+      "pelvis_euler_deg": [
+        -1,
+        3,
+        0
+      ],
+      "spine_euler_deg": [
+        -1,
+        4,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        -0.72,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        -0.8,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -8,
+        0,
+        0
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.36,
+        -0.31,
+        0.94
+      ],
+      "sword_tip_direction": [
+        0.14,
+        -0.18,
+        -0.97
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.14,
+        0.095
+      ]
+    },
+    {
+      "frame": 43,
+      "phase": "ready_end",
+      "pelvis_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "spine_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "neck_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "head_euler_deg": [
+        0,
+        0,
+        0
+      ],
+      "upper_arm_L_deg": [
+        -6,
+        0,
+        0
+      ],
+      "forearm_L_deg": [
+        -12,
+        0,
+        0
+      ],
+      "right_hand_target": [
+        0.43,
+        -0.3,
+        0.93
+      ],
+      "sword_tip_direction": [
+        0.28,
+        -0.2,
+        -0.94
+      ],
+      "left_ankle_target": [
+        -0.13,
+        -0.045,
+        0.07
+      ]
+    }
+  ]
+}
