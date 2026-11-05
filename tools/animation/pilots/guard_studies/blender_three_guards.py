@@ -227,6 +227,7 @@ def evaluated_head_geometry(rig, grip, tip):
     distance=float("inf")
     hair_top=-float("inf")
     hair_right=-float("inf")
+    head_front_y=float("inf")
     for name in ("Head","HairCap"):
         obj=bpy.data.objects[name]
         evaluated=obj.evaluated_get(depsgraph)
@@ -240,6 +241,8 @@ def evaluated_head_geometry(rig, grip, tip):
         if name=="HairCap":
             hair_top=high.z
             hair_right=high.x
+        elif name=="Head":
+            head_front_y=low.y
         for i in range(201):
             t=i/200.
             p=grip.lerp(tip,t)
@@ -248,7 +251,7 @@ def evaluated_head_geometry(rig, grip, tip):
             dz=max(low.z-p.z, 0., p.z-high.z)
             distance=min(distance, math.sqrt(dx*dx+dy*dy+dz*dz))
     # R01 blade is a 0.105-wide cuboid. Account for half-width.
-    return distance-.053, hair_top, hair_right
+    return distance-.053, hair_top, hair_right, head_front_y
 
 
 def audit(rig,wrist,feet,stance,rest_dir,objs):
@@ -262,7 +265,7 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
     tip=grip+LENGTH*direction
     head=vec(rig,"head",HEAD)
     clearance=base.distance_to_segment(head,grip,tip)-.398-.055
-    mesh_clearance,hair_top,hair_right=evaluated_head_geometry(rig,grip,tip)
+    mesh_clearance,hair_top,hair_right,head_front_y=evaluated_head_geometry(rig,grip,tip)
     bends={s:knee(rig,s) for s in ("L","R")}
     toe={}
     for side in ("L","R"):
@@ -275,6 +278,7 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
         "sword_head_proxy_clearance":round(clearance,5),
         "head_mesh_aabb_clearance_after_blade_halfwidth":round(mesh_clearance,5),
         "hair_top_world_z":round(hair_top,5),
+        "head_front_mesh_y":round(head_front_y,5),
         "sword_grip_xyz":[round(float(a),5) for a in grip],
         "sword_tip_xyz":[round(float(a),5) for a in tip],
         "knee_flexion_deg":bends,
@@ -285,26 +289,27 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
     result["checks"]={
         "wrist_reached":result["wrist_ik_error"]<.05,
         "sword_follows_hand":result["sword_axis_dot"]>.995 and result["sword_single_hand_bone"],
-        "head_proxy_clear":(mesh_clearance>.005 if stance["index"]==1 else clearance>0.),
+        "head_proxy_clear":(mesh_clearance>.012 if stance["index"]==1 else clearance>0.),
         "real_knee_bend":min(bends.values())>=15.,
         "knees_within_design_ranges":all(
           result["knee_target_ranges"][side][0]<=bends[side]<=result["knee_target_ranges"][side][1] for side in ("L","R")
         )
     }
     if stance["index"]==1:
-        # Tip points back over center above the evaluated voxel hair geometry.
-        result["checks"]["overhead_tip_above_hair"]=tip.z>hair_top+.035
-        result["checks"]["overhead_tip_near_center"]=abs(tip.x)<.20
-        if tip.x<grip.x and grip.x>hair_right>tip.x:
-            crossing=(hair_right-grip.x)/(tip.x-grip.x)
-            crossing_z=grip.z+crossing*(tip.z-grip.z)
-        else:
-            crossing_z=-float("inf")
-        result["checks"]["blade_above_hair_at_head_edge"]=crossing_z>hair_top+.035
-        result["crown_crossing_margin_m"]=round(crossing_z-hair_top,5)
+        # User explicitly requested the sword hand in FRONT OF the head, not
+        # held overhead. Validate actual deformed head mesh in world-space Y.
+        # The whole blade should be in the air *before* the front head surface.
+        result["checks"]["hand_in_front_of_face"]=grip.y<head_front_y-.07
+        result["checks"]["blade_entirely_in_front_of_face"]=max(grip.y,tip.y)<head_front_y-.06
+        result["checks"]["grip_near_forehead_level"]=abs(grip.z-head.z)<.30
+        result["checks"]["blade_inward_from_right"]=tip.x<.03 and grip.x>.14
+        result["face_forward_clearance_scene_units"]=round(head_front_y-max(grip.y,tip.y),5)
     if stance["index"]==3:
-        result["checks"]["low_tip_inward"]=tip.x<grip.x-.14 and tip.x<.38
-        result["checks"]["low_tip_below_hand_above_floor"]=.10<tip.z<grip.z-.25
+        # The guard moves UP AND IN toward torso; old R04 downward tests are
+        # deliberately removed so old clip behavior cannot pass accidentally.
+        result["checks"]["tip_up_and_in"]=tip.x<grip.x-.25 and tip.z>grip.z+.30
+        result["checks"]["tip_below_face"]=tip.z<head.z-.10
+        result["checks"]["tip_forward_of_chest"]=tip.y<-.25
     if stance["index"]==2:
         # The mid-guard diagonal must finish below the chin in front view.
         # This is a geometric screen-silhouette proxy; actual images still need review.
@@ -331,9 +336,9 @@ def screen_space_audit(cameras, poses):
     independent of the chosen world-space XYZ component sign assumptions.
     """
     allowed_front = {
-        "MKM_GUARD_HIGH_OUTER_01": (150., 174.), # near-horizontal LEFT/up above hair
+        "MKM_GUARD_HIGH_OUTER_01": (155., 177.), # almost horizontal LEFT, in FRONT of head
         "MKM_GUARD_MID_02": (110., 157.),        # diagonal left and upward
-        "MKM_GUARD_LOW_MOBILE_03": (-123., -100.), # down and IN toward center, 20° from vertical
+        "MKM_GUARD_LOW_MOBILE_03": (120., 150.), # diagonal UP and IN toward center
     }
     # Newly created camera objects have deferred world transforms in Blender.
     # Force dependency graph evaluation before using matrix_world; otherwise
@@ -355,7 +360,7 @@ def screen_space_audit(cameras, poses):
         pose["screen_blade_delta"]=xy_deltas
         pose["checks"]["front_camera_sword_angle_matches_design"]=a<=angles["front"]<=b
         if pose["id"]=="MKM_GUARD_LOW_MOBILE_03":
-            pose["checks"]["about_20_degrees_inward_from_vertical"]=12.<=abs(angles["front"]+90.)<=33.
+            pose["checks"]["clear_upward_inward_diagonal"]=30.<=180.-angles["front"]<=60.
         pose["angle_expected_front_range_deg"]=[a,b]
         print("GUARD-PROJECTION:",pose["id"],"front/back/side",angles,
               "front_target", [a,b], "match",pose["checks"]["front_camera_sword_angle_matches_design"])
