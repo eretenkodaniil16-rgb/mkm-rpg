@@ -75,9 +75,9 @@
       "alias_ru": "Средняя защитная",
       "pose_targets": {
         "wrist_xyz": [
-          0.5,
-          -0.28,
-          1.14
+          0.52,
+          -0.35,
+          0.94
         ],
         "blade_direction_world": [
           -0.45,
@@ -106,7 +106,7 @@
           20,
           30
         ],
-        "weapon_silhouette_target": "Blade diagonally forward-left/up across body, not a horizontal line"
+        "weapon_silhouette_target": "Distinct diagonal projected up-left, but entire tip below the face plane and ahead of torso (clear facial silhouette)"
       },
       "silhouette": "blade diagonal across chest in perspective, physically in front of armor; tip not obscuring face"
     },
@@ -172,7 +172,7 @@
   },
   "weapon_angle_revision": {
     "id": "R03_WEAPON_AXIS_R2",
-    "review_status": "PENDING_9_VIEW_BLENDER_INSPECTION",
+    "review_status": "BLENDER_SCREEN_ANGLE_PASS_MID_FACE_CLEARANCE_CORRECTION_PENDING",
     "reason": "Old front/side renders proved sword axis cosmetically wrong despite previous world-vector dot=1.0",
     "front_view_expected_angle_deg_from_screen_right_approx": [
       40,
