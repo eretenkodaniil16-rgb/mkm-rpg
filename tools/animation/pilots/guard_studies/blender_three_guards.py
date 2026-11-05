@@ -278,6 +278,10 @@ def screen_space_audit(cameras, poses):
         "MKM_GUARD_MID_02": (110., 157.),        # diagonal left and upward
         "MKM_GUARD_LOW_MOBILE_03": (-80., -30.), # forward and downward
     }
+    # Newly created camera objects have deferred world transforms in Blender.
+    # Force dependency graph evaluation before using matrix_world; otherwise
+    # every camera can appear as an identity transform in headless runs.
+    bpy.context.view_layer.update()
     for pose in poses:
         grip=Vector(pose["sword_grip_xyz"])
         tip=Vector(pose["sword_tip_xyz"])
