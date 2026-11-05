@@ -135,8 +135,8 @@
         ],
         "blade_direction_world": [
           -0.68,
-          -0.18,
-          0.71
+          -0.44,
+          0.58
         ],
         "pelvis_drop_scene": 0.135,
         "pelvis_yaw_deg": -8,
@@ -160,7 +160,7 @@
           40,
           60
         ],
-        "weapon_silhouette_target": "Low mobile right hand near hip with sword diagonally UP and IN toward chest center, ~46 degrees above horizon in front view; tip in front of torso, not pointed to ground."
+        "weapon_silhouette_target": "Sword climbs diagonally UP toward center from low right-hand guard, ~40° above the image horizontal, with blade carried FORWARD clear of head/face; no sword-to-head clipping."
       },
       "silhouette": "low staggered stance, sword climbs noticeably upward and inward from right hip to center chest, clear facial line"
     }
