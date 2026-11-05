@@ -340,7 +340,7 @@ def screen_space_audit(cameras, poses):
     allowed_front = {
         "MKM_GUARD_HIGH_OUTER_01": (155., 177.), # almost horizontal LEFT, in FRONT of head
         "MKM_GUARD_MID_02": (110., 157.),        # diagonal left and upward
-        "MKM_GUARD_LOW_MOBILE_03": (-155., -135.), # 35deg DOWN and IN from horizontal
+        "MKM_GUARD_LOW_MOBILE_03": (-150., -140.), # 35deg DOWN and IN, +/-5deg front view
     }
     # Newly created camera objects have deferred world transforms in Blender.
     # Force dependency graph evaluation before using matrix_world; otherwise
@@ -362,7 +362,7 @@ def screen_space_audit(cameras, poses):
         pose["screen_blade_delta"]=xy_deltas
         pose["checks"]["front_camera_sword_angle_matches_design"]=a<=angles["front"]<=b
         if pose["id"]=="MKM_GUARD_LOW_MOBILE_03":
-            pose["checks"]["about_35deg_down_from_horizontal"]=25.<=180.+angles["front"]<=45.
+            pose["checks"]["about_35deg_down_from_horizontal"]=30.<=180.+angles["front"]<=40.
         pose["angle_expected_front_range_deg"]=[a,b]
         print("GUARD-PROJECTION:",pose["id"],"front/back/side",angles,
               "front_target", [a,b], "match",pose["checks"]["front_camera_sword_angle_matches_design"])
