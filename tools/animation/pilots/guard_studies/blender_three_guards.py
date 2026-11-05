@@ -305,11 +305,13 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
         result["checks"]["blade_inward_from_right"]=tip.x<.03 and grip.x>.14
         result["face_forward_clearance_scene_units"]=round(head_front_y-max(grip.y,tip.y),5)
     if stance["index"]==3:
-        # The guard moves UP AND IN toward torso; old R04 downward tests are
-        # deliberately removed so old clip behavior cannot pass accidentally.
-        result["checks"]["tip_up_and_in"]=tip.x<grip.x-.25 and tip.z>grip.z+.30
-        result["checks"]["tip_below_face"]=tip.z<head.z-.10
+        # R06: 03 must point inward and DOWN (not the prior R05 upward form).
+        # Keep the tip well above the floor and clear of the head and legs.
+        result["checks"]["tip_down_and_in"]=tip.x<grip.x-.30 and tip.z<grip.z-.25
+        result["checks"]["tip_safely_above_floor"]=tip.z>.12
         result["checks"]["tip_forward_of_chest"]=tip.y<-.25
+        result["checks"]["tip_on_center_half"]=tip.x<.25
+        result["checks"]["face_mesh_clear"]=mesh_clearance>.025
     if stance["index"]==2:
         # The mid-guard diagonal must finish below the chin in front view.
         # This is a geometric screen-silhouette proxy; actual images still need review.
@@ -338,7 +340,7 @@ def screen_space_audit(cameras, poses):
     allowed_front = {
         "MKM_GUARD_HIGH_OUTER_01": (155., 177.), # almost horizontal LEFT, in FRONT of head
         "MKM_GUARD_MID_02": (110., 157.),        # diagonal left and upward
-        "MKM_GUARD_LOW_MOBILE_03": (120., 150.), # diagonal UP and IN toward center
+        "MKM_GUARD_LOW_MOBILE_03": (-155., -135.), # 35deg DOWN and IN from horizontal
     }
     # Newly created camera objects have deferred world transforms in Blender.
     # Force dependency graph evaluation before using matrix_world; otherwise
@@ -360,7 +362,7 @@ def screen_space_audit(cameras, poses):
         pose["screen_blade_delta"]=xy_deltas
         pose["checks"]["front_camera_sword_angle_matches_design"]=a<=angles["front"]<=b
         if pose["id"]=="MKM_GUARD_LOW_MOBILE_03":
-            pose["checks"]["clear_upward_inward_diagonal"]=30.<=180.-angles["front"]<=60.
+            pose["checks"]["about_35deg_down_from_horizontal"]=25.<=180.+angles["front"]<=45.
         pose["angle_expected_front_range_deg"]=[a,b]
         print("GUARD-PROJECTION:",pose["id"],"front/back/side",angles,
               "front_target", [a,b], "match",pose["checks"]["front_camera_sword_angle_matches_design"])
