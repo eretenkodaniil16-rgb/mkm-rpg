@@ -216,6 +216,41 @@ def knee(rig,side):
     return round(180-math.degrees((hip-k).angle(ankle-k)),2)
 
 
+def evaluated_head_geometry(rig, grip, tip):
+    """Conservative deformed HEAD+HAIR mesh AABB/segment clearance.
+
+    The legacy .398-radius head sphere falsely rejects an above-crown cut
+    even when the actual rectangular voxel hair and head are untouched.
+    These mesh boxes are recomputed after pose evaluation on EACH frame.
+    """
+    depsgraph=bpy.context.evaluated_depsgraph_get()
+    distance=float("inf")
+    hair_top=-float("inf")
+    hair_right=-float("inf")
+    for name in ("Head","HairCap"):
+        obj=bpy.data.objects[name]
+        evaluated=obj.evaluated_get(depsgraph)
+        mesh=evaluated.to_mesh()
+        try:
+            vertices=[evaluated.matrix_world @ v.co for v in mesh.vertices]
+        finally:
+            evaluated.to_mesh_clear()
+        low=Vector(tuple(min(v[k] for v in vertices) for k in range(3)))
+        high=Vector(tuple(max(v[k] for v in vertices) for k in range(3)))
+        if name=="HairCap":
+            hair_top=high.z
+            hair_right=high.x
+        for i in range(201):
+            t=i/200.
+            p=grip.lerp(tip,t)
+            dx=max(low.x-p.x, 0., p.x-high.x)
+            dy=max(low.y-p.y, 0., p.y-high.y)
+            dz=max(low.z-p.z, 0., p.z-high.z)
+            distance=min(distance, math.sqrt(dx*dx+dy*dy+dz*dz))
+    # R01 blade is a 0.105-wide cuboid. Account for half-width.
+    return distance-.053, hair_top, hair_right
+
+
 def audit(rig,wrist,feet,stance,rest_dir,objs):
     p=stance["pose_targets"]
     grip=vec(rig,"hand.R",GRIP)
@@ -227,6 +262,7 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
     tip=grip+LENGTH*direction
     head=vec(rig,"head",HEAD)
     clearance=base.distance_to_segment(head,grip,tip)-.398-.055
+    mesh_clearance,hair_top,hair_right=evaluated_head_geometry(rig,grip,tip)
     bends={s:knee(rig,s) for s in ("L","R")}
     toe={}
     for side in ("L","R"):
@@ -237,6 +273,8 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
         "wrist_ik_error":round((w-wrist.location).length,5),
         "sword_axis_dot":round(direction.dot(desired),6),
         "sword_head_proxy_clearance":round(clearance,5),
+        "head_mesh_aabb_clearance_after_blade_halfwidth":round(mesh_clearance,5),
+        "hair_top_world_z":round(hair_top,5),
         "sword_grip_xyz":[round(float(a),5) for a in grip],
         "sword_tip_xyz":[round(float(a),5) for a in tip],
         "knee_flexion_deg":bends,
@@ -247,12 +285,26 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
     result["checks"]={
         "wrist_reached":result["wrist_ik_error"]<.05,
         "sword_follows_hand":result["sword_axis_dot"]>.995 and result["sword_single_hand_bone"],
-        "head_proxy_clear":clearance>0.,
+        "head_proxy_clear":(mesh_clearance>.005 if stance["index"]==1 else clearance>0.),
         "real_knee_bend":min(bends.values())>=15.,
         "knees_within_design_ranges":all(
           result["knee_target_ranges"][side][0]<=bends[side]<=result["knee_target_ranges"][side][1] for side in ("L","R")
         )
     }
+    if stance["index"]==1:
+        # Tip points back over center above the evaluated voxel hair geometry.
+        result["checks"]["overhead_tip_above_hair"]=tip.z>hair_top+.035
+        result["checks"]["overhead_tip_near_center"]=abs(tip.x)<.20
+        if tip.x<grip.x and grip.x>hair_right>tip.x:
+            crossing=(hair_right-grip.x)/(tip.x-grip.x)
+            crossing_z=grip.z+crossing*(tip.z-grip.z)
+        else:
+            crossing_z=-float("inf")
+        result["checks"]["blade_above_hair_at_head_edge"]=crossing_z>hair_top+.035
+        result["crown_crossing_margin_m"]=round(crossing_z-hair_top,5)
+    if stance["index"]==3:
+        result["checks"]["low_tip_inward"]=tip.x<grip.x-.14 and tip.x<.38
+        result["checks"]["low_tip_below_hand_above_floor"]=.10<tip.z<grip.z-.25
     if stance["index"]==2:
         # The mid-guard diagonal must finish below the chin in front view.
         # This is a geometric screen-silhouette proxy; actual images still need review.
@@ -279,9 +331,9 @@ def screen_space_audit(cameras, poses):
     independent of the chosen world-space XYZ component sign assumptions.
     """
     allowed_front = {
-        "MKM_GUARD_HIGH_OUTER_01": (22., 55.),   # outward and upward
+        "MKM_GUARD_HIGH_OUTER_01": (150., 174.), # near-horizontal LEFT/up above hair
         "MKM_GUARD_MID_02": (110., 157.),        # diagonal left and upward
-        "MKM_GUARD_LOW_MOBILE_03": (-80., -30.), # forward and downward
+        "MKM_GUARD_LOW_MOBILE_03": (-123., -100.), # down and IN toward center, 20° from vertical
     }
     # Newly created camera objects have deferred world transforms in Blender.
     # Force dependency graph evaluation before using matrix_world; otherwise
@@ -302,6 +354,8 @@ def screen_space_audit(cameras, poses):
         pose["screen_angle_deg"]=angles
         pose["screen_blade_delta"]=xy_deltas
         pose["checks"]["front_camera_sword_angle_matches_design"]=a<=angles["front"]<=b
+        if pose["id"]=="MKM_GUARD_LOW_MOBILE_03":
+            pose["checks"]["about_20_degrees_inward_from_vertical"]=12.<=abs(angles["front"]+90.)<=33.
         pose["angle_expected_front_range_deg"]=[a,b]
         print("GUARD-PROJECTION:",pose["id"],"front/back/side",angles,
               "front_target", [a,b], "match",pose["checks"]["front_camera_sword_angle_matches_design"])
@@ -326,7 +380,16 @@ def run():
     wrist,feet=controls(rig)
     first=data["stances"][0]
     bpy.context.scene.frame_set(FRAMES[0])
-    rest_dir=set_stance(rig,wrist,feet,first)
+    # Freeze the EXACT prior weapon geometry/palm bind (R2 high guard
+    # before this correction). Otherwise changing guard 01 would silently
+    # change the bone-local sword mesh and the already approved guard 02.
+    baseline=data["weapon_binding"]["immutable_blade_bind_calibration"]
+    immutable_mid=data["weapon_angle_revision"]["baseline_mid_guard_snapshot"]
+    assert data["stances"][1]==immutable_mid, "Approved guard 02 was altered"
+    calibration={"pose_targets":dict(first["pose_targets"])}
+    calibration["pose_targets"]["wrist_xyz"]=baseline["guard01_baseline_wrist_xyz"]
+    calibration["pose_targets"]["blade_direction_world"]=baseline["guard01_baseline_blade_direction_world"]
+    rest_dir=set_stance(rig,wrist,feet,calibration)
     objs=bind_sword(rig,mats,rest_dir)
     report=[]
 
