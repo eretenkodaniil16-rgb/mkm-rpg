@@ -47,9 +47,9 @@
       "alias_ru": "Высокая внешняя",
       "pose_targets": {
         "wrist_xyz": [
-          0.56,
-          -0.17,
-          1.77
+          0.53,
+          -0.13,
+          1.81
         ],
         "blade_direction_world": [
           -0.945,
