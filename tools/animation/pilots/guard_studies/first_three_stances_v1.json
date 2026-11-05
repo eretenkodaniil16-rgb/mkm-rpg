@@ -47,14 +47,14 @@
       "alias_ru": "Высокая внешняя",
       "pose_targets": {
         "wrist_xyz": [
-          0.53,
-          -0.13,
-          1.81
+          0.29,
+          -0.44,
+          1.57
         ],
         "blade_direction_world": [
-          -0.945,
-          -0.08,
-          0.315
+          -0.97,
+          -0.02,
+          0.22
         ],
         "pelvis_drop_scene": 0.025,
         "pelvis_yaw_deg": -7,
@@ -78,9 +78,9 @@
           25,
           35
         ],
-        "weapon_silhouette_target": "Raised right-hand high tierce: almost horizontal sword traverses ABOVE crown from right to center, never cuts through hair. Keep blade over head, not outboard-upwards."
+        "weapon_silhouette_target": "Sword hand in FRONT of head in 3D, at forehead height in front-view; nearly horizontal blade left toward model center, safely in front of facial mesh (not overhead)."
       },
-      "silhouette": "right hand above and lateral to right shoulder; sword high outward, left hand by waist"
+      "silhouette": "right-hand grip in front of head, sword nearly horizontal left across upper frontal space; bent knees and left free hand unchanged"
     },
     {
       "id": "MKM_GUARD_MID_02",
@@ -134,9 +134,9 @@
           0.86
         ],
         "blade_direction_world": [
-          -0.34,
-          -0.15,
-          -0.93
+          -0.68,
+          -0.18,
+          0.71
         ],
         "pelvis_drop_scene": 0.135,
         "pelvis_yaw_deg": -8,
@@ -160,9 +160,9 @@
           40,
           60
         ],
-        "weapon_silhouette_target": "Low mobile: blade slopes DOWN and INWARD toward model center at about 20 degrees from image vertical; sword tip stays ahead of legs and above floor."
+        "weapon_silhouette_target": "Low mobile right hand near hip with sword diagonally UP and IN toward chest center, ~46 degrees above horizon in front view; tip in front of torso, not pointed to ground."
       },
-      "silhouette": "deep staggered stance, visible knee flexion, sword tip ahead and down without ground contact"
+      "silhouette": "low staggered stance, sword climbs noticeably upward and inward from right hip to center chest, clear facial line"
     }
   ],
   "acceptance": {
@@ -184,8 +184,8 @@
     "gameplay_status": "UNVERIFIED_PENDING_MNAE_ISSUE_43"
   },
   "weapon_angle_revision": {
-    "id": "R04_INWARD_OVERHEAD_LOW20",
-    "review_status": "PENDING_BLENDER_SCREEN_AND_MESH_INSPECTION",
+    "id": "R05_FRONT_HEAD_UPWARD_DIAGONAL",
+    "review_status": "PENDING_BLENDER_3_VIEW_QA",
     "changed_stances": [
       1,
       3
@@ -234,19 +234,22 @@
     },
     "front_target_angles_deg": {
       "high_outer": [
-        150,
-        174
+        158,
+        177
       ],
       "mid_guard": [
         110,
         157
       ],
       "low_mobile": [
-        -123,
-        -100
+        120,
+        150
       ]
     },
     "blade_bound_to_hand_bone": true,
-    "head_clearance_requires_evaluated_mesh": true
+    "head_clearance_requires_evaluated_mesh": true,
+    "high_guard_camera_goal": "hand and sword entirely forward of face mesh, sword projects near-horizontal toward center",
+    "low_guard_camera_goal": "blade rises inward from hand toward center at about 45 degrees",
+    "replaces_overhead_and_downward_checks": true
   }
 }
