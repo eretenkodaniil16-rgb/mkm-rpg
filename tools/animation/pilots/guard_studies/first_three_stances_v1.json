@@ -10,13 +10,27 @@
     "up": "+Z",
     "character_height_scene": 1.8,
     "blade_length_scene": 0.62,
-    "units": "authoring_scene_units_not_minecraft_block"
+    "units": "authoring_scene_units_not_minecraft_block",
+    "pose_targets_refined_from_real_blender_qa": true
   },
   "weapon_binding": {
     "attacking_hand": "RIGHT",
     "family": "one_handed_sword",
     "binding": "fixed_hand_bone_local_transform",
-    "world_quaternion_animation": false
+    "world_quaternion_animation": false,
+    "immutable_blade_bind_calibration": {
+      "reason": "Freeze the former approved high-outer pose as rest-sword calibration so guard 02 renders identically when guard 01 moves.",
+      "guard01_baseline_wrist_xyz": [
+        0.63,
+        -0.23,
+        1.39
+      ],
+      "guard01_baseline_blade_direction_world": [
+        0.76,
+        -0.1,
+        0.64
+      ]
+    }
   },
   "shared_restrictions": [
     "no_gameplay_changes",
@@ -33,16 +47,16 @@
       "alias_ru": "Высокая внешняя",
       "pose_targets": {
         "wrist_xyz": [
-          0.56,
-          -0.25,
-          1.44
+          0.29,
+          -0.44,
+          1.57
         ],
         "blade_direction_world": [
-          0.56,
-          -0.16,
-          0.81
+          -0.97,
+          -0.02,
+          0.22
         ],
-        "pelvis_drop_scene": 0.085,
+        "pelvis_drop_scene": 0.025,
         "pelvis_yaw_deg": -7,
         "spine_relative_yaw_deg": -9,
         "trunk_forward_incline_deg": 2,
@@ -53,7 +67,7 @@
         ],
         "right_ankle_xyz": [
           0.24,
-          0.01,
+          0.15,
           0.07
         ],
         "left_knee_flexion_deg_range": [
@@ -63,9 +77,10 @@
         "right_knee_flexion_deg_range": [
           25,
           35
-        ]
+        ],
+        "weapon_silhouette_target": "Sword hand in FRONT of head in 3D, at forehead height in front-view; nearly horizontal blade left toward model center, safely in front of facial mesh (not overhead)."
       },
-      "silhouette": "right hand above and lateral to right shoulder; sword high outward, left hand by waist"
+      "silhouette": "right-hand grip in front of head, sword nearly horizontal left across upper frontal space; bent knees and left free hand unchanged"
     },
     {
       "id": "MKM_GUARD_MID_02",
@@ -73,16 +88,16 @@
       "alias_ru": "Средняя защитная",
       "pose_targets": {
         "wrist_xyz": [
-          0.46,
-          -0.3,
-          1.14
+          0.52,
+          -0.35,
+          0.9
         ],
         "blade_direction_world": [
-          -0.63,
-          -0.75,
-          0.19
+          -0.45,
+          -0.66,
+          0.6
         ],
-        "pelvis_drop_scene": 0.075,
+        "pelvis_drop_scene": 0.01,
         "pelvis_yaw_deg": -3,
         "spine_relative_yaw_deg": 5,
         "trunk_forward_incline_deg": 2,
@@ -93,7 +108,7 @@
         ],
         "right_ankle_xyz": [
           0.21,
-          0.01,
+          0.12,
           0.07
         ],
         "left_knee_flexion_deg_range": [
@@ -103,7 +118,8 @@
         "right_knee_flexion_deg_range": [
           20,
           30
-        ]
+        ],
+        "weapon_silhouette_target": "Distinct diagonal projected up-left, but entire tip below the face plane and ahead of torso (clear facial silhouette)"
       },
       "silhouette": "blade diagonal across chest in perspective, physically in front of armor; tip not obscuring face"
     },
@@ -113,16 +129,16 @@
       "alias_ru": "Низкая подвижная",
       "pose_targets": {
         "wrist_xyz": [
-          0.5,
-          -0.37,
-          0.8
+          0.52,
+          -0.38,
+          0.84
         ],
         "blade_direction_world": [
-          0.18,
-          -0.43,
-          -0.885
+          -0.79,
+          -0.34,
+          -0.49
         ],
-        "pelvis_drop_scene": 0.18,
+        "pelvis_drop_scene": 0.135,
         "pelvis_yaw_deg": -8,
         "spine_relative_yaw_deg": 7,
         "trunk_forward_incline_deg": 10,
@@ -133,7 +149,7 @@
         ],
         "right_ankle_xyz": [
           0.25,
-          0.04,
+          0.25,
           0.07
         ],
         "left_knee_flexion_deg_range": [
@@ -143,9 +159,10 @@
         "right_knee_flexion_deg_range": [
           40,
           60
-        ]
+        ],
+        "weapon_silhouette_target": "Low mobile: sword blade points inward toward torso center and DOWN about 35 degrees below horizontal in front projection. Guard stays at right hip; tip suspended above floor and clear of body/head."
       },
-      "silhouette": "deep staggered stance, visible knee flexion, sword tip ahead and down without ground contact"
+      "silhouette": "deep staggered stance, sword travels diagonally inward-down from the right hip toward the model center, approximately 35 degrees below horizontal"
     }
   ],
   "acceptance": {
@@ -165,5 +182,75 @@
       "same_pose_with_only_sword_height_changed"
     ],
     "gameplay_status": "UNVERIFIED_PENDING_MNAE_ISSUE_43"
+  },
+  "weapon_angle_revision": {
+    "id": "R06_LOW_GUARD_35_DOWN_INWARD",
+    "review_status": "R06_TUNED_PENDING_REAL_CAMERA_QA",
+    "changed_stances": [
+      3
+    ],
+    "approved_stance_02_unchanged": true,
+    "baseline_mid_guard_snapshot": {
+      "id": "MKM_GUARD_MID_02",
+      "index": 2,
+      "alias_ru": "Средняя защитная",
+      "pose_targets": {
+        "wrist_xyz": [
+          0.52,
+          -0.35,
+          0.9
+        ],
+        "blade_direction_world": [
+          -0.45,
+          -0.66,
+          0.6
+        ],
+        "pelvis_drop_scene": 0.01,
+        "pelvis_yaw_deg": -3,
+        "spine_relative_yaw_deg": 5,
+        "trunk_forward_incline_deg": 2,
+        "left_ankle_xyz": [
+          -0.21,
+          -0.14,
+          0.07
+        ],
+        "right_ankle_xyz": [
+          0.21,
+          0.12,
+          0.07
+        ],
+        "left_knee_flexion_deg_range": [
+          20,
+          30
+        ],
+        "right_knee_flexion_deg_range": [
+          20,
+          30
+        ],
+        "weapon_silhouette_target": "Distinct diagonal projected up-left, but entire tip below the face plane and ahead of torso (clear facial silhouette)"
+      },
+      "silhouette": "blade diagonal across chest in perspective, physically in front of armor; tip not obscuring face"
+    },
+    "front_target_angles_deg": {
+      "high_outer": [
+        155,
+        177
+      ],
+      "mid_guard": [
+        110,
+        157
+      ],
+      "low_mobile": [
+        -150,
+        -140
+      ]
+    },
+    "blade_bound_to_hand_bone": true,
+    "head_clearance_requires_evaluated_mesh": true,
+    "high_guard_camera_goal": "hand and sword entirely forward of face mesh, sword projects near-horizontal toward center",
+    "low_guard_camera_goal": "blade moves inward-down ~35 degrees below horizontal, not up toward face",
+    "replaces_overhead_and_downward_checks": false,
+    "approved_stance_01_unchanged": true,
+    "replaces_upward_checks": true
   }
 }
