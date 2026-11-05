@@ -253,6 +253,11 @@ def audit(rig,wrist,feet,stance,rest_dir,objs):
           result["knee_target_ranges"][side][0]<=bends[side]<=result["knee_target_ranges"][side][1] for side in ("L","R")
         )
     }
+    if stance["index"]==2:
+        # The mid-guard diagonal must finish below the chin in front view.
+        # This is a geometric screen-silhouette proxy; actual images still need review.
+        result["checks"]["mid_guard_tip_below_face"]=tip.z < head.z-.23
+        result["mid_guard_tip_clearance_below_face_z"]=round(head.z-.23-tip.z,5)
     return result
 
 
