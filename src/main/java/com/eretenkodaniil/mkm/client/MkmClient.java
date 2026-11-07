@@ -4,6 +4,8 @@ import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
 import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
 import com.eretenkodaniil.mkm.character.net.AllocationResult;
+import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionResult;
+import com.eretenkodaniil.mkm.client.gui.CharacterOriginScreen;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.client.animation.HitFeedbackParticles;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
@@ -45,6 +47,12 @@ public final class MkmClient implements ClientModInitializer {
                 context.client().execute(() -> {
                     if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
                         sheet.onAllocationResult(result);
+                    }
+                }));
+        ClientPlayNetworking.registerGlobalReceiver(OriginSelectionResult.TYPE, (result, context) ->
+                context.client().execute(() -> {
+                    if (context.client().gui.screen() instanceof CharacterOriginScreen screen) {
+                        screen.onSelectionResult(result);
                     }
                 }));
         ClientPlayNetworking.registerGlobalReceiver(HitConfirm.TYPE,

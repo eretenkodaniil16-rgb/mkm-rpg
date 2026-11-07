@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.equipment;
 
 import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginModifierRules;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import java.util.EnumMap;
@@ -22,7 +24,9 @@ public final class EquipmentSnapshots {
         equipped.put(EquipmentRules.Slot.CHEST, id(player.getItemBySlot(EquipmentSlot.CHEST)));
         equipped.put(EquipmentRules.Slot.LEGS, id(player.getItemBySlot(EquipmentSlot.LEGS)));
         equipped.put(EquipmentRules.Slot.FEET, id(player.getItemBySlot(EquipmentSlot.FEET)));
-        return PlayerModifierCalculator.calculate(character, EquipmentRules.aggregate(equipped));
+        // Original equip + origin deltas share the Character calculator and one final clamp.
+        return OriginModifierRules.snapshot(character, EquipmentRules.aggregate(equipped),
+                player.getAttached(CharacterOriginAttachments.PROFILE));
     }
 
     public static PhysicalDamageType heldPhysicalType(LivingEntity player) {
