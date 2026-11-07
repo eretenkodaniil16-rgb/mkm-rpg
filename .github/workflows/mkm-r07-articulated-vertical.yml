@@ -83,6 +83,7 @@ jobs:
           JAR=$(find build/libs -maxdepth 1 -name 'mkm-rpg-*.jar' | grep -v sources | head -1)
           test -n "$JAR"
           unzip -l "$JAR" | grep -F assets/mkm/mnae/r07_mid_guard_cut_v3.json
+          mkdir -p build/r07/derived
           sha256sum "$JAR" | tee build/r07/derived/JAR_SHA256SUMS.txt
       - uses: actions/upload-artifact@v4
         with:
