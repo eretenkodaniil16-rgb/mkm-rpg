@@ -18,6 +18,14 @@ final class TickTimeWindowTest {
         assertEquals(20.0, s.p99Ms(), 0.001);
     }
 
+    @Test void resetBetweenServerSessions() {
+        TickTimeWindow ticks = new TickTimeWindow(16);
+        ticks.begin(10); ticks.end(20);
+        assertEquals(1, ticks.snapshot().samples());
+        ticks.clear();
+        assertEquals(0, ticks.snapshot().samples());
+    }
+
     @Test void ignoresUnstartedAndNegativeSamples() {
         TickTimeWindow ticks = new TickTimeWindow(16);
         ticks.end(123);
