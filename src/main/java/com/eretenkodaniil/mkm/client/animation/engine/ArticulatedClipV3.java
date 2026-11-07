@@ -14,11 +14,22 @@ import java.util.*;
  */
 public final class ArticulatedClipV3 {
     public record Bone(String id,String parent,Vec3 restPivot,Quat restRotation) {}
-    public record Sample(Vec3 pivot,Quat rotation,Vec3 localTranslation,Quat localRotation) {
+    public record Sample(Vec3 pivot,Quat rotation,Vec3 localTranslation,Quat localRotation,
+                         Vec3 scale) {
+        public Sample {
+            Objects.requireNonNull(pivot);Objects.requireNonNull(rotation);
+            Objects.requireNonNull(localTranslation);Objects.requireNonNull(localRotation);
+            Objects.requireNonNull(scale);
+            // First R07 uses 100% rigid skinned cuboids. Nonunit scale is not
+            // silently dropped; future rigs must add explicit matrix support.
+            if (Math.abs(scale.x()-1)>1e-6 || Math.abs(scale.y()-1)>1e-6
+                    || Math.abs(scale.z()-1)>1e-6)
+                throw new IllegalArgumentException("R07 requires unit bone scale");
+        }
         public Sample mix(Sample b,double t) {
             return new Sample(pivot.lerp(b.pivot,t),rotation.slerp(b.rotation,t),
                     localTranslation.lerp(b.localTranslation,t),
-                    localRotation.slerp(b.localRotation,t));
+                    localRotation.slerp(b.localRotation,t),scale.lerp(b.scale,t));
         }
     }
     public record Frame(double time,Map<String,Sample> joints) {}
@@ -148,7 +159,8 @@ public final class ArticulatedClipV3 {
                 joints.put(bone.getKey(),new Sample(vec(b.getAsJsonArray("pivot")),
                     quat(b.getAsJsonArray("quaternion")),
                     vec(b.getAsJsonArray("local_translation")),
-                    quat(b.getAsJsonArray("local_quaternion"))));
+                    quat(b.getAsJsonArray("local_quaternion")),
+                    vec(b.getAsJsonArray("scale"))));
             }
             frames.add(new Frame(frame.get("t").getAsDouble(),Map.copyOf(joints)));
         }
