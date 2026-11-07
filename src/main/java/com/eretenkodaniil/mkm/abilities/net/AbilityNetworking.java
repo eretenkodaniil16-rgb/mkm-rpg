@@ -15,6 +15,6 @@ public final class AbilityNetworking {
                 CastAbilityRequest.TYPE, CastAbilityRequest.STREAM_CODEC);
         ServerPlayNetworking.registerGlobalReceiver(CastAbilityRequest.TYPE,
                 (payload, context) -> AbilityService.tryCast(
-                        context.player(), payload.abilityId()));
+                        context.player(), payload.abilityId(), payload.requestSequence()));
     }
 }
