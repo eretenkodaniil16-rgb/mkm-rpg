@@ -91,5 +91,8 @@ final class CharacterOriginPersistenceTest {
         assertThrows(IllegalArgumentException.class, () ->
                 new CharacterOriginData(1, 1, "mkm:human", "mkm:warrior/../bad"));
         assertEquals(2, disk(new CharacterOriginData(2, 1, "mkm:human", "mkm:mage")).schemaVersion());
+        assertEquals(new CharacterOriginData(2, 2, "mkm:dwarf", "mkm:warrior"),
+                disk(new CharacterOriginData(2, 2, "mkm:dwarf", "mkm:warrior")),
+                "future schema revisions must be preserved, and never overwritten by M4");
     }
 }
