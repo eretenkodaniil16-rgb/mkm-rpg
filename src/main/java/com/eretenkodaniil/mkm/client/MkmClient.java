@@ -36,6 +36,8 @@ public final class MkmClient implements ClientModInitializer {
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
 
+    private static int renewalRequestSequence;
+
     static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
 
@@ -45,9 +47,15 @@ public final class MkmClient implements ClientModInitializer {
                 (packet, context) -> context.client().execute(
                         () -> AbilityVisualInbox.onServerEvent(context.client(), packet.event())));
         ClientPlayConnectionEvents.JOIN.register(
-                (handler, sender, client) -> AbilityVisualInbox.reset());
+                (handler, sender, client) -> {
+                    AbilityVisualInbox.reset();
+                    renewalRequestSequence = 0;
+                });
         ClientPlayConnectionEvents.DISCONNECT.register(
-                (handler, client) -> AbilityVisualInbox.reset());
+                (handler, client) -> {
+                    AbilityVisualInbox.reset();
+                    renewalRequestSequence = 0;
+                });
         ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
                 context.client().execute(() -> {
                     if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
@@ -76,7 +84,12 @@ public final class MkmClient implements ClientModInitializer {
             while (RENEWAL.consumeClick()) {
                 if (client.player == null || client.gui.screen() != null
                         || !ClientPlayNetworking.canSend(CastAbilityRequest.TYPE)) continue;
-                ClientPlayNetworking.send(new CastAbilityRequest(AbilityCatalog.RENEWAL.id()));
+                // One sequence per intentional keypress, reset on connection.
+                // Fail closed on integer exhaustion instead of reusing IDs.
+                if (renewalRequestSequence == Integer.MAX_VALUE) continue;
+                int requestId = ++renewalRequestSequence;
+                ClientPlayNetworking.send(new CastAbilityRequest(
+                        AbilityCatalog.RENEWAL.id(), requestId));
             }
             while (COMBO.consumeClick()) {
                 if (client.player == null || client.gui.screen() != null
