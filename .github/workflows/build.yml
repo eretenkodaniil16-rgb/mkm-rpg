@@ -41,6 +41,8 @@ on:
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'integration/world-e2-1-fabric-character-v4-qa'
       - 'integration/fabric-v4-next-qa-gates-v1'
+      - 'feature/performance-hybrid-m0-diagnostics'
+      - 'integration/fabric-v4-encounters-perf-qa3'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
