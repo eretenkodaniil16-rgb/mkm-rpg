@@ -130,7 +130,7 @@ def audit_frame(rig):
     head=rig.pose.bones["head"]
     hand=rig.pose.bones["hand.R"]
     rest_head_center=Vector((0,-.01,1.575))
-    center=head.matrix @ head.bone.matrix_local.inverted() @ rest_head_center
+    head_center=head.matrix @ head.bone.matrix_local.inverted() @ rest_head_center
     # Extract original R06 sword centers from its actual rigid hand-bound
     # geometry. Never use the obsolete R01 hardcoded sword axis.
     def center(obj):
@@ -144,7 +144,7 @@ def audit_frame(rig):
     tip_rest=center(blade_tip)
     grip=hand.matrix @ hand.bone.matrix_local.inverted() @ grip_rest
     tip=hand.matrix @ hand.bone.matrix_local.inverted() @ tip_rest
-    clearance=segment_dist(center,grip,tip)-.235-.055
+    clearance=segment_dist(head_center,grip,tip)-.235-.055
     feet={}
     for side in ("R","L"):
         p=rig.pose.bones["foot."+side]
