@@ -1,0 +1,239 @@
+package com.eretenkodaniil.mkm.encounter;
+
+import com.eretenkodaniil.mkm.MkmMod;
+import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+import net.minecraft.core.BlockPos;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.Difficulty;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.EntityTypes;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.entity.Mob;
+import net.minecraft.world.entity.monster.skeleton.Skeleton;
+import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+
+/**
+ * Authoritative, opt-in World Encounter Director pilot.
+ * One explicitly placed occurrence per Overworld save; never a natural-spawn hook,
+ * AI controller, damage modifier, tick scanner, chunk ticket or renderer.
+ */
+public final class EncounterDirector {
+    public static final String PILOT_ID = "mkm:ford_ambush";
+    private static final String REWARD_ID = "mkm:encounter/ford_ambush";
+    private static final String MOB_TAG = "mkm.encounter.ford_ambush.v1";
+    private static final String OWNER_TAG = "mkm.encounter.owner.";
+    private static final String ELITE_TAG = "mkm.encounter.elite.v1";
+    private static final int[][] OFFSETS = {
+            {7,0},{-7,0},{0,7},{0,-7},{6,5},{-6,5},{6,-5},{-6,-5},
+            {9,0},{-9,0},{0,9},{0,-9}
+    };
+
+    private EncounterDirector() {}
+
+    private static void inform(ServerPlayer player, String text) {
+        player.sendSystemMessage(Component.literal("MKM Encounter: " + text));
+    }
+
+    public static boolean start(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)
+                || !player.isAlive() || player.isSpectator()) return false;
+        EncounterDefinition config = EncounterDefinitions.ford();
+        if (config == null) {
+            inform(player, "JSON не загружен или отклонён сервером. Посмотрите лог /reload.");
+            return false;
+        }
+        if (!level.dimension().location().toString().equals(config.dimension())
+                || level.getDifficulty() == Difficulty.PEACEFUL) {
+            inform(player, "Нужен обычный мир и сложность не Peaceful.");
+            return false;
+        }
+        String biome = level.getBiome(player.blockPosition()).unwrapKey()
+                .map(key -> key.location().toString()).orElse("unknown");
+        if (!config.accepts(biome, level.getDayTime())) {
+            inform(player, "Требуется разрешённый биом и ночное время: " + biome
+                    + ". Можно использовать /time set night.");
+            return false;
+        }
+        EncounterLedger ledger = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
+        if (!ledger.canReserve(config.id(), config.roster().size())) {
+            inform(player, "Встреча уже зарезервирована/завершена или превышен бюджет сущностей. "
+                    + "Повторное появление запрещено.");
+            return false;
+        }
+
+        // Plan the complete squad within already loaded chunks, without forcing
+        // chunk loading and without modifying terrain or vanilla mob-spawn rules.
+        List<Mob> prepared = new ArrayList<>();
+        List<EncounterLedger.Member> roster = new ArrayList<>();
+        BlockPos anchor = player.blockPosition();
+        for (EncounterDefinition.Spawn spec : config.roster()) {
+            Mob mob = newMob(level, spec);
+            if (mob == null) return false;
+            boolean placed = false;
+            for (int[] offset : OFFSETS) {
+                BlockPos feet = anchor.offset(offset[0], 0, offset[1]);
+                if (!level.hasChunkAt(feet) || !level.getBlockState(feet.below()).isSolid()) continue;
+                mob.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5, 0.0F, 0.0F);
+                if (!level.noCollision(mob)
+                        || prepared.stream().anyMatch(other -> other.getBoundingBox()
+                                .intersects(mob.getBoundingBox()))) continue;
+                placed = true;
+                break;
+            }
+            if (!placed) {
+                inform(player, "Нет трёх свободных и загруженных площадок рядом. "
+                        + "Встаньте на ровной поверхности; сущности не создавались.");
+                return false;
+            }
+            UUID uuid = UUID.randomUUID();
+            mob.setUUID(uuid);
+            mob.addTag(MOB_TAG);
+            mob.addTag(OWNER_TAG + player.getUUID());
+            mob.addTag("mkm.encounter.role." + spec.role());
+            if (spec.elite()) mob.addTag(ELITE_TAG);
+            mob.setPersistenceRequired();
+            mob.setCustomName(Component.literal(spec.elite()
+                    ? "Костяной дозорный — командир" : spec.entityId().endsWith("husk")
+                            ? "Иссушённый налётчик" : "Дозорный-лучник"));
+            mob.setCustomNameVisible(spec.elite());
+            prepared.add(mob);
+            roster.add(new EncounterLedger.Member(uuid.toString(),
+                    spec.entityId(), spec.role(), spec.elite(), false));
+        }
+
+        EncounterLedger.Entry reserved = new EncounterLedger.Entry(
+                EncounterLedger.SCHEMA_VERSION, player.getUUID().toString(),
+                anchor.getX(), anchor.getY(), anchor.getZ(), config.rewardXp(),
+                EncounterLedger.RESERVED, roster);
+        // Persist UUIDs BEFORE any entity is inserted. A failed/partial spawn
+        // stays reserved for manual audit; it never causes automatic duplicates.
+        level.setAttached(EncounterAttachments.ENCOUNTERS, ledger.reserve(config.id(), reserved));
+        for (Mob mob : prepared) {
+            if (!level.addFreshEntity(mob)) {
+                MkmMod.LOGGER.error("Encounter {} partially spawned; reserved roster retained, owner {}",
+                        config.id(), player.getUUID());
+                inform(player, "Часть группы не появилась. Резервирование сохранено, "
+                        + "автоматическая повторная генерация запрещена.");
+                return false;
+            }
+            mob.setTarget(player); // Vanilla AI goal scheduler; AI team owns future strategies.
+            NpcVisualSignals.emit(mob, NpcVisualSignals.Cue.THREAT);
+        }
+        EncounterLedger current = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
+        level.setAttached(EncounterAttachments.ENCOUNTERS,
+                current.replace(config.id(), current.find(config.id()), reserved.start()));
+        inform(player, "Ночная засада началась: 2 хуска и командир-скелет. "
+                + "Победите троих и вернитесь к месту начала за наградой.");
+        return true;
+    }
+
+    private static Mob newMob(ServerLevel level, EncounterDefinition.Spawn spec) {
+        switch (spec.entityId()) {
+            case "minecraft:husk" -> {
+                return new Husk(EntityTypes.HUSK, level);
+            }
+            case "minecraft:skeleton" -> {
+                Skeleton skeleton = new Skeleton(EntityTypes.SKELETON, level);
+                // Explicit vanilla ranged equipment; commander helmet prevents
+                // daylight burn if the player sleeps through the encounter.
+                skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
+                if (spec.elite()) {
+                    skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
+                }
+                return skeleton;
+            }
+            default -> {
+                return null; // explicit entity-family allowlist; AI mods cannot inject classes via JSON
+            }
+        }
+    }
+
+    /** AFTER_DEATH only. World roster membership, entity type and owner tag must agree. */
+    public static void onDeath(LivingEntity victim, net.minecraft.world.damagesource.DamageSource source) {
+        if (!(victim.level() instanceof ServerLevel level) || !victim.entityTags().contains(MOB_TAG)) return;
+        EncounterLedger ledger = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
+        EncounterLedger.Entry event = ledger.find(PILOT_ID);
+        if (event == null) return;
+        String deadId = victim.getUUID().toString();
+        boolean authorized = event.members().stream().anyMatch(member -> member.uuid().equals(deadId)
+                && member.entityId().equals(victim.getType() == EntityTypes.HUSK
+                        ? "minecraft:husk" : victim.getType() == EntityTypes.SKELETON
+                        ? "minecraft:skeleton" : "unknown")
+                && victim.entityTags().contains(OWNER_TAG + event.ownerId()));
+        if (!authorized) return;
+        EncounterLedger after = ledger.markDeath(PILOT_ID, deadId);
+        if (after == ledger) return; // duplicated or unrelated death callback
+        level.setAttached(EncounterAttachments.ENCOUNTERS, after);
+        NpcVisualSignals.emit(victim, NpcVisualSignals.Cue.DEATH);
+        var changed = after.find(PILOT_ID);
+        ServerPlayer owner = level.getServer().getPlayerList()
+                .getPlayer(UUID.fromString(event.ownerId()));
+        if (owner != null) inform(owner, changed.phase().equals(EncounterLedger.DEFEATED)
+                ? "Засада уничтожена. Вернитесь к месту начала и выполните /mkmencounter claim."
+                : "Противник уничтожен. Осталось: " + changed.aliveCount());
+    }
+
+    public static boolean claim(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level) || !player.isAlive() || player.isSpectator())
+            return false;
+        EncounterLedger ledger = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
+        EncounterLedger.Entry event = ledger.find(PILOT_ID);
+        if (event == null || !event.ownerId().equals(player.getUUID().toString())
+                || !event.phase().equals(EncounterLedger.DEFEATED)) {
+            inform(player, "Награда недоступна: встреча ещё не завершена, уже оплачена или принадлежит другому игроку.");
+            return false;
+        }
+        if (player.distanceToSqr(event.x() + 0.5, event.y(), event.z() + 0.5) > 256.0) {
+            inform(player, "Вернитесь в радиус 16 блоков от места засады за наградой.");
+            return false;
+        }
+        // Same v4 Character attachment holds receipt, XP, level and allocation credits.
+        // A crash between receipt and world CLAIMED stage is safely retryable.
+        var result = CharacterService.grantExperienceOnce(player, REWARD_ID, event.rewardXp());
+        if (!result.confirmed()) {
+            inform(player, "Character M3 отказал в награде: " + result.status());
+            return false;
+        }
+        EncounterLedger updated = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
+        level.setAttached(EncounterAttachments.ENCOUNTERS, updated.claim(PILOT_ID));
+        inform(player, result.creditedExperience() > 0L
+                ? "Награда получена: +" + result.creditedExperience() + " MKM XP."
+                : "Награда уже была учтена или достигнут предел XP.");
+        return true;
+    }
+
+    public static void status(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level)) return;
+        EncounterLedger.Entry event = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS)
+                .find(PILOT_ID);
+        if (event == null) {
+            inform(player, "Ночная засада ещё не запускалась в этом мире.");
+            return;
+        }
+        inform(player, "state=" + event.phase() + ", rewardXp=" + event.rewardXp()
+                + ", owner=" + event.ownerId() + ", anchor=" + event.x() + "/"
+                + event.y() + "/" + event.z() + ", remaining=" + event.aliveCount());
+        if (event.phase().equals(EncounterLedger.ACTIVE) || event.phase().equals(EncounterLedger.RESERVED)) {
+            for (EncounterLedger.Member member : event.members()) {
+                if (member.dead()) continue;
+                Entity loaded = null;
+                try { loaded = level.getEntity(UUID.fromString(member.uuid())); }
+                catch (IllegalArgumentException badId) {
+                    MkmMod.LOGGER.warn("Invalid member UUID in encounter ledger: {}", member.uuid());
+                }
+                inform(player, member.role() + " / " + member.entityId() + " / " + member.uuid()
+                        + (loaded == null ? " — не загружен либо отсутствует (НЕ доказательство смерти)"
+                            : " — загружен"));
+            }
+        }
+    }
+}
