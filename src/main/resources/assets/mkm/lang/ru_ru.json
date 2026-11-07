@@ -86,7 +86,7 @@
   "screen.mkm.origin.back": "Назад",
   "screen.mkm.origin.bonuses": "Предварительные особенности",
   "screen.mkm.origin.human_desc": "Универсальность: восстановление выносливости и маны",
-  "screen.mkm.origin.dwarf_desc": "Стойкость: здоровье и устойчивость блока",
+  "screen.mkm.origin.dwarf_desc": "Стойкость: запас выносливости и устойчивость блока",
   "screen.mkm.origin.warrior_desc": "Ближний бой: урон и экономия выносливости",
   "screen.mkm.origin.mage_desc": "Магия: запас маны и эффективность лечения",
   "screen.mkm.origin.sheet": "Раса: %s · Класс: %s",
