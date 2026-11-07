@@ -131,12 +131,19 @@ def audit_frame(rig):
     hand=rig.pose.bones["hand.R"]
     rest_head_center=Vector((0,-.01,1.575))
     center=head.matrix @ head.bone.matrix_local.inverted() @ rest_head_center
-    # Sword R06 pieces permanently bound to hand.R: compare real evaluated
-    # vertices (not hypothetical socket) and head mesh bounds.
-    meshes=[o for o in bpy.data.objects if o.get("bind")=="bone_local:hand.R"]
-    # Original R06 source sword has bind metadata for each individual part.
-    grip=hand.matrix @ hand.bone.matrix_local.inverted() @ Vector((.36,-.09,.64))
-    tip=hand.matrix @ hand.bone.matrix_local.inverted() @ Vector((.36,-.09,.05))
+    # Extract original R06 sword centers from its actual rigid hand-bound
+    # geometry. Never use the obsolete R01 hardcoded sword axis.
+    def center(obj):
+        return sum((obj.matrix_world @ v.co for v in obj.data.vertices),
+                   Vector((0,0,0))) / len(obj.data.vertices)
+    handle=bpy.data.objects.get("MKM_SWORD_HANDLE")
+    blade_tip=bpy.data.objects.get("MKM_SWORD_TIP")
+    if handle is None or blade_tip is None:
+        raise RuntimeError("Frozen R06 sword mesh missing")
+    grip_rest=center(handle)
+    tip_rest=center(blade_tip)
+    grip=hand.matrix @ hand.bone.matrix_local.inverted() @ grip_rest
+    tip=hand.matrix @ hand.bone.matrix_local.inverted() @ tip_rest
     clearance=segment_dist(center,grip,tip)-.235-.055
     feet={}
     for side in ("R","L"):
@@ -230,8 +237,20 @@ def main():
         "rest_quaternion":game_quat(b.matrix_local.to_quaternion()),
         "scale":[1,1,1]} for b in rig.data.bones],
       "mesh_bindings":mesh_parts(rig),
-      "weapon_socket":{"hand_bone":"hand.R","local_handle":[0,0,0],
-        "local_tip":[0,-.62*CONVERSION,0],"vanilla_item_layer_required":True},
+      "weapon_socket":{"hand_bone":"hand.R",
+        "local_handle":game_vector(
+            sum((bpy.data.objects["MKM_SWORD_HANDLE"].matrix_world @ v.co
+                 for v in bpy.data.objects["MKM_SWORD_HANDLE"].data.vertices),
+                Vector((0,0,0)))/
+            len(bpy.data.objects["MKM_SWORD_HANDLE"].data.vertices)
+            -rig.data.bones["hand.R"].head_local),
+        "local_tip":game_vector(
+            sum((bpy.data.objects["MKM_SWORD_TIP"].matrix_world @ v.co
+                 for v in bpy.data.objects["MKM_SWORD_TIP"].data.vertices),
+                Vector((0,0,0)))/
+            len(bpy.data.objects["MKM_SWORD_TIP"].data.vertices)
+            -rig.data.bones["hand.R"].head_local),
+        "vanilla_item_layer_required":True},
       "markers":[{"name":name,"t":round((f-1)/(SAMPLES-1),8),"frame":f}
           for f,name in ((1,"guard"),(5,"anticipation"),(9,"windup"),
                          (16,"impact"),(22,"follow_through"),(29,"recovery"),(43,"guard_return"))],
