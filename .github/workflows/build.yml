@@ -19,6 +19,7 @@ on:
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'integration/fabric-26.3-c3.7-all-systems-v1'
       - 'integration/world-e2-1-fabric-character-v4-qa'
+      - 'integration/fabric-v4-next-qa-gates-v1'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -76,7 +77,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.5-fabric.4.jar")
+              if p.endswith("0.0.6-fabric.0-qa.1.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -208,7 +209,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.5-fabric.4.jar
+          path: build/libs/mkm-rpg-0.0.6-fabric.0-qa.1.jar
           if-no-files-found: error
           retention-days: 14
 

@@ -8,10 +8,10 @@ import zipfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-mod_filename = 'mkm-rpg-0.0.5-fabric.4.jar'
+mod_filename = 'mkm-rpg-0.0.6-fabric.0-qa.1.jar'
 jar = root / 'build' / 'libs' / mod_filename
 source = root / 'distribution' / 'windows'
-output = root / 'dist' / 'MKM_Fabric_26.3_Installer_Windows.zip'
+output = root / 'dist' / 'MKM_Fabric_26.3_Integration_V4_QA_ONLY.zip'
 if not jar.is_file():
     raise SystemExit(f'Build the release JAR first: {jar}')
 output.parent.mkdir(parents=True, exist_ok=True)
