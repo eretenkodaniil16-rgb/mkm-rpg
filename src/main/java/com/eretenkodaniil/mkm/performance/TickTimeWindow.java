@@ -37,6 +37,13 @@ public final class TickTimeWindow {
         if (sampleCount < durations.length) sampleCount++;
     }
 
+    /** Reset samples when a new integrated or dedicated server session begins. */
+    public void clear() {
+        running = false;
+        writeIndex = 0;
+        sampleCount = 0;
+    }
+
     /** Snapshot is called infrequently (commands), never every tick. */
     public Summary snapshot() {
         if (sampleCount == 0) return new Summary(0, 0, 0, 0, 0, 0);
