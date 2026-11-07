@@ -34,9 +34,9 @@ final class OriginModifierIntegrationTest {
                 assertTrue(actual.get(PlayerModifierId.MELEE_DAMAGE) >= 1);
                 assertTrue(actual.get(PlayerModifierId.BLOCK_STABILITY) >= 1.25);
                 if (race.id().equals(OriginCatalog.DWARF.id())) {
-                    assertEquals(22, actual.get(PlayerModifierId.MAX_HEALTH));
+                    assertEquals(104, actual.get(PlayerModifierId.MAX_STAMINA));
                 } else {
-                    assertEquals(20, actual.get(PlayerModifierId.MAX_HEALTH));
+                    assertEquals(100, actual.get(PlayerModifierId.MAX_STAMINA));
                 }
                 if (clazz.id().equals(OriginCatalog.MAGE.id())) {
                     assertEquals(106, actual.get(PlayerModifierId.MAX_MANA));
