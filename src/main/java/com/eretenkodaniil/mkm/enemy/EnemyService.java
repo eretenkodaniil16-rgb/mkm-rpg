@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.enemy;
 
 import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
 import com.eretenkodaniil.mkm.registry.MkmItems;
+import java.lang.management.ManagementFactory;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -30,6 +31,17 @@ public final class EnemyService {
     private static long totalTickNanos;
     private static long peakTickNanos;
     private static int peakTracked;
+    private static long totalAllocatedBytes;
+    private static long allocationSamples;
+    private static final com.sun.management.ThreadMXBean ALLOCATION_MX_BEAN =
+            ManagementFactory.getThreadMXBean() instanceof com.sun.management.ThreadMXBean bean
+                    && bean.isThreadAllocatedMemorySupported() ? bean : null;
+
+    private static long allocatedOnThread() {
+        if (ALLOCATION_MX_BEAN == null || !ALLOCATION_MX_BEAN.isThreadAllocatedMemoryEnabled())
+            return -1L;
+        return ALLOCATION_MX_BEAN.getThreadAllocatedBytes(Thread.currentThread().threadId());
+    }
 
     private EnemyService() {}
 
@@ -42,6 +54,8 @@ public final class EnemyService {
             totalTickNanos = 0L;
             peakTickNanos = 0L;
             peakTracked = 0;
+            totalAllocatedBytes = 0L;
+            allocationSamples = 0L;
         });
     }
 
@@ -62,6 +76,7 @@ public final class EnemyService {
     }
 
     public static void onServerTick(MinecraftServer server) {
+        long beforeAllocated = allocatedOnThread();
         long started = System.nanoTime();
         int active = 0;
         for (ServerLevel level : server.getAllLevels()) {
@@ -86,6 +101,11 @@ public final class EnemyService {
         totalTickNanos += Math.max(0L, elapsed);
         peakTickNanos = Math.max(peakTickNanos, elapsed);
         peakTracked = Math.max(peakTracked, active);
+        long afterAllocated = allocatedOnThread();
+        if (beforeAllocated >= 0L && afterAllocated >= beforeAllocated) {
+            totalAllocatedBytes += afterAllocated - beforeAllocated;
+            allocationSamples++;
+        }
     }
 
     /** Only existing CharacterEvents.onEntityDeath may credit MKM kill XP. */
@@ -146,8 +166,11 @@ public final class EnemyService {
         int active = 0;
         for (Map<UUID, EnemyRuntime> map : LOADED.values()) active += map.size();
         double averageUs = tickSamples == 0 ? 0.0 : totalTickNanos / (1000.0 * tickSamples);
+        String allocation = allocationSamples == 0 ? "unavailable" :
+                String.format(java.util.Locale.ROOT, "%.0f B/tick",
+                        (double) totalAllocatedBytes / allocationSamples);
         return String.format(java.util.Locale.ROOT,
-                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1f us max=%.1f us (module only; not MSPT or allocation)",
-                active, peakTracked, tickSamples, averageUs, peakTickNanos / 1000.0);
+                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1f us max=%.1f us alloc=%s (module only, NOT full MSPT)",
+                active, peakTracked, tickSamples, averageUs, peakTickNanos / 1000.0, allocation);
     }
 }
