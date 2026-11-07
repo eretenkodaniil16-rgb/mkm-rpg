@@ -76,7 +76,7 @@ class Nbt:
 
 def read_png(path: pathlib.Path):
     data = path.read_bytes()
-    assert data.startswith(b"\\x89PNG\\r\\n\\x1a\\n"), path
+    assert data.startswith(bytes((137, 80, 78, 71, 13, 10, 26, 10))), path
     cursor = 8
     idat = bytearray()
     while cursor < len(data):
