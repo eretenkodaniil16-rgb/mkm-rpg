@@ -50,6 +50,7 @@ public final class ArticulatedAvatarLayer
         Map<String,ModelPart> entries=new HashMap<>();
         for(String bone:parts.keySet())entries.put(bone,rigRoot.getChild(bone));
         joints=Map.copyOf(entries);
+        ArticulatedMode.markLayerReady();
     }
 
     @Override
