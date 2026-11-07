@@ -3,6 +3,7 @@ package com.eretenkodaniil.mkm.enemy;
 import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import java.lang.management.ManagementFactory;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.IdentityHashMap;
 import java.util.Iterator;
@@ -27,6 +28,8 @@ public final class EnemyService {
     private static final int MAX_TRACKED_PER_LEVEL = 512;
     private static final String DEATH_LOOT_TAG = "mkm.enemy.loot_claimed.v1";
     private static final Map<ServerLevel, Map<UUID, EnemyRuntime>> LOADED = new IdentityHashMap<>();
+    private static final long[] LATENCY_BUCKET_CEIL_US = {25L, 50L, 100L, 250L, 500L, 1000L, 2000L, 5000L};
+    private static final long[] LATENCY_COUNTS = new long[LATENCY_BUCKET_CEIL_US.length + 1];
     private static long tickSamples;
     private static long totalTickNanos;
     private static long peakTickNanos;
@@ -50,12 +53,7 @@ public final class EnemyService {
         ServerEntityEvents.ENTITY_UNLOAD.register((entity, level) -> onUnload(entity, level));
         ServerLifecycleEvents.SERVER_STOPPED.register(server -> {
             LOADED.clear();
-            tickSamples = 0L;
-            totalTickNanos = 0L;
-            peakTickNanos = 0L;
-            peakTracked = 0;
-            totalAllocatedBytes = 0L;
-            allocationSamples = 0L;
+            resetPerformance();
         });
     }
 
@@ -96,15 +94,23 @@ public final class EnemyService {
             }
             if (perLevel.isEmpty()) LOADED.remove(level);
         }
-        long elapsed = System.nanoTime() - started;
-        tickSamples++;
-        totalTickNanos += Math.max(0L, elapsed);
-        peakTickNanos = Math.max(peakTickNanos, elapsed);
-        peakTracked = Math.max(peakTracked, active);
+        long elapsed = Math.max(0L, System.nanoTime() - started);
         long afterAllocated = allocatedOnThread();
-        if (beforeAllocated >= 0L && afterAllocated >= beforeAllocated) {
-            totalAllocatedBytes += afterAllocated - beforeAllocated;
-            allocationSamples++;
+        // Only measure real active cohorts; idle server time cannot dilute averages.
+        if (active > 0) {
+            tickSamples++;
+            totalTickNanos += elapsed;
+            peakTickNanos = Math.max(peakTickNanos, elapsed);
+            peakTracked = Math.max(peakTracked, active);
+            long elapsedUs = elapsed / 1000L;
+            int bucket = 0;
+            while (bucket < LATENCY_BUCKET_CEIL_US.length
+                    && elapsedUs > LATENCY_BUCKET_CEIL_US[bucket]) bucket++;
+            LATENCY_COUNTS[bucket]++;
+            if (beforeAllocated >= 0L && afterAllocated >= beforeAllocated) {
+                totalAllocatedBytes += afterAllocated - beforeAllocated;
+                allocationSamples++;
+            }
         }
     }
 
@@ -162,6 +168,31 @@ public final class EnemyService {
         onUnload(mob, level);
     }
 
+    /** Reset histogram without touching loaded mobs or gameplay state. GM-only command. */
+    public static void resetPerformance() {
+        tickSamples = 0L;
+        totalTickNanos = 0L;
+        peakTickNanos = 0L;
+        peakTracked = 0;
+        totalAllocatedBytes = 0L;
+        allocationSamples = 0L;
+        Arrays.fill(LATENCY_COUNTS, 0L);
+    }
+
+    private static String p95UpperBound() {
+        if (tickSamples == 0L) return "n/a";
+        long target = (long) Math.ceil(tickSamples * 0.95);
+        long cumulative = 0L;
+        for (int i = 0; i < LATENCY_COUNTS.length; i++) {
+            cumulative += LATENCY_COUNTS[i];
+            if (cumulative >= target) {
+                return i == LATENCY_BUCKET_CEIL_US.length
+                        ? ">5000us" : "<=" + LATENCY_BUCKET_CEIL_US[i] + "us";
+            }
+        }
+        return "n/a";
+    }
+
     public static String performanceLine() {
         int active = 0;
         for (Map<UUID, EnemyRuntime> map : LOADED.values()) active += map.size();
@@ -170,7 +201,8 @@ public final class EnemyService {
                 String.format(java.util.Locale.ROOT, "%.0f B/tick",
                         (double) totalAllocatedBytes / allocationSamples);
         return String.format(java.util.Locale.ROOT,
-                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1f us max=%.1f us alloc=%s (module only, NOT full MSPT)",
-                active, peakTracked, tickSamples, averageUs, peakTickNanos / 1000.0, allocation);
+                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1fus p95 upper=%s max=%.1fus alloc=%s (module only; NOT full MSPT)",
+                active, peakTracked, tickSamples, averageUs, p95UpperBound(),
+                peakTickNanos / 1000.0, allocation);
     }
 }

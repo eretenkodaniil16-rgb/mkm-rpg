@@ -27,7 +27,11 @@ public final class EnemyCommands {
                 .then(Commands.literal("perf").executes(ctx -> {
                     ctx.getSource().sendSuccess(() -> Component.literal(EnemyService.performanceLine()), false);
                     return 1;
-                }))
+                }).then(Commands.literal("reset").executes(ctx -> {
+                    EnemyService.resetPerformance();
+                    ctx.getSource().sendSuccess(() -> Component.literal("MKM Enemy AI telemetry reset."), false);
+                    return 1;
+                })))
                 .then(Commands.literal("spawn")
                         .then(Commands.literal("raider")
                                 .executes(ctx -> spawn(ctx.getSource(), EnemyCatalog.ROAD_RAIDER, 1))
