@@ -4,6 +4,7 @@ import com.eretenkodaniil.mkm.MkmMod;
 import java.util.Set;
 import java.util.stream.Collectors;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.loader.api.FabricLoader;
 
 /** Passive server-tick diagnostics and read-only third-party compatibility checks. */
@@ -21,6 +22,7 @@ public final class MkmPerformanceRuntime {
                 .filter(id -> FabricLoader.getInstance().isModLoaded(id))
                 .collect(Collectors.toUnmodifiableSet());
         compatibility = OptimizationCompatibility.inspect(installed);
+        ServerLifecycleEvents.SERVER_STARTING.register(server -> TICKS.clear());
         ServerTickEvents.START_SERVER_TICK.register(server -> TICKS.begin(System.nanoTime()));
         ServerTickEvents.END_SERVER_TICK.register(server -> TICKS.end(System.nanoTime()));
         MkmMod.LOGGER.info("MKM Performance M0: passive tick diagnostics; optimizers {}, chunk backend {}",
