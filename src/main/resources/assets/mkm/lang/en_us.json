@@ -72,5 +72,7 @@
   "hud.mkm.renewal.busy": "BUSY",
   "hud.mkm.renewal.full_health": "FULL HP",
   "hud.mkm.renewal.low_mana": "LOW MANA",
-  "hud.mkm.renewal.cooldown": "%s s"
+  "hud.mkm.renewal.cooldown": "%s s",
+  "item.mkm.raider_insignia": "Raider's Insignia",
+  "item.mkm.stalker_fang": "Stalker's Fang"
 }

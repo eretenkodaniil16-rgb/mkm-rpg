@@ -72,5 +72,7 @@
   "hud.mkm.renewal.busy": "ЗАНЯТ",
   "hud.mkm.renewal.full_health": "HP: МАКС.",
   "hud.mkm.renewal.low_mana": "НЕТ МАНЫ",
-  "hud.mkm.renewal.cooldown": "%s с"
+  "hud.mkm.renewal.cooldown": "%s с",
+  "item.mkm.raider_insignia": "Знак налётчика",
+  "item.mkm.stalker_fang": "Клык охотника"
 }

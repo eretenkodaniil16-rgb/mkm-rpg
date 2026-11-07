@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.character;
 
 import java.util.WeakHashMap;
+import com.eretenkodaniil.mkm.enemy.EnemyService;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.damagesource.DamageSource;
@@ -11,7 +12,6 @@ import net.minecraft.world.entity.monster.Enemy;
 public final class CharacterEvents {
     /** Weak identity keys prevent repeated death callbacks awarding the same victim twice. */
     private static final WeakHashMap<LivingEntity, Boolean> REWARDED_DEATHS = new WeakHashMap<>();
-    private static final long HOSTILE_KILL_XP = 25L;
 
     private CharacterEvents() {}
 
@@ -26,7 +26,7 @@ public final class CharacterEvents {
                 || player == victim
                 || REWARDED_DEATHS.putIfAbsent(victim, Boolean.TRUE) != null) return;
         CharacterData before = CharacterService.get(player);
-        CharacterData after = CharacterService.addExperience(player, HOSTILE_KILL_XP);
+        CharacterData after = CharacterService.addExperience(player, EnemyService.killXp(victim));
         if (after.experience() == before.experience()) return; // max level: no gratuitous sync
         if (after.level() > before.level()) {
             player.sendOverlayMessage(net.minecraft.network.chat.Component.translatable(
