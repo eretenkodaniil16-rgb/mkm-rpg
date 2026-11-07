@@ -1,0 +1,294 @@
+{
+  "authoring_only": true,
+  "blender": "4.0.2",
+  "rig_bone_count": 17,
+  "rig_object": "MKM_PILOT_RIG",
+  "sword_parts": [
+    "MKM_SWORD_HANDLE",
+    "MKM_SWORD_POMMEL",
+    "MKM_SWORD_GUARD",
+    "MKM_SWORD_BLADE",
+    "MKM_SWORD_TIP"
+  ],
+  "pose_frames": {
+    "01": 1,
+    "02": 20,
+    "03": 40
+  },
+  "view_cameras": [
+    "front",
+    "back",
+    "side"
+  ],
+  "rendered_images": 9,
+  "poses": [
+    {
+      "id": "MKM_GUARD_HIGH_OUTER_01",
+      "frame": 1,
+      "wrist_ik_error": 1e-05,
+      "sword_axis_dot": 1.0,
+      "sword_head_proxy_clearance": -0.03376,
+      "head_mesh_aabb_clearance_after_blade_halfwidth": 0.07923,
+      "hair_top_world_z": 1.80274,
+      "head_front_mesh_y": -0.30098,
+      "sword_grip_xyz": [
+        0.26714,
+        -0.43505,
+        1.60244
+      ],
+      "sword_tip_xyz": [
+        -0.33738,
+        -0.44752,
+        1.73955
+      ],
+      "knee_flexion_deg": {
+        "L": 27.17,
+        "R": 29.21
+      },
+      "toe_xyz": {
+        "L": [
+          -0.25008,
+          -0.275,
+          0.02103
+        ],
+        "R": [
+          0.24786,
+          0.035,
+          0.02062
+        ]
+      },
+      "sword_single_hand_bone": true,
+      "knee_target_ranges": {
+        "L": [
+          25,
+          35
+        ],
+        "R": [
+          25,
+          35
+        ]
+      },
+      "checks": {
+        "wrist_reached": true,
+        "sword_follows_hand": true,
+        "head_proxy_clear": true,
+        "real_knee_bend": true,
+        "knees_within_design_ranges": true,
+        "hand_in_front_of_face": true,
+        "blade_entirely_in_front_of_face": true,
+        "grip_near_forehead_level": true,
+        "blade_inward_from_right": true,
+        "front_camera_sword_angle_matches_design": true
+      },
+      "face_forward_clearance_scene_units": 0.13407,
+      "screen_angle_deg": {
+        "front": 167.75,
+        "back": 12.73,
+        "side": 92.71
+      },
+      "screen_blade_delta": {
+        "front": [
+          -0.60452,
+          0.13123
+        ],
+        "back": [
+          0.60452,
+          0.13659
+        ],
+        "side": [
+          -0.01247,
+          0.2638
+        ]
+      },
+      "angle_expected_front_range_deg": [
+        155.0,
+        177.0
+      ]
+    },
+    {
+      "id": "MKM_GUARD_MID_02",
+      "frame": 20,
+      "wrist_ik_error": 1e-05,
+      "sword_axis_dot": 1.0,
+      "sword_head_proxy_clearance": 0.34476,
+      "head_mesh_aabb_clearance_after_blade_halfwidth": 0.35773,
+      "hair_top_world_z": 1.81745,
+      "head_front_mesh_y": -0.26589,
+      "sword_grip_xyz": [
+        0.53019,
+        -0.37342,
+        0.93078
+      ],
+      "sword_tip_xyz": [
+        0.25093,
+        -0.78301,
+        1.30314
+      ],
+      "knee_flexion_deg": {
+        "L": 25.58,
+        "R": 28.94
+      },
+      "toe_xyz": {
+        "L": [
+          -0.21711,
+          -0.255,
+          0.02051
+        ],
+        "R": [
+          0.21625,
+          0.005,
+          0.02039
+        ]
+      },
+      "sword_single_hand_bone": true,
+      "knee_target_ranges": {
+        "L": [
+          20,
+          30
+        ],
+        "R": [
+          20,
+          30
+        ]
+      },
+      "checks": {
+        "wrist_reached": true,
+        "sword_follows_hand": true,
+        "head_proxy_clear": true,
+        "real_knee_bend": true,
+        "knees_within_design_ranges": true,
+        "mid_guard_tip_below_face": true,
+        "front_camera_sword_angle_matches_design": true
+      },
+      "mid_guard_tip_clearance_below_face_z": 0.03103,
+      "screen_angle_deg": {
+        "front": 135.37,
+        "back": 58.27,
+        "side": 134.03
+      },
+      "screen_blade_delta": {
+        "front": [
+          -0.27926,
+          0.27566
+        ],
+        "back": [
+          0.27926,
+          0.45167
+        ],
+        "side": [
+          -0.40959,
+          0.42367
+        ]
+      },
+      "angle_expected_front_range_deg": [
+        110.0,
+        157.0
+      ]
+    },
+    {
+      "id": "MKM_GUARD_LOW_MOBILE_03",
+      "frame": 40,
+      "wrist_ik_error": 5e-05,
+      "sword_axis_dot": 1.0,
+      "sword_head_proxy_clearance": 0.37228,
+      "head_mesh_aabb_clearance_after_blade_halfwidth": 0.36618,
+      "hair_top_world_z": 1.71215,
+      "head_front_mesh_y": -0.41933,
+      "sword_grip_xyz": [
+        0.50343,
+        -0.41556,
+        0.83204
+      ],
+      "sword_tip_xyz": [
+        0.00861,
+        -0.62852,
+        0.52512
+      ],
+      "knee_flexion_deg": {
+        "L": 59.72,
+        "R": 57.99
+      },
+      "toe_xyz": {
+        "L": [
+          -0.26373,
+          -0.355,
+          0.02192
+        ],
+        "R": [
+          0.26022,
+          0.135,
+          0.02106
+        ]
+      },
+      "sword_single_hand_bone": true,
+      "knee_target_ranges": {
+        "L": [
+          50,
+          65
+        ],
+        "R": [
+          40,
+          60
+        ]
+      },
+      "checks": {
+        "wrist_reached": true,
+        "sword_follows_hand": true,
+        "head_proxy_clear": true,
+        "real_knee_bend": true,
+        "knees_within_design_ranges": true,
+        "tip_down_and_in": true,
+        "tip_safely_above_floor": true,
+        "tip_forward_of_chest": true,
+        "tip_on_center_half": true,
+        "face_mesh_clear": true,
+        "front_camera_sword_angle_matches_design": true,
+        "about_35deg_down_from_horizontal": true
+      },
+      "screen_angle_deg": {
+        "front": -145.08,
+        "back": -27.17,
+        "side": -137.75
+      },
+      "screen_blade_delta": {
+        "front": [
+          -0.49482,
+          -0.34551
+        ],
+        "back": [
+          0.49482,
+          -0.25399
+        ],
+        "side": [
+          -0.21296,
+          -0.19343
+        ]
+      },
+      "angle_expected_front_range_deg": [
+        -150.0,
+        -140.0
+      ]
+    }
+  ],
+  "all_geometry_checks": true,
+  "user_visual_approval": "APPROVED_R06_SOURCE_BASELINE",
+  "source_approval": {
+    "status": "APPROVED",
+    "date": "2026-11-08",
+    "approved_scope": "Three static guard poses and their sword/character geometries as Blender authoring source for future animation",
+    "approval_origin": "User explicitly accepted the final R06 visual comparison in conversation",
+    "guards": [
+      "MKM_GUARD_HIGH_OUTER_01",
+      "MKM_GUARD_MID_02",
+      "MKM_GUARD_LOW_MOBILE_03"
+    ],
+    "not_approved_for": [
+      "MNAE runtime",
+      "Minecraft combat animation",
+      "gameplay integration"
+    ],
+    "policy": "Treat R06 as immutable reference. Create a separate version/branch for future motion development; do not silently overwrite R06."
+  },
+  "game_mnae_status": "NOT_TESTED",
+  "warning": "Do not accept as Minecraft render or a complete animation. Knee ranges may be incompatible with this authoring rig."
+}
