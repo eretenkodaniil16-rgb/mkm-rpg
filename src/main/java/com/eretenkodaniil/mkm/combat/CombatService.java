@@ -2,6 +2,8 @@ package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolState;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -31,10 +33,14 @@ public final class CombatService {
         if (player.getAttached(CombatAttachments.TIMELINE) == null) {
             player.setAttached(CombatAttachments.TIMELINE, new ActionTimeline());
         }
+        if (player.getAttached(CombatAttachments.FENCING_SCHOOL) == null) {
+            player.setAttached(CombatAttachments.FENCING_SCHOOL, new FencingSchoolState());
+        }
     }
 
     public static void onPlayerTick(ServerPlayer player) {
         long now = player.level().getGameTime();
+        FencingSchoolService.onPlayerTick(player);
         tickAction(player, now);
         if (now % SYNC_INTERVAL_TICKS != 0L) {
             return;

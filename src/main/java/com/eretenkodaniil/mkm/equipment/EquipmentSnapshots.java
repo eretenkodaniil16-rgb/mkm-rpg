@@ -3,13 +3,16 @@ package com.eretenkodaniil.mkm.equipment;
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.combat.CombatModifierContributions;
 import com.eretenkodaniil.mkm.combat.PlayerCombatModifierAccess;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
+import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 /** Thin platform adapter. CharacterData and ordinary vanilla equipment remain the only state. */
@@ -33,7 +36,14 @@ public final class EquipmentSnapshots {
         equipped.put(EquipmentRules.Slot.CHEST, id(player.getItemBySlot(EquipmentSlot.CHEST)));
         equipped.put(EquipmentRules.Slot.LEGS, id(player.getItemBySlot(EquipmentSlot.LEGS)));
         equipped.put(EquipmentRules.Slot.FEET, id(player.getItemBySlot(EquipmentSlot.FEET)));
-        return PlayerCombatModifierAccess.snapshot(character, equipped, serverFeatures);
+        // Compose verified school posture as exactly one named STATUS source.
+        // Client UI preview cannot grant this bonus: ServerPlayer is required.
+        // The existing calculator retains all caps and player-only ownership.
+        List<CombatModifierContributions.Contribution> verified = new ArrayList<>(serverFeatures);
+        if (player instanceof ServerPlayer serverPlayer) {
+            FencingSchoolService.activeContribution(serverPlayer).ifPresent(verified::add);
+        }
+        return PlayerCombatModifierAccess.snapshot(character, equipped, verified);
     }
 
     public static PhysicalDamageType heldPhysicalType(LivingEntity player) {

@@ -2,6 +2,9 @@ package com.eretenkodaniil.mkm.command;
 
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchool;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolRules;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -37,6 +40,16 @@ public final class MkmCommands {
                         .executes(context -> showStats(context.getSource())))
                 .then(Commands.literal("modifiers")
                         .executes(context -> showModifiers(context.getSource())))
+                .then(Commands.literal("fencing")
+                        .executes(context -> showFencing(context.getSource()))
+                        .then(Commands.literal("none")
+                                .executes(context -> selectFencing(context.getSource(), FencingSchool.NONE)))
+                        .then(Commands.literal("liechtenauer")
+                                .executes(context -> selectFencing(context.getSource(), FencingSchool.LIECHTENAUER)))
+                        .then(Commands.literal("fiore")
+                                .executes(context -> selectFencing(context.getSource(), FencingSchool.FIORE)))
+                        .then(Commands.literal("destreza")
+                                .executes(context -> selectFencing(context.getSource(), FencingSchool.DESTREZA))))
                 .then(Commands.literal("xp")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("add")
@@ -54,7 +67,7 @@ public final class MkmCommands {
 
     private static int showHelp(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal(
-                "MKM commands: /mkm ping, /mkm stats, /mkm modifiers. Admin/cheats: /mkm xp add <amount>, /mkm xp set <amount>."), false);
+                "MKM commands: /mkm ping, /mkm stats, /mkm modifiers, /mkm fencing [none|liechtenauer|fiore|destreza]. Admin/cheats: /mkm xp add <amount>, /mkm xp set <amount>."), false);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -115,6 +128,38 @@ public final class MkmCommands {
                         + " | Mana regen " + modifiers.formatted(PlayerModifierId.MANA_REGENERATION)
                         + " | Magic resistance " + modifiers.formatted(PlayerModifierId.MAGIC_RESISTANCE)
                         + " | Weak point " + modifiers.formatted(PlayerModifierId.WEAK_POINT_DAMAGE)), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int showFencing(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        var state = FencingSchoolService.state(player);
+        long now = player.level().getGameTime();
+        source.sendSuccess(() -> Component.literal(
+                "Fencing school: " + state.school().id()
+                        + " | " + (state.activeAt(now) ? "ACTIVE" : "INACTIVE/WARMUP")
+                        + " | warmup: " + state.remainingWarmup(now) + " ticks"
+                        + " | switch cooldown: " + state.remainingSwitchCooldown(now) + " ticks"
+                        + " | guard cue: " + state.school().visualGuardCue()), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int selectFencing(CommandSourceStack source, FencingSchool school)
+            throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        FencingSchoolRules.Result result = FencingSchoolService.select(player, school);
+        if (!result.applied()) {
+            source.sendFailure(Component.literal(
+                    "Fencing selection denied: " + result.code()
+                            + " | remaining cooldown: "
+                            + result.state().remainingSwitchCooldown(player.level().getGameTime()) + " ticks"));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal(
+                "Fencing: " + school.id() + " selected. "
+                        + FencingSchoolRules.WARMUP_TICKS + " ticks warmup for a sword stance; "
+                        + FencingSchoolRules.SWITCH_COOLDOWN_TICKS
+                        + " ticks switch cooldown. Use /mkm fencing for status."), false);
         return Command.SINGLE_SUCCESS;
     }
 
