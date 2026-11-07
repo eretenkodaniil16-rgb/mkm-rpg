@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.combat.presentation;
 
 import com.eretenkodaniil.mkm.equipment.EquipmentRules;
+import com.eretenkodaniil.mkm.equipment.PhysicalDamageType;
 import com.eretenkodaniil.mkm.equipment.WeaponCombatProfiles;
 import java.util.Objects;
 
@@ -29,10 +30,12 @@ public final class WeaponPresentationResolver {
         }
     }
 
-    public record Item(String id, EquipmentRules.Family family) {
+    public record Item(String id, EquipmentRules.Family family,
+                       PhysicalDamageType meleeDamageType) {
         public Item {
             Objects.requireNonNull(id, "id");
             Objects.requireNonNull(family, "family");
+            Objects.requireNonNull(meleeDamageType, "meleeDamageType");
         }
         public boolean empty() {
             return "minecraft:air".equals(id);
@@ -94,7 +97,8 @@ public final class WeaponPresentationResolver {
         }
         // Actual vanilla LMB is always MAIN_HAND (regardless of preferred LEFT/RIGHT arm).
         HandContext hands = inspect(actualHands, AttackPresentationEvent.Hand.MAIN_HAND);
-        WeaponCombatProfiles.Profile profile = WeaponCombatProfiles.forItem(hands.activeItem().id());
+        WeaponCombatProfiles.Profile profile = WeaponCombatProfiles.forFamily(
+                hands.activeItem().family(), hands.activeItem().empty());
         AttackSequenceRules.Selection selection = AttackSequenceRules.next(
                 previous, hands.activeItem().family(), hands.activeItem().id(), gameTick,
                 profile.maxSequenceSteps(),
@@ -113,7 +117,7 @@ public final class WeaponPresentationResolver {
         // Deliberately MAIN_HAND: presentation family, not gameplay equipment bonuses.
         // Unsupported pickaxe is Family.NONE but remains NON-EMPTY, so it is generic,
         // never unarmed. No second whitelist of item IDs is introduced.
-        return new Item(id, EquipmentRules.profile(id, EquipmentRules.Slot.MAIN_HAND).family());
+        return new Item(id, EquipmentRules.presentationFamily(id), EquipmentRules.meleeDamageType(id));
     }
 
     private static AttackPresentationEvent.Arm opposite(AttackPresentationEvent.Arm arm) {

@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.combat.presentation;
 
 import com.eretenkodaniil.mkm.equipment.EquipmentRules;
+import com.eretenkodaniil.mkm.equipment.PhysicalDamageType;
+import java.util.Optional;
 import java.util.Objects;
 
 /**
@@ -52,6 +54,16 @@ public record AttackPresentationEvent(
             long startGameTick, long sequenceId, Outcome outcome) {
         this(actionKind, weaponFamily, hand, leadingArm, sequenceStep,
                 animationId, startGameTick, sequenceId, outcome, null);
+    }
+
+    /**
+     * Read-only direct melee type from the same EquipmentRules/hand snapshot.
+     * Legacy events without handContext intentionally have no typed evidence.
+     * This is NOT permission to deal damage.
+     */
+    public Optional<PhysicalDamageType> meleeDamageType() {
+        return handContext == null ? Optional.empty()
+                : Optional.of(handContext.activeItem().meleeDamageType());
     }
 
     /** Never infer SERVER_CONFIRMED_HIT from client input or an animation marker. */

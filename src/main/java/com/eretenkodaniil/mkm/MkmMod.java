@@ -9,6 +9,7 @@ import com.eretenkodaniil.mkm.character.CharacterEvents;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
+import com.eretenkodaniil.mkm.combat.enemy.ServerEnemyCombatAdapter;
 import com.eretenkodaniil.mkm.combat.ShieldGuardService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
@@ -21,6 +22,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
@@ -48,6 +50,10 @@ public final class MkmMod implements ModInitializer {
         AbilityNetworking.initialize();
         FordQuestService.initialize();
 
+        // AI/World may register approved special mob profiles during mod init.
+        // Lock the configuration before any server world can deal damage.
+        ServerLifecycleEvents.SERVER_STARTING.register(server ->
+                ServerEnemyCombatAdapter.sealAtServerStart());
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
             CombatService.onLogin(handler.player);
