@@ -104,7 +104,8 @@ public record EncounterLedger(Map<String, Entry> encounters) {
         return new EncounterLedger(next);
     }
     public EncounterLedger replace(String id, Entry old, Entry replacement) {
-        if (old == null || replacement == null || encounters.get(id) != old) return this;
+        if (old == null || replacement == null || old == replacement
+                || encounters.get(id) != old) return this;
         Map<String, Entry> next = new HashMap<>(encounters);
         next.put(id, replacement);
         return new EncounterLedger(next);
