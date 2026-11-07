@@ -85,7 +85,7 @@ def mesh_parts(rig):
     parts=[]
     for obj in bpy.data.objects:
         bone=obj.get("mkm_source_bone")
-        if bone not in rig.data.bones or obj.type!="MESH" or "sword" in obj.name.lower():
+        if not isinstance(bone,str) or bone not in rig.data.bones or obj.type!="MESH" or "sword" in obj.name.lower():
             continue
         vertices=[obj.matrix_world @ v.co for v in obj.data.vertices]
         if not vertices:continue
