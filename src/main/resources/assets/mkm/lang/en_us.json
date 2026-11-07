@@ -72,5 +72,11 @@
   "hud.mkm.renewal.busy": "BUSY",
   "hud.mkm.renewal.full_health": "FULL HP",
   "hud.mkm.renewal.low_mana": "LOW MANA",
-  "hud.mkm.renewal.cooldown": "%s s"
+  "hud.mkm.renewal.cooldown": "%s s",
+  "block.mkm.aged_ashlar": "Aged Ashlar",
+  "block.mkm.mossy_ashlar": "Mossy Ashlar",
+  "block.mkm.cracked_ashlar": "Fractured Ashlar",
+  "block.mkm.charred_timber": "Charred Timber",
+  "block.mkm.rusted_iron": "Rusted Iron",
+  "block.mkm.rune_slate": "Rune Slate"
 }

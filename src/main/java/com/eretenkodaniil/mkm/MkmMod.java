@@ -12,10 +12,12 @@ import com.eretenkodaniil.mkm.combat.CombatService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
+import com.eretenkodaniil.mkm.environment.WatchtowerPlacementCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
+import com.eretenkodaniil.mkm.registry.MkmBlocks;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -42,6 +44,7 @@ public final class MkmMod implements ModInitializer {
         CombatAttachments.initialize();
         FordQuestAttachments.initialize();
         MkmItems.initialize();
+        MkmBlocks.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
         CharacterNetworking.initialize();
@@ -67,6 +70,7 @@ public final class MkmMod implements ModInitializer {
         ServerLivingEntityEvents.AFTER_DEATH.register(FordQuestService::onDeath);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> WatchtowerPlacementCommands.register(dispatcher));
         LOGGER.info("MKM Fabric 26.3 initialized");
     }
 }

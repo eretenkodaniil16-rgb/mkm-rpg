@@ -72,5 +72,11 @@
   "hud.mkm.renewal.busy": "ЗАНЯТ",
   "hud.mkm.renewal.full_health": "HP: МАКС.",
   "hud.mkm.renewal.low_mana": "НЕТ МАНЫ",
-  "hud.mkm.renewal.cooldown": "%s с"
+  "hud.mkm.renewal.cooldown": "%s с",
+  "block.mkm.aged_ashlar": "Старый тесаный камень",
+  "block.mkm.mossy_ashlar": "Замшелый тесаный камень",
+  "block.mkm.cracked_ashlar": "Растрескавшийся тесаный камень",
+  "block.mkm.charred_timber": "Обугленное дерево",
+  "block.mkm.rusted_iron": "Ржавое железо",
+  "block.mkm.rune_slate": "Рунический сланец"
 }
