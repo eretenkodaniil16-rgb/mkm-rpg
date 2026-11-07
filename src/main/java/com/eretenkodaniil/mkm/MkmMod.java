@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm;
 
 import com.eretenkodaniil.mkm.abilities.AbilityAttachments;
 import com.eretenkodaniil.mkm.abilities.AbilityService;
+import com.eretenkodaniil.mkm.abilities.HostileRenewalService;
 import com.eretenkodaniil.mkm.abilities.net.AbilityNetworking;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.net.CharacterNetworking;
@@ -57,6 +58,9 @@ public final class MkmMod implements ModInitializer {
                 CombatService.onPlayerTick(player);
                 AbilityService.onPlayerTick(player);
             }
+            // Only tagged hostile mobs within range of an actual player are
+            // inspected every 20 ticks; no new global per-entity AI ticker.
+            HostileRenewalService.onServerTick(server);
         });
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);
