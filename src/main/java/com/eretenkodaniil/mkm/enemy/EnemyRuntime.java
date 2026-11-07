@@ -21,6 +21,7 @@ final class EnemyRuntime {
     private BlockPos lastSeen;
     private long lastSeenTick = Long.MIN_VALUE;
     private double lastX;
+    private double lastY;
     private double lastZ;
     private int stuckTicks;
 
@@ -29,6 +30,7 @@ final class EnemyRuntime {
         this.definition = definition;
         this.patrolAnchor = mob.blockPosition();
         this.lastX = mob.getX();
+        this.lastY = mob.getY();
         this.lastZ = mob.getZ();
     }
 
@@ -77,11 +79,14 @@ final class EnemyRuntime {
 
         // Sample position every 10 ticks only while moving. No path-node scan.
         if (EnemyTactics.shouldRepath(now, mob.getId(), 10)) {
+            // Include Y: vanilla Spider wall climbing is genuine progress, not a stuck state.
             double moved = (mob.getX() - lastX) * (mob.getX() - lastX)
+                    + (mob.getY() - lastY) * (mob.getY() - lastY)
                     + (mob.getZ() - lastZ) * (mob.getZ() - lastZ);
             stuckTicks = !mob.getNavigation().isDone() && moved < 0.09
                     ? Math.min(60, stuckTicks + 10) : 0;
             lastX = mob.getX();
+            lastY = mob.getY();
             lastZ = mob.getZ();
         }
 
