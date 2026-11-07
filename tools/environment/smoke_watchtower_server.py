@@ -143,6 +143,12 @@ def main():
                 assert "watchtower 1 placed" in placed.lower(), "Native NBT placement failed"
                 with_socket.command("execute if block 7 -55 6 mkm:rune_slate run say MKM_ENV_RUNE_PASS")
                 wait_for_marker("MKM_ENV_RUNE_PASS")
+                with_socket.command("execute if block 5 -53 7 minecraft:ladder run say MKM_ENV_LADDER_LOWER_PASS")
+                wait_for_marker("MKM_ENV_LADDER_LOWER_PASS")
+                with_socket.command("execute if block 5 -49 7 minecraft:ladder run say MKM_ENV_LADDER_TOP_PASS")
+                wait_for_marker("MKM_ENV_LADDER_TOP_PASS")
+                with_socket.command("execute if block 8 -55 11 minecraft:air run say MKM_ENV_ENTRY_PASS")
+                wait_for_marker("MKM_ENV_ENTRY_PASS")
                 with_socket.command("execute if block 18 -55 14 minecraft:campfire run say MKM_ENV_CAMP_PASS")
                 wait_for_marker("MKM_ENV_CAMP_PASS")
                 loot = with_socket.command("data get block 11 -55 5 LootTable")
