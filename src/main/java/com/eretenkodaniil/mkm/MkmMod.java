@@ -50,7 +50,6 @@ public final class MkmMod implements ModInitializer {
         AbilityNetworking.initialize();
         FordQuestNetworking.initialize();
         FordQuestService.initialize();
-        MkmPerformanceRuntime.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
@@ -71,6 +70,8 @@ public final class MkmMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmPerformanceCommands.register(dispatcher));
+        // Register the timing END callback after MKM's own end-tick work.
+        MkmPerformanceRuntime.initialize();
         LOGGER.info("MKM Fabric 26.3 initialized");
     }
 }
