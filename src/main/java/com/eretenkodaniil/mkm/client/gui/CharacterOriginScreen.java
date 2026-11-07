@@ -197,11 +197,13 @@ public final class CharacterOriginScreen extends Screen {
                     width / 2, top + 128, LIGHT);
             graphics.centeredText(font, Component.translatable(
                     raceId.equals(OriginCatalog.HUMAN.id())
-                            ? "screen.mkm.origin.human_desc" : "screen.mkm.origin.dwarf_desc"),
+                            ? (layout.compact() ? "screen.mkm.origin.human_short" : "screen.mkm.origin.human_desc")
+                            : (layout.compact() ? "screen.mkm.origin.dwarf_short" : "screen.mkm.origin.dwarf_desc")),
                     width / 2, layout.firstDescriptionY(), MUTED);
             graphics.centeredText(font, Component.translatable(
                     classId.equals(OriginCatalog.WARRIOR.id())
-                            ? "screen.mkm.origin.warrior_desc" : "screen.mkm.origin.mage_desc"),
+                            ? (layout.compact() ? "screen.mkm.origin.warrior_short" : "screen.mkm.origin.warrior_desc")
+                            : (layout.compact() ? "screen.mkm.origin.mage_short" : "screen.mkm.origin.mage_desc")),
                     width / 2, layout.secondDescriptionY(), MUTED);
         }
         if (status != null) graphics.centeredText(font, status, width / 2, layout.statusY(), LIGHT);
