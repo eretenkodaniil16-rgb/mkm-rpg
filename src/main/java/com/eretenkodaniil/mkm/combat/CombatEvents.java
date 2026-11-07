@@ -102,8 +102,7 @@ public final class CombatEvents {
         double staggerPower = playerMelee
                 ? stats((ServerPlayer) source.getEntity()).get(PlayerModifierId.STAGGER_POWER)
                 : mobMelee && source.getEntity() instanceof Mob attackingMob
-                        ? ServerEnemyCombatAdapter.features(attackingMob)
-                                .map(p -> p.attackStaggerPower()).orElse(1.0D)
+                        ? ServerEnemyCombatAdapter.directMeleeStaggerPower(attackingMob)
                         : 1.0D;
         double staggerResistance = entity instanceof ServerPlayer defender
                 ? stats(defender).get(PlayerModifierId.STAGGER_RESISTANCE)

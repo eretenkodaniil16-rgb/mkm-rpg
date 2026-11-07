@@ -35,6 +35,21 @@ public final class ServerEnemyCombatAdapter {
      * classifier as a player; otherwise use an explicitly registered natural
      * attack type. Unregistered mobs keep their existing vanilla/MKM fallback.
      */
+    /** A projectile-only or non-attacking profile cannot buff a direct melee hit. */
+    public static double directMeleeStaggerPower(Mob attacker) {
+        return selectDirectMeleeStaggerPower(features(attacker));
+    }
+
+    /** Pure action-delivery check for server-only Mob melee callbacks. */
+    public static double selectDirectMeleeStaggerPower(
+            Optional<EnemyCombatProfile> registered) {
+        java.util.Objects.requireNonNull(registered, "registered");
+        return registered.filter(profile -> profile.delivery()
+                        == EnemyCombatProfile.AttackDelivery.DIRECT_MELEE)
+                .map(EnemyCombatProfile::attackStaggerPower)
+                .orElse(1.0D);
+    }
+
     public static PhysicalDamageType directMeleeType(Mob attacker) {
         String main = BuiltInRegistries.ITEM.getKey(attacker.getMainHandItem().getItem()).toString();
         return selectDirectMeleeType(main, features(attacker));

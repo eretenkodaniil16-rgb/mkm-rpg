@@ -110,6 +110,21 @@ final class EnemyCombatProfileContractTest {
                 "Improvised bow melee stays blunt");
     }
 
+    @Test void projectileOnlyMobDoesNotReceiveMeleeStaggerBonus() {
+        EnemyCombatProfile melee = new EnemyCombatProfile(
+                EnemyCombatProfile.AttackDelivery.DIRECT_MELEE,
+                PIERCE, 0D, Map.of(), 1D, 2D);
+        EnemyCombatProfile projectile = new EnemyCombatProfile(
+                EnemyCombatProfile.AttackDelivery.PROJECTILE,
+                PIERCE, 0D, Map.of(), 1D, 2D);
+        assertEquals(2D, ServerEnemyCombatAdapter.selectDirectMeleeStaggerPower(
+                java.util.Optional.of(melee)));
+        assertEquals(1D, ServerEnemyCombatAdapter.selectDirectMeleeStaggerPower(
+                java.util.Optional.of(projectile)));
+        assertEquals(1D, ServerEnemyCombatAdapter.selectDirectMeleeStaggerPower(
+                java.util.Optional.empty()));
+    }
+
     @Test void optionalRegistryIsEmptyUntilExplicitlyConfiguredAndSealed() {
         EnemyCombatFeatureRegistry registry = new EnemyCombatFeatureRegistry();
         assertTrue(registry.find("minecraft:zombie").isEmpty());
