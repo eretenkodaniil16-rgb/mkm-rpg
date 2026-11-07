@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.client.gui;
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.attribute.PrimaryAttribute;
 import com.eretenkodaniil.mkm.character.net.AllocationRequest;
@@ -92,6 +94,13 @@ public final class CharacterSheetScreen extends Screen {
                 .size(narrow ? 70 : 90, 20).pos(
                         panelLeft + panelWidth - (narrow ? 188 : 276), layout.footerTop())
                 .build());
+        // The new origin screen is explicit and optional for existing v4 saves;
+        // never block old progressed characters or silently assign a class.
+        addRenderableWidget(Button.builder(
+                        Component.translatable("screen.mkm.origin.open"),
+                        button -> minecraft.gui.setScreen(new CharacterOriginScreen()))
+                .size(narrow ? 108 : 156, 20)
+                .pos(panelLeft + 8, layout.footerTop()).build());
         resetButton = addRenderableWidget(Button.builder(
                         Component.translatable("screen.mkm.character.reset"),
                         button -> { Arrays.fill(pending, 0); statusMessage = null; refreshButtons(); })
@@ -309,8 +318,15 @@ public final class CharacterSheetScreen extends Screen {
         }
 
         if (!layout.compact()) {
-            graphics.text(font, Component.translatable("screen.mkm.character.synced"),
-                    contentLeft, contentTop + 16, GOOD);
+            var origin = minecraft.player.getAttached(CharacterOriginAttachments.PROFILE);
+            boolean chosen = origin != null && origin.selected();
+            String race = chosen && OriginCatalog.race(origin.raceId()) != null
+                    ? OriginCatalog.race(origin.raceId()).titleKey() : "screen.mkm.origin.unselected";
+            String clazz = chosen && OriginCatalog.clazz(origin.classId()) != null
+                    ? OriginCatalog.clazz(origin.classId()).titleKey() : "screen.mkm.origin.unselected";
+            graphics.text(font, Component.translatable("screen.mkm.origin.sheet",
+                    Component.translatable(race), Component.translatable(clazz)),
+                    contentLeft, contentTop + 16, chosen ? GOOD : WARNING);
         }
         graphics.text(font, Component.translatable("screen.mkm.character.level", data.level()),
                 contentLeft, layout.micro() ? top + 19 : contentTop + (layout.compact() ? 14 : 36), TEXT);
