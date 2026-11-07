@@ -57,6 +57,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build --no-daemon
+      - name: Verify hybrid-performance benchmark comparison tests
+        run: python3 -m unittest discover -s tools/performance -p 'test_*.py' -v
       - name: Verify offline world backup preflight (Python stdlib)
         run: python3 -m unittest discover -s tools/integration -p 'test_*.py' -v
       - name: Self-check animation choreography and generate storyboard
