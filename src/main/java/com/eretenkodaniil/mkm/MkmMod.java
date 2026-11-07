@@ -15,6 +15,8 @@ import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
 import com.eretenkodaniil.mkm.quests.FordQuestCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
+import com.eretenkodaniil.mkm.performance.MkmPerformanceRuntime;
+import com.eretenkodaniil.mkm.performance.MkmPerformanceCommands;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.fabricmc.api.ModInitializer;
@@ -67,6 +69,9 @@ public final class MkmMod implements ModInitializer {
         ServerLivingEntityEvents.AFTER_DEATH.register(FordQuestService::onDeath);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmPerformanceCommands.register(dispatcher));
+        // Register the timing END callback after MKM's own end-tick work.
+        MkmPerformanceRuntime.initialize();
         LOGGER.info("MKM Fabric 26.3 initialized");
     }
 }

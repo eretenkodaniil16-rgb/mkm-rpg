@@ -7,7 +7,7 @@ MKM RPG — автоматическая установка для Windows
 ================================================
 Minecraft Java Edition: 26.3
 Fabric Loader: 0.20.1
-MKM: 0.0.6-fabric.0-qa.1 (Fabric API встроен в JAR)
+MKM: 0.0.6-fabric.0-qa.2 (Fabric API встроен в JAR)
 
 1. Установите официальный Minecraft Launcher и один раз запустите Minecraft 26.3.
 2. Полностью закройте Minecraft и лаунчер.
@@ -18,7 +18,7 @@ MKM: 0.0.6-fabric.0-qa.1 (Fabric API встроен в JAR)
    скопирует MKM в папку mods.
 6. Откройте Minecraft Launcher и выберите профиль fabric-loader-0.20.1-26.3.
 
-Fabric API отдельно скачивать не нужно: он уже включён в MKM.
+Оптимизационные моды Sodium/Lithium/C2ME/Moonrise отдельно не включены;\nсм. docs/MKM_HYBRID_PERFORMANCE_ENGINE_M0.md.\nFabric API отдельно скачивать не нужно: он уже включён в MKM.
 Сам Minecraft, официальная учётная запись и Minecraft Launcher НЕ входят в пакет.
 Для первой установки нужен интернет. Установщик не требует прав администратора.
 Установщик использует официальный Windows Fabric Installer EXE, для которого
