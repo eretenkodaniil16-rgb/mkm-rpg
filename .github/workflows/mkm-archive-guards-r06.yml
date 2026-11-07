@@ -1,0 +1,109 @@
+name: Archive approved MKM sword guards R06
+
+on:
+  push:
+    branches:
+      - tools/three-guards-blender-source-v1
+    paths:
+      - .github/workflows/mkm-archive-guards-r06.yml
+
+permissions:
+  contents: write
+
+jobs:
+  freeze-approved-source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - name: Checkout full source branch for archival tag
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Install Blender and Xvfb
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender xvfb
+          blender --version | head -3
+
+      - name: Render immutable approved R06 from the generator
+        env:
+          LIBGL_ALWAYS_SOFTWARE: "1"
+        run: |
+          xvfb-run -a blender -b --factory-startup \
+            --python tools/animation/pilots/guard_studies/blender_three_guards.py \
+            -- --render --out build/reports/three-guards
+          test -s build/reports/three-guards/MKM_Three_Sword_Guards_v1.blend
+          test "$(find build/reports/three-guards -name 'stance_*.png' -size +2k | wc -l)" -eq 9
+
+      - name: Check acceptance, source integrity and real camera geometry
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path=Path('tools/animation/pilots/guard_studies/first_three_stances_v1.json')
+          source=json.loads(path.read_text(encoding='utf-8'))
+          manifest=json.loads(Path('build/reports/three-guards/manifest.json').read_text(encoding='utf-8'))
+          assert source['status']=='USER_APPROVED_BLENDER_AUTHORING_BASELINE_R06'
+          assert source['source_approval']['status']=='APPROVED'
+          assert source['weapon_angle_revision']['id']=='R06_LOW_GUARD_35_DOWN_INWARD'
+          assert manifest['user_visual_approval']=='APPROVED_R06_SOURCE_BASELINE'
+          assert manifest['all_geometry_checks']
+          assert manifest['rendered_images']==9 and manifest['rig_bone_count']==17
+          assert len(manifest['poses'])==3
+          assert all(all(p['checks'].values()) for p in manifest['poses'])
+          angles={p['id']:p['screen_angle_deg']['front'] for p in manifest['poses']}
+          assert 155<=angles['MKM_GUARD_HIGH_OUTER_01']<=177
+          assert 110<=angles['MKM_GUARD_MID_02']<=157
+          assert -150<=angles['MKM_GUARD_LOW_MOBILE_03']<=-140
+          assert source['stances'][0]['pose_targets']['wrist_xyz']==[0.29,-0.44,1.57]
+          assert source['stances'][1]==source['weapon_angle_revision']['baseline_mid_guard_snapshot']
+          assert source['stances'][2]['pose_targets']['blade_direction_world']==[-0.79,-0.34,-0.49]
+          print('Approved source + 17-bone Blender + nine real camera views: PASS')
+          print('All three sword angles: ',angles)
+          PY
+
+      - name: Commit approved binary .blend and nine references once
+        env:
+          ARCHIVE_DIR: assets/animation/approved/mkm_sword_guards_r06
+        run: |
+          set -euo pipefail
+          if [ -f "$ARCHIVE_DIR/MKM_Three_Sword_Guards_R06.blend" ]; then
+            echo "Approved binary asset already exists; refusing overwrite."
+          else
+            mkdir -p "$ARCHIVE_DIR"
+            cp build/reports/three-guards/MKM_Three_Sword_Guards_v1.blend \
+               "$ARCHIVE_DIR/MKM_Three_Sword_Guards_R06.blend"
+            cp build/reports/three-guards/stance_*.png "$ARCHIVE_DIR/"
+            cp build/reports/three-guards/manifest.json "$ARCHIVE_DIR/"
+            cp tools/animation/pilots/guard_studies/first_three_stances_v1.json \
+               "$ARCHIVE_DIR/pose_targets_r06.json"
+            cp docs/workflow/MKM_R06_APPROVED_GUARDS.md "$ARCHIVE_DIR/README.md"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -f "$ARCHIVE_DIR"
+            git commit -m "assets: preserve user-approved R06 sword guards Blender source and nine views"
+            git push origin "HEAD:refs/heads/tools/three-guards-blender-source-v1"
+          fi
+
+      - name: Tag approved source commit without moving existing tag
+        run: |
+          set -euo pipefail
+          if git ls-remote --exit-code --tags origin refs/tags/mkm-guards-r06-approved >/dev/null; then
+            echo "Approved tag already exists. It is immutable; not moving."
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a mkm-guards-r06-approved -m "MKM R06 — three user-approved Blender sword guard source poses"
+            git push origin refs/tags/mkm-guards-r06-approved
+          fi
+
+      - name: Save reproducible workflow artifact as a convenience
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mkm-approved-guards-r06-blend-and-nine-views
+          path: build/reports/three-guards/
+          retention-days: 30
+          if-no-files-found: warn
