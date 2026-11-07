@@ -4,6 +4,12 @@ import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
 import com.eretenkodaniil.mkm.client.animation.AnimationClip;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
 import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.ArticulatedMode;
+import com.eretenkodaniil.mkm.client.animation.engine.ArticulatedClipV3;
+import com.eretenkodaniil.mkm.client.animation.engine.Vec3;
+import com.eretenkodaniil.mkm.client.animation.engine.Quat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Quaternionf;
 import com.eretenkodaniil.mkm.client.animation.VanillaAvatarAdapter;
 import com.eretenkodaniil.mkm.client.animation.WeaponPresentationResolver;
 import net.minecraft.client.Minecraft;
@@ -26,10 +32,46 @@ public abstract class PlayerModelAnimationMixin {
     @Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",
             at = @At("TAIL"))
     private void mkm$animateLocalCombat(AvatarRenderState state, CallbackInfo ci) {
+        PlayerModel model = (PlayerModel) (Object) this;
+        // PlayerModel instances can be re-used for different avatars/frames.
+        // Never let a one-frame experimental overlay erase vanilla forever.
+        model.head.skipDraw=false;
+        model.hat.skipDraw=false;
+        model.body.skipDraw=false;
+        model.jacket.skipDraw=false;
+        model.leftArm.skipDraw=false;
+        model.rightArm.skipDraw=false;
+        model.leftSleeve.skipDraw=false;
+        model.rightSleeve.skipDraw=false;
+        model.leftLeg.skipDraw=false;
+        model.rightLeg.skipDraw=false;
+        model.leftPants.skipDraw=false;
+        model.rightPants.skipDraw=false;
         LocalCombatAnimation.Frame frame = LocalCombatAnimation.frame(state);
         if (frame == null || frame.weight() <= 0.0001F) return;
 
-        PlayerModel model = (PlayerModel) (Object) this;
+        if (ArticulatedMode.active(state,frame)) {
+            // The registered RenderLayer draws a genuinely distinct 17-piece
+            // world-space skinned model. No original six-part cubes are drawn
+            // in parallel. Armor or first-person always fall back safely.
+            model.head.skipDraw=true;
+            model.hat.skipDraw=true;
+            model.body.skipDraw=true;
+            model.jacket.skipDraw=true;
+            model.leftArm.skipDraw=true;
+            model.rightArm.skipDraw=true;
+            model.leftSleeve.skipDraw=true;
+            model.rightSleeve.skipDraw=true;
+            model.leftLeg.skipDraw=true;
+            model.rightLeg.skipDraw=true;
+            model.leftPants.skipDraw=true;
+            model.rightPants.skipDraw=true;
+            AnimationRenderProbe.markDecision(
+                Minecraft.getInstance().level.getGameTime(),
+                ArticulatedMode.clip().id(),
+                0D,"MNAE17",frame.selection(),"ARTICULATED_17_F9");
+            return;
+        }
         ActionTimeline action = frame.timeline();
         float w = frame.weight();
 
@@ -122,6 +164,34 @@ public abstract class PlayerModelAnimationMixin {
         copyAngles(model.rightPants, model.rightLeg);
         copyAngles(model.leftPants, model.leftLeg);
         copyAngles(model.jacket, model.body);
+    }
+
+    /**
+     * Real held-item layer calls this after model setup. Redirect ONLY the
+     * experimental mainhand sword to the Blender hand socket; keep offhand,
+     * first-person, shield and all other items at vanilla transforms.
+     */
+    @Inject(method = "translateToHand(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lnet/minecraft/world/entity/HumanoidArm;Lcom/mojang/blaze3d/vertex/PoseStack;)V",
+            at = @At("HEAD"), cancellable = true)
+    private void mkm$r07TranslateToWrist(AvatarRenderState state,HumanoidArm arm,
+                                         PoseStack stack, CallbackInfo ci) {
+        LocalCombatAnimation.Frame frame=LocalCombatAnimation.frame(state);
+        if(!ArticulatedMode.active(state,frame)||arm!=state.mainArm)return;
+        ArticulatedClipV3 clip=ArticulatedMode.clip();
+        ArticulatedClipV3.Sample hand=clip.sample(
+                frame.sampledClip().localTime()).get("hand.R");
+        if(hand==null)return;
+        Quat q=hand.rotation();
+        Vec3 pivot=clip.socketPoint(clip.sample(frame.sampledClip().localTime()),false);
+        if(arm==HumanoidArm.LEFT) {
+            pivot=new Vec3(-pivot.x(),pivot.y(),pivot.z());
+            q=new Quat(q.x(),-q.y(),-q.z(),q.w());
+        }
+        PlayerModel model=(PlayerModel)(Object)this;
+        model.root().translateAndRotate(stack);
+        stack.translate(pivot.x()/16D,pivot.y()/16D,pivot.z()/16D);
+        stack.rotate(new Quaternionf((float)q.x(),(float)q.y(),(float)q.z(),(float)q.w()));
+        ci.cancel();
     }
 
     private static void applyClip(
