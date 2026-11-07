@@ -19,8 +19,10 @@ on:
       - 'feature/c3-7-visible-combat-diagnostics'
       - 'integration/fabric-26.3-c3.7-all-systems-v1'
       - 'feature/combat-mnae-lmb-guard-archetypes-m1'
+      - 'feature/combat-entity-contract-m2'
   pull_request:
     branches:
+      - 'feature/combat-mnae-lmb-guard-archetypes-m1'
       - 'port/fabric-26.3'
       - 'feature/fabric-26.3-bundled-api'
       - 'feature/fabric-26.3-oneclick-installer'
