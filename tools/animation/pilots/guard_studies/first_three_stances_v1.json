@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "id": "mkm:sword_stances_first_three_v1",
-  "status": "PROPOSED_FOR_USER_DESIGN_SIGNOFF",
+  "status": "USER_APPROVED_BLENDER_AUTHORING_BASELINE_R06",
   "source": "approved_conversation_concept_sheet_01_02_03",
   "render_target": "one voxel warrior / one sword / one 17-bone authoring rig",
   "coordinates": {
@@ -185,7 +185,7 @@
   },
   "weapon_angle_revision": {
     "id": "R06_LOW_GUARD_35_DOWN_INWARD",
-    "review_status": "R06_TUNED_PENDING_REAL_CAMERA_QA",
+    "review_status": "USER_APPROVED_R06_SOURCE_BASELINE",
     "changed_stances": [
       3
     ],
@@ -252,5 +252,22 @@
     "replaces_overhead_and_downward_checks": false,
     "approved_stance_01_unchanged": true,
     "replaces_upward_checks": true
+  },
+  "source_approval": {
+    "status": "APPROVED",
+    "date": "2026-11-08",
+    "approved_scope": "Three static guard poses and their sword/character geometries as Blender authoring source for future animation",
+    "approval_origin": "User explicitly accepted the final R06 visual comparison in conversation",
+    "guards": [
+      "MKM_GUARD_HIGH_OUTER_01",
+      "MKM_GUARD_MID_02",
+      "MKM_GUARD_LOW_MOBILE_03"
+    ],
+    "not_approved_for": [
+      "MNAE runtime",
+      "Minecraft combat animation",
+      "gameplay integration"
+    ],
+    "policy": "Treat R06 as immutable reference. Create a separate version/branch for future motion development; do not silently overwrite R06."
   }
 }
