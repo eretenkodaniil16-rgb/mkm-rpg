@@ -149,6 +149,9 @@ public final class EncounterDirector {
                 if (spec.elite()) {
                     skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
                 }
+                // The direct constructor initially assesses an empty hand;
+                // explicitly select the vanilla bow goal after equipping.
+                skeleton.reassessWeaponGoal();
                 return skeleton;
             }
             default -> {
@@ -175,8 +178,12 @@ public final class EncounterDirector {
         level.setAttached(EncounterAttachments.ENCOUNTERS, after);
         NpcVisualSignals.emit(victim, NpcVisualSignals.Cue.DEATH);
         var changed = after.find(PILOT_ID);
-        ServerPlayer owner = level.getServer().getPlayerList()
-                .getPlayer(UUID.fromString(event.ownerId()));
+        ServerPlayer owner = null;
+        try {
+            owner = level.getServer().getPlayerList().getPlayer(UUID.fromString(event.ownerId()));
+        } catch (IllegalArgumentException badOwner) {
+            MkmMod.LOGGER.error("Encounter {} has invalid saved owner UUID {}", PILOT_ID, event.ownerId());
+        }
         if (owner != null) inform(owner, changed.phase().equals(EncounterLedger.DEFEATED)
                 ? "Засада уничтожена. Вернитесь к месту начала и выполните /mkmencounter claim."
                 : "Противник уничтожен. Осталось: " + changed.aliveCount());
