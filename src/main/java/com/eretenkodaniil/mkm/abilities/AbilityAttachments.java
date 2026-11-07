@@ -56,9 +56,20 @@ public final class AbilityAttachments {
                     .copyOnDeath()
                     .syncWith(NETWORK_CODEC, AttachmentSyncPredicate.targetOnly()));
 
+    /**
+     * Same persistent ManaLedger schema and AbilityRules as players, but the
+     * hostile's state is server-private and does not copy on death or sync to
+     * a player as a fake owner. Only tagged mobs access this attachment.
+     */
+    public static final AttachmentType<ManaLedger> HOSTILE = AttachmentRegistry.create(
+            MkmMod.id("hostile_ability_resources"), builder -> builder
+                    .initializer(ManaLedger::new)
+                    .persistent(ManaLedgerCodec.PERSISTENT_CODEC));
+
     private AbilityAttachments() {}
 
     public static void initialize() {
         PLAYER.identifier();
+        HOSTILE.identifier();
     }
 }

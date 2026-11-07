@@ -3,22 +3,22 @@ package com.eretenkodaniil.mkm.abilities;
 import java.util.Set;
 
 /**
- * Pure, future-facing grant checks. Character Core owns learned ability IDs,
- * equipment owns temporary grants. Nothing is persisted in this class.
- * Only Renewal is public in the current playable prototype.
+ * Compatibility facade for the existing M2 grant query. Class, race, equipment
+ * and AI all resolve through the SINGLE AbilityGrantPolicy implementation.
+ * Effect execution remains separately server allowlisted.
  */
 public final class AbilityAccessRules {
     private AbilityAccessRules() {}
 
     public static boolean hasGrant(
             String abilityId, Set<String> learned, Set<String> equipmentGranted) {
-        if (!AbilityIds.valid(abilityId) || AbilityCatalog.get(abilityId) == null
-                || learned == null || equipmentGranted == null) return false;
-        return AbilityCatalog.RENEWAL.id().equals(abilityId)
-                || learned.contains(abilityId) || equipmentGranted.contains(abilityId);
+        if (learned == null || equipmentGranted == null) return false;
+        return AbilityGrantPolicy.granted(
+                new AbilityGrantPolicy.Grants(AbilityGrantPolicy.Actor.PLAYER,
+                        null, null, learned, equipmentGranted, Set.of()), abilityId);
     }
 
-    /** Runtime execution is separately controlled by server handler registration. */
+    /** Explicitly allowlisted server effects; declarative grants cannot widen it. */
     public static boolean executableNow(String abilityId) {
         return AbilityCatalog.RENEWAL.id().equals(abilityId);
     }

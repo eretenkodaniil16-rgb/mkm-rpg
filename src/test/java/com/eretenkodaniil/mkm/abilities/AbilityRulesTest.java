@@ -7,10 +7,14 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AbilityRulesTest {
     @Test void catalogDefinitionsAreStable() {
-        assertEquals(5, AbilityCatalog.all().size());
+        assertEquals(7, AbilityCatalog.all().size()); // 5 M1 + 2 race-only descriptors
         assertSame(AbilityCatalog.RENEWAL, AbilityCatalog.get("mkm:renewal"));
         assertEquals(AbilityDefinition.TargetMode.SELF, AbilityCatalog.RENEWAL.targetMode());
         assertEquals(AbilityDefinition.Kind.PASSIVE, AbilityCatalog.get("mkm:iron_will").kind());
+        assertEquals(AbilityDefinition.Kind.PASSIVE,
+                AbilityCatalog.get("mkm:stone_resilience").kind());
+        assertFalse(AbilityGrantPolicy.executable(
+                AbilityGrantPolicy.Grants.currentPlayer(), "mkm:ancestral_focus"));
         assertNull(AbilityCatalog.get("mkm:forged_spell"));
     }
 
