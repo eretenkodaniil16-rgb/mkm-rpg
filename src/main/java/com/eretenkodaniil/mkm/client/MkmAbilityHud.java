@@ -36,8 +36,8 @@ public final class MkmAbilityHud {
         if (attached == null || character == null || timeline == null || combat == null) return;
 
         var stats = AbilityModifierAccess.snapshot(client.player);
-        var parameters = RenewalParameters.from(stats);
-        double maximum = stats.get(PlayerModifierId.MAX_MANA);
+        var parameters = RenewalParameters.from(stats, character.level());
+        double maximum = parameters.maximumMana();
         double ratio = maximum > 0D ? Math.clamp(attached.mana() / maximum, 0D, 1D) : 0D;
         int viewportWidth = client.getWindow().getGuiScaledWidth();
         int viewportHeight = client.getWindow().getGuiScaledHeight();
