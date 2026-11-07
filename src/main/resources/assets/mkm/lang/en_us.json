@@ -86,7 +86,7 @@
   "screen.mkm.origin.back": "Back",
   "screen.mkm.origin.bonuses": "Provisional traits",
   "screen.mkm.origin.human_desc": "Versatile: stamina and mana regeneration",
-  "screen.mkm.origin.dwarf_desc": "Sturdy: health and shield stability",
+  "screen.mkm.origin.dwarf_desc": "Sturdy: stamina pool and shield stability",
   "screen.mkm.origin.warrior_desc": "Melee: damage and stamina efficiency",
   "screen.mkm.origin.mage_desc": "Magic: mana pool and healing efficiency",
   "screen.mkm.origin.sheet": "Race: %s · Class: %s",
