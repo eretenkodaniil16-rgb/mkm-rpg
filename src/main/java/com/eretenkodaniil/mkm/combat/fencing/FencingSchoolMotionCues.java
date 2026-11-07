@@ -55,6 +55,7 @@ public final class FencingSchoolMotionCues {
         Objects.requireNonNull(event, "event");
         if (event.hand() != AttackPresentationEvent.Hand.MAIN_HAND
                 || event.handContext() == null
+                || event.startGameTick() > localGameTick
                 || event.sequenceStep() < 1 || event.sequenceStep() > 3
                 || (event.actionKind() != AttackPresentationEvent.ActionKind.VANILLA_SWING
                     && event.actionKind() != AttackPresentationEvent.ActionKind.SPECIAL_COMBO)
@@ -66,7 +67,7 @@ public final class FencingSchoolMotionCues {
         var mainhand = event.handContext().mainHand();
         if (mainhand.empty()) return Optional.empty();
         Optional<FencingSchool> effective = FencingSchoolRules.effectiveSchool(
-                schoolState, mainhand.family(), localGameTick);
+                schoolState, mainhand.family(), event.startGameTick());
         if (effective.isEmpty()) return Optional.empty();
         FencingSchool school = effective.orElseThrow();
         List<String> techniques = TECHNIQUES.get(school);
