@@ -40,6 +40,8 @@ public record EncounterDefinition(
                 || rewardXp <= 0 || rewardXp > 1_000
                 || roster.size() != 3
                 || roster.stream().filter(Spawn::elite).count() != 1
+                || roster.stream().filter(Spawn::elite).anyMatch(s ->
+                    !s.entityId().equals("minecraft:skeleton") || !s.role().equals("leader"))
                 || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:husk"))
                 || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:skeleton"))
                 || roster.stream().anyMatch(s -> !List.of("minecraft:husk", "minecraft:skeleton").contains(s.entityId())
