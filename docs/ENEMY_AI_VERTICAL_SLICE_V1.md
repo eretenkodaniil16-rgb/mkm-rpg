@@ -91,10 +91,13 @@ Cheats/GM permissions required:
 /mkmenemy spawn raider 10
 /mkmenemy spawn stalker
 /mkmenemy spawn stalker 10
+/mkmenemy stress 20
+/mkmenemy stress 40
+/mkmenemy clear
 /mkmenemy perf reset
 /mkmenemy perf
 ```
-In non-Peaceful difficulty, a safe nearby solid-footed position is required. Spawns are persistent and immediately target the command issuer. For testing 40 mobs, repeat commands in a clear, accessible bounded arena. `/mkmenemy perf` shows service-only loaded/peak, mean/max and bucketed p95-upper-bound per-server-tick runtime and **optional** current-thread allocated bytes using the platform's ThreadMXBean. It does **not** measure full Minecraft MSPT, total Java heap, GPU or per-tick percentile. Use \`/mkmenemy perf reset\` after the cohort reaches 20 or 40 entities, then collect at least 5 minutes of data. Only ticks containing at least one tracked loaded mob are sampled. Reset does not affect gameplay state.
+In non-Peaceful difficulty, a safe nearby solid-footed position is required. Spawns are persistent and immediately target the command issuer. For repeatable tests on flat terrain use \`/mkmenemy stress 20\` or \`40\`; this attempts a grid of alternating types and reports the **actual** count successfully spawned. The stress command resets module telemetry. \`/mkmenemy clear\` discards nearby tagged prototypes without death, loot or XP; never use it on authored encounters. `/mkmenemy perf` shows service-only loaded/peak, mean/max and bucketed p95-upper-bound per-server-tick runtime and **optional** current-thread allocated bytes using the platform's ThreadMXBean. It does **not** measure full Minecraft MSPT, total Java heap, GPU or per-tick percentile. Use \`/mkmenemy perf reset\` after the cohort reaches 20 or 40 entities, then collect at least 5 minutes of data. Only ticks containing at least one tracked loaded mob are sampled. Reset does not affect gameplay state.
 
 ## Verification & release gate
 
@@ -109,7 +112,7 @@ Interactive QA, not waived by headless CI:
 3. At low health Raider must retreat and stop abusing invisible pursuit; Spider must approach via wall or flank, not use the humanoid attack rig. Observe soft poise and vanilla attack damage once per hit with shield/armor.
 4. Kill each twice; verify one additional item token per death, vanilla loot retained, and player Character v4 XP increments **once**, by 25/35 (plus ordinary quest reward only if legitimately due). Kill another untagged vanilla mob: still 25. Repeat with player B killing another player's mob.
 5. Unload their chunk, save/restart, reload: same entity UUID and level-scaled attributes; no multiplied HP or new duplicate spawn. Kill after reload: no duplicate XP or drops. Check original Ford quest raider's UUID, reservation and XP unaffected.
-6. Spawn 20, then 40 across 2–3 groups. For each count: record 2-minute warmup + 5-minute test, /mkmenemy perf mean/max/alloc, full server MSPT p50/p95/p99 and GC/jfr allocation rate. Target, navigation and hits should remain functional in multiplayer.
+6. Use \`/mkmenemy stress 20\` and then \`/mkmenemy clear\` followed by \`/mkmenemy stress 40\`, recording the actual successfully spawned count (on flat terrain). For each count: record 2-minute warmup + 5-minute test, /mkmenemy perf mean/max/alloc, full server MSPT p50/p95/p99 and GC/jfr allocation rate. Target, navigation and hits should remain functional in multiplayer.
 7. Candidate acceptance budgets, **not measured results**: 20 TPS retained; p95 full-server MSPT < 50 ms; enemy module p95 < 1 ms at 40 active; controller allocation aim < 16 KiB per tick; no unbounded loaded-map retention after unload. The histogram p95 is an **upper bound**, not an exact percentile; validate tail latency with JFR/YourKit, and measure full-server MSPT separately.
 8. Run `./gradlew clean test build --no-daemon`, dedicated server smoke, client under Xvfb, plus interactive third-person/first-person checks. Verify no damage/animation regressions. Do not merge without these observations.
 
