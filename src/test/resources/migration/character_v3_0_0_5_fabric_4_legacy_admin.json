@@ -1,0 +1,13 @@
+{
+  "schema_version": 3,
+  "experience": 300,
+  "strength": 63,
+  "dexterity": 12,
+  "vitality": 10,
+  "endurance": 10,
+  "intelligence": 10,
+  "willpower": 10,
+  "perception": 10,
+  "earned_points": 4,
+  "allocated_points": [0, 2, 0, 0, 0, 0, 0]
+}
