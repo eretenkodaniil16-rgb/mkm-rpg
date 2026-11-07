@@ -82,7 +82,7 @@
   "screen.mkm.origin.dwarf": "Dwarf",
   "screen.mkm.origin.warrior": "Warrior",
   "screen.mkm.origin.mage": "Mage",
-  "screen.mkm.origin.confirm": "Confirm choice",
+  "screen.mkm.origin.confirm": "Choose",
   "screen.mkm.origin.back": "Back",
   "screen.mkm.origin.bonuses": "Provisional traits",
   "screen.mkm.origin.human_desc": "Versatile: stamina and mana regeneration",
@@ -100,5 +100,10 @@
   "screen.mkm.origin.locked": "Race or class cannot be selected again",
   "screen.mkm.origin.stale": "Stale request; reopen this screen",
   "screen.mkm.origin.invalid": "Server rejected the selected IDs",
-  "screen.mkm.origin.unsupported": "Current character state is not supported"
+  "screen.mkm.origin.unsupported": "Current character state is not supported",
+  "screen.mkm.origin.short_notice": "One-time choice",
+  "screen.mkm.origin.human_short": "Resource regeneration",
+  "screen.mkm.origin.dwarf_short": "Stamina and shield",
+  "screen.mkm.origin.warrior_short": "Melee and stamina cost",
+  "screen.mkm.origin.mage_short": "Mana and healing"
 }
