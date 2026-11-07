@@ -24,10 +24,10 @@ public final class AbilityArchetypes {
     private AbilityArchetypes() {}
 
     public static Set<String> classGrants(String classId) {
-        return CLASSES.getOrDefault(classId, Set.of());
+        return classId == null ? Set.of() : CLASSES.getOrDefault(classId, Set.of());
     }
 
     public static Set<String> raceGrants(String raceId) {
-        return RACES.getOrDefault(raceId, Set.of());
+        return raceId == null ? Set.of() : RACES.getOrDefault(raceId, Set.of());
     }
 }
