@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.abilities;
 
 import com.eretenkodaniil.mkm.abilities.visual.AbilityVisualEmitter;
+import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
@@ -29,7 +30,8 @@ public final class AbilityService {
             PlayerModifierSnapshot stats = stats(player);
             long now = player.level().getGameTime();
             player.setAttached(AbilityAttachments.PLAYER, new ManaLedger(
-                    stats.get(PlayerModifierId.MAX_MANA), now, now, java.util.Map.of()));
+                    ManaCapacityPolicy.maximum(stats, CharacterService.get(player).level()),
+                    now, now, java.util.Map.of()));
         }
     }
 
@@ -40,7 +42,7 @@ public final class AbilityService {
         PlayerModifierSnapshot stats = stats(player);
         ManaLedger previous = player.getAttachedOrCreate(AbilityAttachments.PLAYER);
         ManaLedger updated = AbilityRules.regenerate(previous, now,
-                stats.get(PlayerModifierId.MAX_MANA),
+                ManaCapacityPolicy.maximum(stats, CharacterService.get(player).level()),
                 stats.get(PlayerModifierId.MANA_REGENERATION));
 
         // The bookkeeping cursor alone does not justify an attachment sync.
@@ -58,7 +60,8 @@ public final class AbilityService {
         // Existing public Renewal remains available before Character Core
         // implements class choice; other catalog entries stay nonexecutable.
         if (!AbilityGrantPolicy.executable(
-                AbilityGrantPolicy.Grants.currentPlayer(), id)) return false;
+                AbilityGrantPolicy.Grants.currentPlayer(
+                        CharacterService.get(player).level()), id)) return false;
 
         // A replayed C2S message must not recast after a cooldown expires.
         // Consumed request numbers are scoped to this player's connection;
@@ -81,7 +84,8 @@ public final class AbilityService {
         if (!actorValid || !actionIdle || !injured) return false;
 
         PlayerModifierSnapshot stats = stats(player);
-        RenewalParameters parameters = RenewalParameters.from(stats);
+        RenewalParameters parameters = RenewalParameters.from(
+                stats, CharacterService.get(player).level());
         ManaLedger previous = player.getAttachedOrCreate(AbilityAttachments.PLAYER);
         ManaLedger paid = RenewalCastPlan.spendIfAllowed(
                 actorValid, actionIdle, injured, previous, now, parameters);
