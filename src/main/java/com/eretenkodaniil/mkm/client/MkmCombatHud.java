@@ -99,6 +99,7 @@ public final class MkmCombatHud {
                     && selection.mainFamily()==WeaponPresentationResolver.Family.SWORD
                     && selection.offFamily()==WeaponPresentationResolver.Family.EMPTY
                     && selection.comboStep()==1 && ArticulatedMode.clip()!=null
+                    && ArticulatedMode.layerReady()
                     && client.options.getCameraType().isFirstPerson()==false
                     && client.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty()
                     && client.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).isEmpty()
@@ -117,6 +118,17 @@ public final class MkmCombatHud {
             graphics.text(client.font,
                     Component.literal(AnimationRenderProbe.context(client.level.getGameTime())),
                     x,y+46,MUTED);
+            if (ArticulatedMode.enabled()) {
+                String note=ArticulatedMode.clip()==null
+                        ? "R07 INVALID RESOURCE"
+                        : !ArticulatedMode.layerReady() ? "R07 RENDER LAYER MISSING"
+                        : selection.offFamily()!=WeaponPresentationResolver.Family.EMPTY
+                                ? "R07 OFFHAND: SAFE FALLBACK"
+                        : client.options.getCameraType().isFirstPerson()
+                                ? "R07 FIRST PERSON: SAFE FALLBACK"
+                        : "R07 RENDER REQUIREMENTS: NO ARMOR; SWORD COMBO1";
+                graphics.text(client.font,Component.literal(note),x,y+57,MUTED);
+            }
         }
     }
 }
