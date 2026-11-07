@@ -5,6 +5,9 @@ on:
     branches:
       - integration/crossstream-2026-11-08-rehearsal
   workflow_dispatch:
+  pull_request:
+    branches:
+      - feature/performance-hybrid-m0-diagnostics
 
 permissions:
   contents: read
