@@ -8,6 +8,7 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
@@ -106,9 +107,15 @@ public final class WatchtowerPlacementCommands {
                                 .setValue(StairBlock.FACING, Direction.NORTH), 3);
             }
         }
+        // Explicit post-placement diagnostics: boolean placeInWorld alone does not prove
+        // a resource palette was decoded into the intended registered blocks.
+        String runeId = BuiltInRegistries.BLOCK.getKey(level.getBlockState(origin.offset(7, 5, 6)).getBlock()).toString();
+        String wallId = BuiltInRegistries.BLOCK.getKey(level.getBlockState(origin.offset(4, 5, 4)).getBlock()).toString();
+        String barrelId = BuiltInRegistries.BLOCK.getKey(level.getBlockState(origin.offset(11, 5, 5)).getBlock()).toString();
         source.sendSuccess(() -> Component.literal(
                 "MKM: watchtower " + variant + " placed at " + origin
-                        + "; all target blocks were air before placement"), true);
+                        + "; all target blocks were air before placement"
+                        + "; rune=" + runeId + "; wall=" + wallId + "; barrel=" + barrelId), true);
         return 1;
     }
 
