@@ -18,9 +18,9 @@ COSMETIC_FILES = (
     "combat/ServerSpecialAttackContract.java",
 )
 FORBIDDEN_DAMAGE = re.compile(
-    r"\\.(?:attack|hurt|hurtServer|setHealth|setDeltaMovement)\\s*\\("
-    r"|ServerPlayNetworking\\.send\\s*\\("
-    r"|\\bnew\\s+DamageSource\\s*\\("
+    r"\.(?:attack|hurt|hurtServer|setHealth|setDeltaMovement)\s*\("
+    r"|ServerPlayNetworking\.send\s*\("
+    r"|\bnew\s+DamageSource\s*\("
 )
 failures = []
 for relative in COSMETIC_FILES:
@@ -45,7 +45,7 @@ else:
 
 mixins = list((JAVA / "mixin").rglob("*.java"))
 other_hooks = [str(p.relative_to(ROOT)) for p in mixins if p != mixin_file
-               and re.search(r'@ModifyVariable\\s*\\(\\s*method\\s*=\\s*"hurtServer"', 
+               and re.search(r'@ModifyVariable\s*\(\s*method\s*=\s*"hurtServer"', 
                              p.read_text(encoding="utf-8"))]
 if other_hooks:
     failures.append(f"Additional hurtServer modify hooks: {other_hooks}")
