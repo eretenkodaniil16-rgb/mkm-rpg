@@ -105,5 +105,7 @@
   "screen.mkm.origin.human_short": "Восстановление ресурсов",
   "screen.mkm.origin.dwarf_short": "Стамина и прочный блок",
   "screen.mkm.origin.warrior_short": "Урон и экономия стамины",
-  "screen.mkm.origin.mage_short": "Мана и лечение"
+  "screen.mkm.origin.mage_short": "Мана и лечение",
+  "item.mkm.raider_insignia": "Знак налётчика",
+  "item.mkm.stalker_fang": "Клык охотника"
 }

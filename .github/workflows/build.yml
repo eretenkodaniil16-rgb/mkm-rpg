@@ -23,6 +23,7 @@ on:
       - 'feature/performance-hybrid-m0-diagnostics'
       - 'integration/fabric-v4-encounters-perf-qa3'
       - 'integration/fabric-v4-encounter-origins-perf-qa4'
+      - 'integration/fabric-v4-world-origins-enemy-perf-qa5'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -45,6 +46,7 @@ on:
       - 'feature/performance-hybrid-m0-diagnostics'
       - 'integration/fabric-v4-encounters-perf-qa3'
       - 'integration/fabric-v4-encounter-origins-perf-qa4'
+      - 'integration/fabric-v4-world-origins-enemy-perf-qa5'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -88,7 +90,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.6-fabric.0-qa.4.jar")
+              if p.endswith("0.0.6-fabric.0-qa.5.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -220,7 +222,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.6-fabric.0-qa.4.jar
+          path: build/libs/mkm-rpg-0.0.6-fabric.0-qa.5.jar
           if-no-files-found: error
           retention-days: 14
 

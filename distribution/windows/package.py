@@ -8,7 +8,7 @@ import zipfile
 from pathlib import Path
 
 root = Path(__file__).resolve().parents[2]
-mod_filename = 'mkm-rpg-0.0.6-fabric.0-qa.4.jar'
+mod_filename = 'mkm-rpg-0.0.6-fabric.0-qa.5.jar'
 jar = root / 'build' / 'libs' / mod_filename
 source = root / 'distribution' / 'windows'
 output = root / 'dist' / 'MKM_Fabric_26.3_Integration_V4_QA_ONLY.zip'
