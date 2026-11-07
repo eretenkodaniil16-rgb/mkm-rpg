@@ -110,6 +110,8 @@ def main():
         assert doc["size"] == [23, 14, 19], doc["size"]
         assert doc["entities"] == [], "No auto-spawn NPC/enemies from template"
         palette = doc["palette"]
+        assert all("id" in entry and "Name" not in entry for entry in palette), "Legacy block-state palette is invalid for 26.3"
+        assert all("Properties" not in entry for entry in palette), "Block properties must be lowercase in 26.3"
         blocks = doc["blocks"]
         assert len(blocks) >= 450, len(blocks)
         pos = {}
@@ -119,7 +121,7 @@ def main():
             key = (x, y, z)
             assert key not in pos, key
             assert 0 <= b["state"] < len(palette)
-            pos[key] = (palette[b["state"]]["Name"], b.get("nbt"))
+            pos[key] = (palette[b["state"]]["id"], b.get("nbt"))
         assert all(n != "minecraft:air" for n, _ in pos.values())
         assert all((x, y, 12) not in pos for x in (8, 9) for y in (5, 6, 7)), "Door obstructed"
         assert all((10, y, 8) not in pos for y in (12, 13)), "Elite headspace"
