@@ -36,19 +36,21 @@ public record EncounterLedger(Map<String, Entry> encounters) {
     }
 
     public record Entry(int schemaVersion, String ownerId, int x, int y, int z,
-                        String phase, List<Member> members) {
+                        int rewardXp, String phase, List<Member> members) {
         public static final Codec<Entry> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.INT.fieldOf("schema_version").forGetter(Entry::schemaVersion),
                 Codec.STRING.fieldOf("owner_uuid").forGetter(Entry::ownerId),
                 Codec.INT.fieldOf("x").forGetter(Entry::x),
                 Codec.INT.fieldOf("y").forGetter(Entry::y),
                 Codec.INT.fieldOf("z").forGetter(Entry::z),
+                Codec.INT.fieldOf("reward_xp").forGetter(Entry::rewardXp),
                 Codec.STRING.fieldOf("phase").forGetter(Entry::phase),
                 Member.CODEC.listOf().fieldOf("members").forGetter(Entry::members)
         ).apply(i, Entry::new));
         public Entry {
             members = List.copyOf(members);
             if (schemaVersion != SCHEMA_VERSION || ownerId == null || ownerId.isBlank()
+                    || rewardXp < 1 || rewardXp > 1_000
                     || !List.of(RESERVED, ACTIVE, DEFEATED, CLAIMED).contains(phase)
                     || members.isEmpty() || members.size() > 6
                     || members.stream().map(Member::uuid).distinct().count() != members.size()) {
@@ -56,7 +58,7 @@ public record EncounterLedger(Map<String, Entry> encounters) {
             }
         }
         public Entry start() { return phase.equals(RESERVED)
-                ? new Entry(schemaVersion, ownerId, x, y, z, ACTIVE, members) : this; }
+                ? new Entry(schemaVersion, ownerId, x, y, z, rewardXp, ACTIVE, members) : this; }
         public Entry markDeath(String uuid) {
             if (!phase.equals(RESERVED) && !phase.equals(ACTIVE)) return this;
             boolean changed = false;
@@ -69,10 +71,10 @@ public record EncounterLedger(Map<String, Entry> encounters) {
             }
             if (!changed) return this;
             String stage = after.stream().allMatch(Member::dead) ? DEFEATED : phase;
-            return new Entry(schemaVersion, ownerId, x, y, z, stage, after);
+            return new Entry(schemaVersion, ownerId, x, y, z, rewardXp, stage, after);
         }
         public Entry claim() { return phase.equals(DEFEATED)
-                ? new Entry(schemaVersion, ownerId, x, y, z, CLAIMED, members) : this; }
+                ? new Entry(schemaVersion, ownerId, x, y, z, rewardXp, CLAIMED, members) : this; }
         public int aliveCount() { return (int) members.stream().filter(m -> !m.dead()).count(); }
     }
 
