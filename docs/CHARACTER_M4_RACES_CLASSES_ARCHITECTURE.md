@@ -31,7 +31,7 @@
 | ID расы | Пробная особенность / ключи `PlayerModifierSnapshot` |
 | --- | --- |
 | `mkm:human` | `mkm:adaptable`: `STAMINA_REGENERATION +0.20`, `MANA_REGENERATION +0.10` |
-| `mkm:dwarf` | `mkm:stoneborn`: `MAX_HEALTH +2`, `BLOCK_STABILITY +0.08` |
+| `mkm:dwarf` | `mkm:stoneborn`: `MAX_STAMINA +4`, `BLOCK_STABILITY +0.08` |
 
 | ID класса | Особенность / ключи `PlayerModifierSnapshot` | Рекомендация стартовой способности |
 | --- | --- | --- |
