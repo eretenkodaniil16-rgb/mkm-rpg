@@ -129,8 +129,10 @@ public final class EncounterDirector {
             NpcVisualSignals.emit(mob, NpcVisualSignals.Cue.THREAT);
         }
         EncounterLedger current = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
+        EncounterLedger.Entry latest = current.find(config.id());
+        // Preserve any death already confirmed while the group was materializing.
         level.setAttached(EncounterAttachments.ENCOUNTERS,
-                current.replace(config.id(), current.find(config.id()), reserved.start()));
+                current.replace(config.id(), latest, latest.start()));
         inform(player, "Ночная засада началась: 2 хуска и командир-скелет. "
                 + "Победите троих и вернитесь к месту начала за наградой.");
         return true;

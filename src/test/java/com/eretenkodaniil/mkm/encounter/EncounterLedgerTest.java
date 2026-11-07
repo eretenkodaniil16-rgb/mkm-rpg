@@ -71,6 +71,26 @@ final class EncounterLedgerTest {
         assertFalse(claimed.find("mkm:ford_ambush").ownerId().equals("owner-b"));
     }
 
+    @Test void malformedTransitionsCannotRollbackCompletedEncounterOrChangeOwnership() {
+        var original = new EncounterLedger().reserve("mkm:ford_ambush", saved("owner-a"));
+        var active = original.replace("mkm:ford_ambush", original.find("mkm:ford_ambush"),
+                original.find("mkm:ford_ambush").start());
+        var wrongOwner = saved("owner-b").start();
+        assertSame(active, active.replace("mkm:ford_ambush",
+                active.find("mkm:ford_ambush"), wrongOwner));
+        var wrongReward = new EncounterLedger.Entry(1,"owner-a",0,64,0,
+                500,EncounterLedger.ACTIVE,active.find("mkm:ford_ambush").members());
+        assertSame(active, active.replace("mkm:ford_ambush",
+                active.find("mkm:ford_ambush"), wrongReward));
+        var defeated = active.markDeath("mkm:ford_ambush","mob-h1")
+                .markDeath("mkm:ford_ambush","mob-h2")
+                .markDeath("mkm:ford_ambush","mob-s1");
+        var claimed = defeated.claim("mkm:ford_ambush");
+        assertSame(claimed,claimed.replace("mkm:ford_ambush",
+                claimed.find("mkm:ford_ambush"),active.find("mkm:ford_ambush")));
+        assertEquals(EncounterLedger.CLAIMED,claimed.find("mkm:ford_ambush").phase());
+    }
+
     @Test void futureSchemaRejectedInsteadOfCorruptingExistingSave() {
         assertThrows(IllegalArgumentException.class,() -> new EncounterLedger.Entry(
                 2,"owner",0,64,0,100,EncounterLedger.ACTIVE,saved("owner").members()));
