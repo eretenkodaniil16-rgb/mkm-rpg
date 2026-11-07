@@ -55,6 +55,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build --no-daemon
+      - name: Verify offline world backup preflight (Python stdlib)
+        run: python3 -m unittest discover -s tools/integration -p 'test_*.py' -v
       - name: Self-check animation choreography and generate storyboard
         run: python3 tools/animation/qa/forward_roll_selfcheck.py --out build/reports/animation-qa
       - name: Self-check six attacks against authoritative hit ticks
