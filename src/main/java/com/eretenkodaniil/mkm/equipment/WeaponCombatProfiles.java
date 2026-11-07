@@ -45,11 +45,16 @@ public final class WeaponCombatProfiles {
     private WeaponCombatProfiles() {}
 
     public static Profile forItem(String itemId) {
-        if (itemId == null || itemId.equals("minecraft:air")) {
+        return forFamily(EquipmentRules.presentationFamily(itemId),
+                itemId == null || itemId.equals("minecraft:air"));
+    }
+
+    /** Metadata by the already-resolved EquipmentRules family; not a second classifier. */
+    public static Profile forFamily(EquipmentRules.Family family, boolean emptyHand) {
+        Objects.requireNonNull(family, "family");
+        if (emptyHand && family == EquipmentRules.Family.NONE) {
             return make(Archetype.UNARMED, EquipmentRules.Family.NONE, 1.25D, .70D, 4, 0D, "unarmed");
         }
-        EquipmentRules.Family family =
-                EquipmentRules.profile(itemId, EquipmentRules.Slot.MAIN_HAND).family();
         return switch (family) {
             case SWORD -> make(Archetype.SWORD, family, 1.0D, 1.0D, 3, .05D, "sword");
             case AXE -> make(Archetype.AXE, family, .72D, 1.35D, 2, .25D, "axe");

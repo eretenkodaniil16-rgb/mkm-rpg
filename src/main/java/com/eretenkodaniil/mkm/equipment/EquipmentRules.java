@@ -108,6 +108,27 @@ public final class EquipmentRules {
                         : Map.of(PlayerModifierId.PHYSICAL_RESISTANCE, resistance));
     }
 
+    /**
+     * ONE canonical visual family classifier. Offhand presentation uses the same
+     * item family, without granting MAIN_HAND equipment bonuses to OFF_HAND.
+     */
+    public static Family presentationFamily(String itemId) {
+        return profile(itemId, Slot.MAIN_HAND).family();
+    }
+
+    /**
+     * Direct MELEE impact type, not the projectile type of a held bow/trident.
+     * Ranged weapons are blunt when used as improvised melee tools; a fired arrow
+     * remains piercing via the separate launch-time RangedShotSnapshot contract.
+     */
+    public static PhysicalDamageType meleeDamageType(String itemId) {
+        Profile profile = profile(itemId, Slot.MAIN_HAND);
+        return switch (profile.family()) {
+            case SWORD, AXE, SPEAR, MACE -> profile.damageType();
+            default -> PhysicalDamageType.BLUNT;
+        };
+    }
+
     /** Slot-aware and deterministic; no inventory items count unless actually equipped. */
     public static Map<PlayerModifierId, Double> aggregate(Map<Slot, String> equipped) {
         EnumMap<PlayerModifierId, Double> totals = new EnumMap<>(PlayerModifierId.class);
