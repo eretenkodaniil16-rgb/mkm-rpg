@@ -34,8 +34,8 @@ final class CharacterOriginPersistenceTest {
         assertEquals(original, character);
         assertEquals(400, character.experience());
         assertEquals(4, character.spentPoints());
-        assertEquals(2, character.earnedPoints() - character.availablePoints() - 2 + 0,
-                "build credits have no link to race selection");
+        assertEquals(0, character.availablePoints(),
+                "race selection must not mint or refund any build credits");
         assertTrue(character.hasClaimedReward("mkm:ford_warden/complete"));
         assertEquals(chosen.data(), disk(chosen.data()));
         assertEquals(original, CharacterData.CODEC.codec().parse(JsonOps.INSTANCE,
