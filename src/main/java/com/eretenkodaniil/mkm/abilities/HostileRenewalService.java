@@ -58,9 +58,16 @@ public final class HostileRenewalService {
 
         long now = caster.level().getGameTime();
         ManaLedger previous = caster.getAttachedOrCreate(AbilityAttachments.HOSTILE);
+        ManaLedger available = AbilityRules.regenerate(previous, now,
+                PROTOTYPE_TERMS.maximumMana(), PROTOTYPE_TERMS.manaRegeneration());
+        // Persist regen even when this cast will be rejected. Otherwise the
+        // 200-tick catch-up cap can permanently strand an exhausted AI caster.
+        if (!previous.equals(available)) {
+            caster.setAttached(AbilityAttachments.HOSTILE, available);
+        }
         ManaLedger paid = RenewalCastPlan.spendIfAllowed(
                 caster.isAlive(), true, caster.getHealth() < caster.getMaxHealth() - 0.001F,
-                previous, now, PROTOTYPE_TERMS);
+                available, now, PROTOTYPE_TERMS);
         if (paid == null) return;
 
         // Commit resource/cooldown BEFORE one native self-heal. Duplicated
