@@ -17,11 +17,14 @@ import net.minecraft.server.level.ServerPlayer;
 public final class AbilityService {
     private static final long SYNC_INTERVAL_TICKS = 5L;
     private static final Map<ServerPlayer, Long> LAST_REQUEST_TICK = new WeakHashMap<>();
+    private static final Map<ServerPlayer, AbilityRequestSequenceGate> REQUEST_SEQUENCES =
+            new WeakHashMap<>();
 
     private AbilityService() {}
 
     public static void onLogin(ServerPlayer player) {
         LAST_REQUEST_TICK.remove(player);
+        REQUEST_SEQUENCES.remove(player);
         if (player.getAttached(AbilityAttachments.PLAYER) == null) {
             PlayerModifierSnapshot stats = stats(player);
             long now = player.level().getGameTime();
@@ -50,12 +53,19 @@ public final class AbilityService {
         }
     }
 
-    public static boolean tryCast(ServerPlayer player, String id) {
+    public static boolean tryCast(ServerPlayer player, String id, int requestSequence) {
         // Player grants are independent of the AI's opt-in permission.
         // Existing public Renewal remains available before Character Core
         // implements class choice; other catalog entries stay nonexecutable.
         if (!AbilityGrantPolicy.executable(
                 AbilityGrantPolicy.Grants.currentPlayer(), id)) return false;
+
+        // A replayed C2S message must not recast after a cooldown expires.
+        // Consumed request numbers are scoped to this player's connection;
+        // only a fresh, strictly increasing number may proceed to gameplay.
+        AbilityRequestSequenceGate requests = REQUEST_SEQUENCES.computeIfAbsent(
+                player, ignored -> new AbilityRequestSequenceGate());
+        if (!requests.accept(requestSequence)) return false;
 
         long now = player.level().getGameTime();
         // Limit malformed/repeated client intents to one attempt per server
