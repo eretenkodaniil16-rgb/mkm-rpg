@@ -1,7 +1,6 @@
 package com.eretenkodaniil.mkm.combat.enemy;
 
 import com.eretenkodaniil.mkm.equipment.EquipmentRules;
-import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.equipment.PhysicalDamageType;
 import java.util.Optional;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -38,14 +37,26 @@ public final class ServerEnemyCombatAdapter {
      */
     public static PhysicalDamageType directMeleeType(Mob attacker) {
         String main = BuiltInRegistries.ITEM.getKey(attacker.getMainHandItem().getItem()).toString();
-        EquipmentRules.Family family = EquipmentRules.presentationFamily(main);
+        return selectDirectMeleeType(main, features(attacker));
+    }
+
+    /**
+     * Pure selection contract for AI/tests. A registered projectile-only
+     * profile must not incorrectly override a REAL direct melee DamageSource.
+     */
+    public static PhysicalDamageType selectDirectMeleeType(
+            String heldMainhandId, Optional<EnemyCombatProfile> registered) {
+        java.util.Objects.requireNonNull(registered, "registered");
+        EquipmentRules.Family family = EquipmentRules.presentationFamily(heldMainhandId);
         if (family == EquipmentRules.Family.SWORD
                 || family == EquipmentRules.Family.AXE
                 || family == EquipmentRules.Family.MACE
                 || family == EquipmentRules.Family.SPEAR) {
-            return EquipmentRules.meleeDamageType(main);
+            return EquipmentRules.meleeDamageType(heldMainhandId);
         }
-        return features(attacker).map(EnemyCombatProfile::naturalAttackType)
-                .orElse(EquipmentSnapshots.heldPhysicalType(attacker));
+        return registered.filter(profile -> profile.delivery()
+                        == EnemyCombatProfile.AttackDelivery.DIRECT_MELEE)
+                .map(EnemyCombatProfile::naturalAttackType)
+                .orElse(EquipmentRules.meleeDamageType(heldMainhandId));
     }
 }

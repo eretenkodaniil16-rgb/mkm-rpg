@@ -86,6 +86,30 @@ final class EnemyCombatProfileContractTest {
                 0D, Map.of(SLASH, .95D), 1D, 1D));
     }
 
+    @Test void enemyWeaponAndNaturalAttackTypeUseSameEquipmentClassifier() {
+        EnemyCombatProfile claw = new EnemyCombatProfile(
+                EnemyCombatProfile.AttackDelivery.DIRECT_MELEE,
+                PIERCE, 0D, Map.of(), 1D, 1D);
+        EnemyCombatProfile ranged = new EnemyCombatProfile(
+                EnemyCombatProfile.AttackDelivery.PROJECTILE,
+                PIERCE, 0D, Map.of(), 1D, 1D);
+        assertEquals(SLASH, ServerEnemyCombatAdapter.selectDirectMeleeType(
+                "minecraft:iron_sword", java.util.Optional.of(claw)));
+        assertEquals(PhysicalDamageType.BLUNT,
+                ServerEnemyCombatAdapter.selectDirectMeleeType(
+                        "minecraft:air", java.util.Optional.empty()));
+        assertEquals(PIERCE, ServerEnemyCombatAdapter.selectDirectMeleeType(
+                "minecraft:air", java.util.Optional.of(claw)));
+        assertEquals(PhysicalDamageType.BLUNT,
+                ServerEnemyCombatAdapter.selectDirectMeleeType(
+                        "minecraft:air", java.util.Optional.of(ranged)),
+                "Projectile profile must not change a direct melee hit");
+        assertEquals(PhysicalDamageType.BLUNT,
+                ServerEnemyCombatAdapter.selectDirectMeleeType(
+                        "minecraft:bow", java.util.Optional.of(ranged)),
+                "Improvised bow melee stays blunt");
+    }
+
     @Test void optionalRegistryIsEmptyUntilExplicitlyConfiguredAndSealed() {
         EnemyCombatFeatureRegistry registry = new EnemyCombatFeatureRegistry();
         assertTrue(registry.find("minecraft:zombie").isEmpty());
