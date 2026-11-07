@@ -27,6 +27,7 @@ public final class CharacterOriginScreen extends Screen {
     private String classId = OriginCatalog.WARRIOR.id();
     private Button human, dwarf, warrior, mage, confirm;
     private boolean awaiting;
+    private boolean confirmedByServer;
     private int requestId;
     private Component status;
 
@@ -42,32 +43,32 @@ public final class CharacterOriginScreen extends Screen {
     @Override
     protected void init() {
         super.init();
-        int left = (width - Math.min(328, width - 12)) / 2;
-        int panelWidth = Math.min(328, width - 12);
-        int top = (height - Math.min(228, height - 12)) / 2;
-        int column = Math.min(146, (panelWidth - 26) / 2);
-        int space = panelWidth - 16 - 2 * column;
-        int rightX = left + 8 + column + space;
+        OriginScreenLayout layout = OriginScreenLayout.forViewport(width, height);
+        int left = layout.left();
+        int panelWidth = layout.width();
+        int top = layout.top();
+        int column = layout.columnWidth();
+        int rightX = layout.classX();
 
         human = addRenderableWidget(Button.builder(
                 Component.translatable("screen.mkm.origin.human"), b -> chooseRace(OriginCatalog.HUMAN.id()))
-                .size(column, 20).pos(left + 8, top + 69).build());
+                .size(column, 20).pos(layout.raceX(), layout.firstY()).build());
         dwarf = addRenderableWidget(Button.builder(
                 Component.translatable("screen.mkm.origin.dwarf"), b -> chooseRace(OriginCatalog.DWARF.id()))
-                .size(column, 20).pos(left + 8, top + 94).build());
+                .size(column, 20).pos(layout.raceX(), layout.secondY()).build());
         warrior = addRenderableWidget(Button.builder(
                 Component.translatable("screen.mkm.origin.warrior"), b -> chooseClass(OriginCatalog.WARRIOR.id()))
-                .size(column, 20).pos(rightX, top + 69).build());
+                .size(column, 20).pos(rightX, layout.firstY()).build());
         mage = addRenderableWidget(Button.builder(
                 Component.translatable("screen.mkm.origin.mage"), b -> chooseClass(OriginCatalog.MAGE.id()))
-                .size(column, 20).pos(rightX, top + 94).build());
+                .size(column, 20).pos(rightX, layout.secondY()).build());
         confirm = addRenderableWidget(Button.builder(
                 Component.translatable("screen.mkm.origin.confirm"), b -> submit())
-                .size(panelWidth / 2 - 12, 20).pos(left + 8, top + 190).build());
+                .size(panelWidth / 2 - 12, 20).pos(left + 8, layout.footerY()).build());
         addRenderableWidget(Button.builder(
                 Component.translatable("screen.mkm.origin.back"), b -> onClose())
                 .size(panelWidth / 2 - 12, 20)
-                .pos(left + panelWidth / 2 + 4, top + 190).build());
+                .pos(left + panelWidth / 2 + 4, layout.footerY()).build());
         updateButtons();
     }
 
@@ -89,7 +90,7 @@ public final class CharacterOriginScreen extends Screen {
 
     private void updateButtons() {
         CharacterOriginData data = current();
-        boolean locked = awaiting || (data != null && data.selected());
+        boolean locked = awaiting || confirmedByServer || (data != null && data.selected());
         if (human != null) {
             human.active = !locked;
             dwarf.active = !locked;
@@ -136,6 +137,10 @@ public final class CharacterOriginScreen extends Screen {
     public void onSelectionResult(OriginSelectionResult result) {
         if (!awaiting || result.requestId() != requestId) return;
         awaiting = false;
+        if (result.status() == CharacterOriginRules.Outcome.SELECTED
+                || result.status() == CharacterOriginRules.Outcome.ALREADY_SELECTED) {
+            confirmedByServer = true;
+        }
         status = Component.translatable(switch (result.status()) {
             case SELECTED -> "screen.mkm.origin.saved";
             case ALREADY_SELECTED -> "screen.mkm.origin.already";
@@ -154,23 +159,24 @@ public final class CharacterOriginScreen extends Screen {
 
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mx, int my, float delta) {
-        int panelWidth = Math.min(328, width - 12);
-        int panelHeight = Math.min(228, height - 12);
-        int left = (width - panelWidth) / 2;
-        int top = (height - panelHeight) / 2;
-        int column = Math.min(146, (panelWidth - 26) / 2);
-        int rightX = left + panelWidth - 8 - column;
+        OriginScreenLayout layout = OriginScreenLayout.forViewport(width, height);
+        int panelWidth = layout.width();
+        int panelHeight = layout.height();
+        int left = layout.left();
+        int top = layout.top();
+        int rightX = layout.classX();
 
         graphics.fill(0, 0, width, height, 0x99000000);
         graphics.fill(left, top, left + panelWidth, top + panelHeight, BACKGROUND);
         graphics.fill(left, top, left + panelWidth, top + 2, BORDER);
         graphics.centeredText(font, title, width / 2, top + 12, LIGHT);
-        graphics.centeredText(font, Component.translatable("screen.mkm.origin.subtitle"),
+        graphics.centeredText(font, Component.translatable(layout.compact()
+                        ? "screen.mkm.origin.short_notice" : "screen.mkm.origin.subtitle"),
                 width / 2, top + 30, MUTED);
         graphics.text(font, Component.translatable("screen.mkm.origin.race"),
-                left + 10, top + 54, BORDER);
+                layout.raceX(), layout.headingY(), BORDER);
         graphics.text(font, Component.translatable("screen.mkm.origin.clazz"),
-                rightX, top + 54, BORDER);
+                rightX, layout.headingY(), BORDER);
 
         CharacterOriginData state = current();
         if (state != null && state.selected()) {
@@ -182,9 +188,9 @@ public final class CharacterOriginScreen extends Screen {
                     Component.translatable(OriginCatalog.clazz(state.classId()) == null
                             ? "screen.mkm.origin.unknown"
                             : OriginCatalog.clazz(state.classId()).titleKey())),
-                    width / 2, top + 128, LIGHT);
+                    width / 2, layout.labelY(), LIGHT);
             graphics.centeredText(font, Component.translatable("screen.mkm.origin.permanent"),
-                    width / 2, top + 146, MUTED);
+                    width / 2, layout.firstDescriptionY(), MUTED);
         } else {
             graphics.centeredText(font,
                     Component.translatable("screen.mkm.origin.bonuses"),
@@ -192,13 +198,13 @@ public final class CharacterOriginScreen extends Screen {
             graphics.centeredText(font, Component.translatable(
                     raceId.equals(OriginCatalog.HUMAN.id())
                             ? "screen.mkm.origin.human_desc" : "screen.mkm.origin.dwarf_desc"),
-                    width / 2, top + 145, MUTED);
+                    width / 2, layout.firstDescriptionY(), MUTED);
             graphics.centeredText(font, Component.translatable(
                     classId.equals(OriginCatalog.WARRIOR.id())
                             ? "screen.mkm.origin.warrior_desc" : "screen.mkm.origin.mage_desc"),
-                    width / 2, top + 158, MUTED);
+                    width / 2, layout.secondDescriptionY(), MUTED);
         }
-        if (status != null) graphics.centeredText(font, status, width / 2, top + 177, LIGHT);
+        if (status != null) graphics.centeredText(font, status, width / 2, layout.statusY(), LIGHT);
         super.extractRenderState(graphics, mx, my, delta);
     }
 }
