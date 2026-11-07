@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.combat.enemy.ServerEnemyCombatAdapter;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -44,6 +45,16 @@ public final class CombatEvents {
                         scaled, offense, stats(defender),
                         EquipmentSnapshots.heldPhysicalType(attacker));
             }
+            // Only explicitly registered special mobs receive a new MKM
+            // resistance overlay. Ordinary mobs retain unchanged vanilla
+            // damage and native armor; player attack is still invoked ONCE.
+            if (target instanceof Mob mob) {
+                return ServerEnemyCombatAdapter.features(mob)
+                        .map(profile -> profile.mitigateDirectPhysical(scaled,
+                                offense.get(PlayerModifierId.ARMOR_PENETRATION),
+                                EquipmentSnapshots.heldPhysicalType(attacker)))
+                        .orElse(scaled);
+            }
             return scaled;
         }
 
@@ -51,9 +62,9 @@ public final class CombatEvents {
         // Computing an offensive bow bonus at impact would permit a weapon-swap exploit.
         if (target instanceof ServerPlayer defender) {
             if (source.is(DamageTypes.MOB_ATTACK)) {
-                PhysicalDamageType type = source.getEntity() instanceof LivingEntity attacker
+                PhysicalDamageType type = source.getEntity() instanceof Mob attacker
                         && source.getDirectEntity() == attacker
-                        ? EquipmentSnapshots.heldPhysicalType(attacker)
+                        ? ServerEnemyCombatAdapter.directMeleeType(attacker)
                         : PhysicalDamageType.BLUNT;
                 return PhysicalMitigationRules.apply(
                         amount, 0.0D, stats(defender), type);
@@ -90,10 +101,16 @@ public final class CombatEvents {
 
         double staggerPower = playerMelee
                 ? stats((ServerPlayer) source.getEntity()).get(PlayerModifierId.STAGGER_POWER)
-                : 1.0D;
+                : mobMelee && source.getEntity() instanceof Mob attackingMob
+                        ? ServerEnemyCombatAdapter.features(attackingMob)
+                                .map(p -> p.attackStaggerPower()).orElse(1.0D)
+                        : 1.0D;
         double staggerResistance = entity instanceof ServerPlayer defender
                 ? stats(defender).get(PlayerModifierId.STAGGER_RESISTANCE)
-                : 1.0D;
+                : entity instanceof Mob targetMob
+                        ? ServerEnemyCombatAdapter.features(targetMob)
+                                .map(p -> p.poiseResistance()).orElse(1.0D)
+                        : 1.0D;
 
         long tick = entity.level().getGameTime();
         PoiseRules.Result result = PoiseRules.onHit(
