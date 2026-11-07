@@ -37,7 +37,9 @@ AI movement/attack goals or MNAE rendering have been made.**
    `EquipmentSnapshots`; preserves `RenewalParameters` derived from
    `PlayerModifierSnapshot` **exactly once**. Added one-request-per-server-
    tick actor-local throttle; native mana cooldown provides durable duplicate
-   rejection across relog. No C2S changes.
+   rejection across relog. The new **v2 C2S** intent also includes a strictly
+   increasing positive per-session sequence number (server replay gate).
+   Client and server must use matching M4 protocol versions.
 4. **Opt-in hostile healer** (existing vanilla hostile `Monster`, *no new
    entity*, no client-side caster control):
    - Explicit scoreboard tag `mkm_arcane_healer`.
@@ -47,7 +49,9 @@ AI movement/attack goals or MNAE rendering have been made.**
      players; checks up to 32 tagged candidates per player per scan; duplicate
      mob UUIDs are suppressed. No arbitrary loaded-world scan.
    - Caster must be alive, active AI, not a passenger or using an item,
-     and below max HP. It uses the same `ManaLedger` and `AbilityRules`
+     and below max HP. Mana regeneration is persisted even when a cast
+     attempt fails, avoiding permanent starvation under the existing
+     200-tick catch-up cap. It uses the same `ManaLedger` and `AbilityRules`
      via `AbilityAttachments.HOSTILE` (persistent, **server-only**, no
      `copyOnDeath`/owner sync). Base hostile mana 100, regen 1/s, Renewal
      cost 20, cooldown 60 ticks, healing 6 HP, regeneration delay 40 ticks.
@@ -156,3 +160,23 @@ do not add another stat source in Magic.
   v3/v4 in separate copied worlds; debug MNAE visual availability.
   Confirm no extra damage, phantom APPLIED or unrelated mob changes.
 - Keep draft PR, no changes to legacy NeoForge main.
+
+## M4 C2S replay and protocol note
+
+`mkm:cast_ability` has a **breaking v2 format**: one byte version `2`,
+bounded ASCII ability ID and a 32-bit positive monotonically increasing
+request sequence. The server consumes the sequence only after an executable
+grant is confirmed, but **before** actor/busy/mana checks; a rejected request
+cannot be replayed later to trigger healing. Requests with duplicate, older,
+zero, negative or wrapped sequence values fail closed. Client sequence resets
+on join/disconnect and server sequence resets on login. The existing mana
+cooldown still enforces the gameplay budget independently. The client cannot
+provide a target, HP, damage, resource cost or result.
+
+The v2 C2S sequence is *not* cryptographic authentication; a malicious
+client may always submit a new valid cast intent after cooldown, subject to
+all server rules. Client/server mixed M3/M4 versions are unsupported.
+
+The separate M3 v2 **S2C visual confirmation** is unchanged: actor,
+dimension, APPLIED phase, logical main hand, 14 cosmetic ticks and
+MNAE `onStop` callback. No C2S sequence can authorize an APPLIED event.
