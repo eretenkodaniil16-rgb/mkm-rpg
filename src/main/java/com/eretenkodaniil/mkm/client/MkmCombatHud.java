@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.client.animation.AnimationController;
 import com.eretenkodaniil.mkm.client.animation.AnimationLibrary;
 import com.eretenkodaniil.mkm.client.animation.AnimationProfile;
 import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.ArticulatedMode;
 import com.eretenkodaniil.mkm.client.animation.WeaponPresentationResolver;
 import com.eretenkodaniil.mkm.client.animation.VanillaAvatarAdapter;
 import com.eretenkodaniil.mkm.client.animation.engine.NativeDemoLibrary;
@@ -47,7 +48,8 @@ public final class MkmCombatHud {
                 .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
         graphics.text(client.font, Component.literal("MKM RPG " + version
-                + (NativeAnimationToggle.enabled() ? " [MNAE M1] F8" : " [C3.8] F8")),
+                + (NativeAnimationToggle.enabled() ? " [MNAE] F8" : " [C3.8] F8")
+                + (ArticulatedMode.enabled() ? " [R07-17 ON] F9" : " [R07 OFF] F9")),
                 x, y - 24, TEXT);
         CombatState combat = client.player.getAttached(CombatAttachments.PLAYER);
         var character = client.player.getAttached(CharacterAttachments.CHARACTER);
@@ -92,6 +94,18 @@ public final class MkmCombatHud {
             String expectedClip=selection.nativeClipId()!=null
                     ? selection.nativeClipId()
                     : profile==null||action==null ? null : profile.clipFor(action);
+            if (ArticulatedMode.enabled() && NativeAnimationToggle.enabled()
+                    && selection.renderer()==WeaponPresentationResolver.Renderer.MNAE
+                    && selection.mainFamily()==WeaponPresentationResolver.Family.SWORD
+                    && selection.offFamily()==WeaponPresentationResolver.Family.EMPTY
+                    && selection.comboStep()==1 && ArticulatedMode.clip()!=null
+                    && client.options.getCameraType().isFirstPerson()==false
+                    && client.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.HEAD).isEmpty()
+                    && client.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.CHEST).isEmpty()
+                    && client.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.LEGS).isEmpty()
+                    && client.player.getItemBySlot(net.minecraft.world.entity.EquipmentSlot.FEET).isEmpty()) {
+                expectedClip="mkm:r07/mid_guard_sword_cut";
+            }
             graphics.text(client.font,
                     Component.literal(expectedClip==null
                             ? "NO AUTHORED CLIP / "+selection.reason()
