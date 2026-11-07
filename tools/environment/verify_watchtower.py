@@ -133,6 +133,12 @@ def main():
         assert all(pos[(5, y, 7)][0] == "minecraft:ladder" for y in range(5, 12))
         assert all(pos[(4, y, 7)][0] == "mkm:aged_ashlar" for y in range(5, 12)), "Missing west ladder anchor"
         assert all((x, 5, 11) not in pos for x in (8, 9)), "Tower approach corridor blocked"
+        for x in range(12, 18):
+            for z in (10, 11):
+                assert (x, 4, z) in pos, "Tower-camp bridge has a hole"
+                assert all((x, y, z) not in pos for y in range(5, 8)), "Bridge headroom obstructed"
+        assert all(pos[(14, y, 10)][0] == "mkm:charred_timber" for y in range(0, 4))
+        assert all(pos[(15, y, 11)][0] == "mkm:charred_timber" for y in range(0, 4))
         names = {name for name, _ in pos.values()}
         assert set("mkm:" + b for b in BLOCKS).issubset(names)
         entries.append(len(blocks))

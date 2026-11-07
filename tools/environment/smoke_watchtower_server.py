@@ -130,7 +130,7 @@ def main():
             wait_for_ready(proc)
             with_socket = Rcon()
             try:
-                with_socket.command("forceload add 0 0 31 31")
+                with_socket.command("forceload add 0 0 127 31")
                 time.sleep(4)
                 # Superflat ground at -61, so the first air block is y=-60.
                 with_socket.command("setblock 4 -55 4 minecraft:gold_block")
@@ -149,12 +149,25 @@ def main():
                 wait_for_marker("MKM_ENV_LADDER_TOP_PASS")
                 with_socket.command("execute if block 8 -55 11 minecraft:air run say MKM_ENV_ENTRY_PASS")
                 wait_for_marker("MKM_ENV_ENTRY_PASS")
+                with_socket.command("execute if block 14 -56 10 mkm:charred_timber run say MKM_ENV_BRIDGE_PASS")
+                wait_for_marker("MKM_ENV_BRIDGE_PASS")
+                with_socket.command("execute if block 13 -55 10 minecraft:air run say MKM_ENV_BRIDGE_CLEAR_PASS")
+                wait_for_marker("MKM_ENV_BRIDGE_CLEAR_PASS")
                 with_socket.command("execute if block 18 -55 14 minecraft:campfire run say MKM_ENV_CAMP_PASS")
                 wait_for_marker("MKM_ENV_CAMP_PASS")
                 loot = with_socket.command("data get block 11 -55 5 LootTable")
                 assert "mkm:chests/watchtower" in loot, "Barrel loot table missing at runtime"
                 twice = with_socket.command("mkmenv watchtower 2 0 -60 0")
                 assert "aborted" in twice.lower(), "A second template overwrote the first"
+                # Independently place and load the two alternative damage templates.
+                for variant, x in ((2, 48), (3, 96)):
+                    other = with_socket.command(f"mkmenv watchtower {variant} {x} -60 0")
+                    assert f"watchtower {variant} placed" in other.lower(), f"Variant {variant} failed: {other}"
+                    assert "rune=mkm:rune_slate" in other, f"Variant {variant} decoded the wrong palette: {other}"
+                    with_socket.command(
+                        f"execute if block {x+14} -56 10 mkm:charred_timber "
+                        f"run say MKM_ENV_BRIDGE_VARIANT_{variant}_PASS")
+                    wait_for_marker(f"MKM_ENV_BRIDGE_VARIANT_{variant}_PASS")
                 print("PASS: real dedicated server loaded NBT, placed structure, preserved occupied block, rune+camp+loot and rejected duplicate placement", flush=True)
             finally:
                 with_socket.close()
