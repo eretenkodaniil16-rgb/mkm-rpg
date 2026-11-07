@@ -39,6 +39,16 @@ public final class AbilityCatalog {
                 "mkm:iron_will", AbilityDefinition.Kind.PASSIVE, AbilityDefinition.TargetMode.NONE,
                 AbilityDefinition.Resource.NONE, AbilityDefinition.Effect.MODIFIER,
                 0.0D, 0, 0, 0.05D));
+        // Race-grant prototypes: declarative ONLY, no effect handlers or client
+        // permission to cast. Character Core will own selection/persistence.
+        register(abilities, new AbilityDefinition(
+                "mkm:stone_resilience", AbilityDefinition.Kind.PASSIVE,
+                AbilityDefinition.TargetMode.NONE, AbilityDefinition.Resource.NONE,
+                AbilityDefinition.Effect.MODIFIER, 0.0D, 0, 0, 0.05D));
+        register(abilities, new AbilityDefinition(
+                "mkm:ancestral_focus", AbilityDefinition.Kind.ACTIVE,
+                AbilityDefinition.TargetMode.SELF, AbilityDefinition.Resource.MANA,
+                AbilityDefinition.Effect.BARRIER, 15.0D, 6, 100, 4.0D));
         return Collections.unmodifiableMap(abilities);
     }
 
