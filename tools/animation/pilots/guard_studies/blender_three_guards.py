@@ -452,7 +452,8 @@ def run():
         "rendered_images":9 if opt.render else 0,
         "poses":report,
         "all_geometry_checks":all(all(x["checks"].values()) for x in report),
-        "user_visual_approval":"PENDING",
+        "user_visual_approval":("APPROVED_R06_SOURCE_BASELINE" if data.get("status")=="USER_APPROVED_BLENDER_AUTHORING_BASELINE_R06" else "PENDING"),
+        "source_approval":data.get("source_approval",{}),
         "game_mnae_status":"NOT_TESTED",
         "warning":"Do not accept as Minecraft render or a complete animation. Knee ranges may be incompatible with this authoring rig."
     }
