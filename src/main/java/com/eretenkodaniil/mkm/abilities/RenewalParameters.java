@@ -9,7 +9,13 @@ public record RenewalParameters(
         long regenerationDelayTicks, double cost,
         long cooldownTicks, float healing) {
 
+    /** Historical level-I mapping retained for AI fixtures and M3 tests. */
     public static RenewalParameters from(PlayerModifierSnapshot stats) {
+        return from(stats, 1);
+    }
+
+    /** One level-scaled mana capacity, all other factors from Character Core. */
+    public static RenewalParameters from(PlayerModifierSnapshot stats, int characterLevel) {
         if (stats == null) throw new IllegalArgumentException("Missing character snapshot");
         double magnitude = AbilityCatalog.RENEWAL.baseMagnitude()
                 * stats.get(PlayerModifierId.HEALING_POWER)
@@ -18,7 +24,7 @@ public record RenewalParameters(
             throw new IllegalArgumentException("Invalid healing magnitude");
         }
         return new RenewalParameters(
-                stats.get(PlayerModifierId.MAX_MANA),
+                ManaCapacityPolicy.maximum(stats, characterLevel),
                 stats.get(PlayerModifierId.MANA_REGENERATION),
                 AbilityRules.regenDelayTicks(stats.get(PlayerModifierId.MANA_REGEN_DELAY)),
                 AbilityRules.scaledCost(AbilityCatalog.RENEWAL.baseCost(),
