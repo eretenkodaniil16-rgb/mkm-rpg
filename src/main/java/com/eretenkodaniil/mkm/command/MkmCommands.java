@@ -4,6 +4,8 @@ import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchool;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolRules;
+import com.eretenkodaniil.mkm.equipment.EquipmentRules;
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
@@ -135,9 +137,12 @@ public final class MkmCommands {
         ServerPlayer player = source.getPlayerOrException();
         var state = FencingSchoolService.state(player);
         long now = player.level().getGameTime();
+        String heldId = BuiltInRegistries.ITEM.getKey(player.getMainHandItem().getItem()).toString();
+        boolean active = FencingSchoolRules.effectiveSchool(
+                state, EquipmentRules.presentationFamily(heldId), now).isPresent();
         source.sendSuccess(() -> Component.literal(
                 "Fencing school: " + state.school().id()
-                        + " | " + (state.activeAt(now) ? "ACTIVE" : "INACTIVE/WARMUP")
+                        + " | " + (active ? "ACTIVE" : "INACTIVE/WARMUP/NOT_SWORD")
                         + " | warmup: " + state.remainingWarmup(now) + " ticks"
                         + " | switch cooldown: " + state.remainingSwitchCooldown(now) + " ticks"
                         + " | guard cue: " + state.school().visualGuardCue()), false);

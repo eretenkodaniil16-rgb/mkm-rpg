@@ -1,7 +1,6 @@
 package com.eretenkodaniil.mkm.combat.fencing;
 
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * Transient owner-synchronized school selection, NOT saved in CharacterData.
@@ -35,8 +34,4 @@ public record FencingSchoolState(
         return Math.max(0L, nextSwitchTick - now);
     }
 
-    /** For local-player MNAE only; never authorizes hits or clip IDs. */
-    public Optional<String> visualGuardCue(long now) {
-        return activeAt(now) ? Optional.of(school.visualGuardCue()) : Optional.empty();
-    }
 }

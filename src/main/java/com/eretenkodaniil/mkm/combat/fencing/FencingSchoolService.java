@@ -41,16 +41,15 @@ public final class FencingSchoolService {
     public static Optional<CombatModifierContributions.Contribution> activeContribution(
             ServerPlayer player) {
         FencingSchoolState current = state(player);
-        if (!player.isAlive() || player.isSpectator()
-                || !current.activeAt(player.level().getGameTime())) {
+        if (!player.isAlive() || player.isSpectator()) {
             return Optional.empty();
         }
         String mainhand = BuiltInRegistries.ITEM.getKey(
                 player.getMainHandItem().getItem()).toString();
-        if (EquipmentRules.presentationFamily(mainhand) != EquipmentRules.Family.SWORD) {
-            return Optional.empty();
-        }
-        return current.school().contribution();
+        return FencingSchoolRules.effectiveSchool(current,
+                        EquipmentRules.presentationFamily(mainhand),
+                        player.level().getGameTime())
+                .flatMap(FencingSchool::contribution);
     }
 
     /** Death ends a volatile fencing stance; no passive persists on respawn. */

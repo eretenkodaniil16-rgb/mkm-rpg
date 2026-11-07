@@ -27,6 +27,24 @@ public final class FencingSchoolRules {
         }
     }
 
+    /**
+     * Identical eligibility for actual server modifier and client-only
+     * semantic guard cue. Missing sword or incomplete warmup is neutral.
+     */
+    public static java.util.Optional<FencingSchool> effectiveSchool(
+            FencingSchoolState state, EquipmentRules.Family actualMainhandFamily, long serverTick) {
+        Objects.requireNonNull(state, "state");
+        Objects.requireNonNull(actualMainhandFamily, "actualMainhandFamily");
+        return actualMainhandFamily == EquipmentRules.Family.SWORD && state.activeAt(serverTick)
+                ? java.util.Optional.of(state.school()) : java.util.Optional.empty();
+    }
+
+    /** Read-only semantic cue; MNAE may ignore it if no matching clip exists. */
+    public static java.util.Optional<String> visualGuardCue(
+            FencingSchoolState state, EquipmentRules.Family family, long tick) {
+        return effectiveSchool(state, family, tick).map(FencingSchool::visualGuardCue);
+    }
+
     private FencingSchoolRules() {}
 
     public static Result select(FencingSchoolState current,
