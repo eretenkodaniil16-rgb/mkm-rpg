@@ -114,11 +114,18 @@ final class EnemyRuntime {
                 }
             }
             case RETREAT -> {
+                // Stop the vanilla melee goal from immediately overriding a tactical withdrawal.
+                // This does not disable the target selector; the mob may reacquire next tick.
+                mob.setTarget(null);
                 if (EnemyTactics.shouldRepath(now, mob.getId(), 20)) {
-                    double dx = target == null ? mob.getX() - patrolAnchor.getX()
-                            : mob.getX() - target.getX();
-                    double dz = target == null ? mob.getZ() - patrolAnchor.getZ()
-                            : mob.getZ() - target.getZ();
+                    // If visibility was lost, retreat from the LAST OBSERVED position
+                    // rather than from the patrol origin or an unseen player's live position.
+                    double threatX = target != null ? target.getX()
+                            : lastSeen != null ? lastSeen.getX() + 0.5 : patrolAnchor.getX();
+                    double threatZ = target != null ? target.getZ()
+                            : lastSeen != null ? lastSeen.getZ() + 0.5 : patrolAnchor.getZ();
+                    double dx = mob.getX() - threatX;
+                    double dz = mob.getZ() - threatZ;
                     double norm = Math.max(0.001, Math.sqrt(dx * dx + dz * dz));
                     mob.getNavigation().moveTo(mob.getX() + 6.0 * dx / norm,
                             mob.getY(), mob.getZ() + 6.0 * dz / norm, 1.10);
