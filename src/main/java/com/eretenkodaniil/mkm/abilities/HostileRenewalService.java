@@ -36,7 +36,7 @@ public final class HostileRenewalService {
             int inspected = 0;
             for (Monster caster : player.level().getEntitiesOfClass(
                     Monster.class, player.getBoundingBox().inflate(THREAT_RADIUS),
-                    mob -> mob.getScoreboardTags().contains(OPT_IN_TAG))) {
+                    mob -> mob.entityTags().contains(OPT_IN_TAG))) {
                 if (++inspected > MAX_CANDIDATES_PER_PLAYER) break;
                 if (caster.getTarget() != player || !processed.add(caster.getUUID())) continue;
                 tryCast(caster, player);
@@ -46,7 +46,7 @@ public final class HostileRenewalService {
 
     private static void tryCast(Monster caster, ServerPlayer target) {
         boolean allowed = HostileRenewalRules.allowed(new HostileRenewalRules.Facts(
-                caster.getScoreboardTags().contains(OPT_IN_TAG), true,
+                caster.entityTags().contains(OPT_IN_TAG), true,
                 caster.isAlive() && !caster.isPassenger() && !caster.isNoAi(),
                 caster.getTarget() == target, target.isAlive() && !target.isSpectator(),
                 caster.level() == target.level(),
