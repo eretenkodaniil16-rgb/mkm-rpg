@@ -23,7 +23,7 @@ public final class EncounterDefinitions {
                     @Override public Identifier getFabricId() {
                         return MkmMod.id("encounter_definitions");
                     }
-                    @Override public void reload(ResourceManager manager) {
+                    @Override public void onResourceManagerReload(ResourceManager manager) {
                         // Never reuse stale config after an invalid datapack reload.
                         ford = null;
                         var file = manager.getResource(MkmMod.id("encounter/ford_ambush.json"));

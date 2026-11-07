@@ -51,14 +51,14 @@ public final class EncounterDirector {
             inform(player, "JSON не загружен или отклонён сервером. Посмотрите лог /reload.");
             return false;
         }
-        if (!level.dimension().location().toString().equals(config.dimension())
+        if (!level.dimension().identifier().toString().equals(config.dimension())
                 || level.getDifficulty() == Difficulty.PEACEFUL) {
             inform(player, "Нужен обычный мир и сложность не Peaceful.");
             return false;
         }
         String biome = level.getBiome(player.blockPosition()).unwrapKey()
-                .map(key -> key.location().toString()).orElse("unknown");
-        if (!config.accepts(biome, level.getDayTime())) {
+                .map(key -> key.identifier().toString()).orElse("unknown");
+        if (!config.accepts(biome, level.getDefaultClockTime())) {
             inform(player, "Требуется разрешённый биом и ночное время: " + biome
                     + ". Можно использовать /time set night.");
             return false;
