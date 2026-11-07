@@ -1,7 +1,7 @@
 package com.eretenkodaniil.mkm.equipment;
 
 import com.eretenkodaniil.mkm.character.CharacterData;
-import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
 import com.eretenkodaniil.mkm.character.origin.OriginModifierRules;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
@@ -27,7 +27,7 @@ public final class EquipmentSnapshots {
         // Compose equipment and selected origin in one existing modifier calculation.
         // This is the single server & sheet/mana adapter; no extra gameplay formula.
         return OriginModifierRules.snapshot(character, EquipmentRules.aggregate(equipped),
-                CharacterOriginService.get(player));
+                player.getAttached(CharacterOriginAttachments.PROFILE));
     }
 
     public static PhysicalDamageType heldPhysicalType(LivingEntity player) {
