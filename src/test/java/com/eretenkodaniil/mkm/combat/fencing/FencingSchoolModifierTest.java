@@ -82,7 +82,10 @@ final class FencingSchoolModifierTest {
                     fiore.get(PlayerModifierId.STAMINA_COST),
                     100F, 10F, 30L, factor).spent();
             assertTrue(guarded < control);
-            assertEquals(factor == 1.5D ? 13.5F : 9F, control, 1e-4);
+            // An actual offhand shield contributes +0.25 BLOCK_STABILITY through
+            // EquipmentRules, so baseline cost is 9/1.25, not 9.
+            assertEquals((float) (9D * factor
+                    / baseline.get(PlayerModifierId.BLOCK_STABILITY)), control, 1e-4);
         }
     }
 
