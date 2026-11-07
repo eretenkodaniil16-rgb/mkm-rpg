@@ -17,7 +17,7 @@ public final class OriginCatalog {
     public static final RaceDefinition DWARF = new RaceDefinition(
             "mkm:dwarf", "screen.mkm.origin.dwarf",
             java.util.List.of("mkm:stoneborn"),
-            Map.of(PlayerModifierId.MAX_HEALTH, 2.0D,
+            Map.of(PlayerModifierId.MAX_STAMINA, 4.0D,
                     PlayerModifierId.BLOCK_STABILITY, 0.08D));
     public static final ClassDefinition WARRIOR = new ClassDefinition(
             "mkm:warrior", "screen.mkm.origin.warrior",
