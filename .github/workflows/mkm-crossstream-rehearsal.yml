@@ -1,0 +1,30 @@
+name: Cross-stream integration conflict rehearsal (no pushes)
+
+on:
+  push:
+    branches:
+      - integration/crossstream-2026-11-08-rehearsal
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  merge-rehearsal:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Try merging active workstreams in an ephemeral checkout
+        id: rehearsal
+        run: python3 tools/integration/rehearse_crossstream.py
+      - name: Publish conflict and dependency report, even if merge fails
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mkm-crossstream-merge-rehearsal-report
+          path: build/reports/crossstream/
+          retention-days: 14
+          if-no-files-found: error
