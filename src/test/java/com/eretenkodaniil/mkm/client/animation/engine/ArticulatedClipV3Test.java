@@ -4,6 +4,9 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import java.io.*;
 import java.util.*;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonArray;
+import java.nio.charset.StandardCharsets;
 
 /**
  * These tests require the Blender v3 resource generated into src/main/resources
@@ -64,6 +67,35 @@ class ArticulatedClipV3Test {
         }
         assertTrue(elbowMoved,"Real elbow world position must change at impact");
         assertTrue(kneeExists,"Real knee channels may never be merged into upper leg");
+    }
+
+    @Test void everyBlenderHandSocketMatchesMnaeWorldCoordinates()throws IOException {
+        ArticulatedClipV3 clip=read();
+        String name="assets/mkm/mnae/r07_mid_guard_cut_v3.json";
+        try(InputStream in=ArticulatedClipV3.class.getClassLoader().getResourceAsStream(name)) {
+            assertNotNull(in);
+            var root=JsonParser.parseString(new String(in.readAllBytes(),StandardCharsets.UTF_8))
+                    .getAsJsonObject();
+            var frames=root.getAsJsonArray("frames");
+            assertEquals(43,frames.size());
+            double factor=24D/1.8D;
+            for(int i=0;i<frames.size();i++){
+                var entry=frames.get(i).getAsJsonObject();
+                double t=(i)/(42D);
+                var pose=clip.sample(t);
+                for(boolean tip:new boolean[]{false,true}){
+                    String key=tip?"tip_blender":"grip_blender";
+                    JsonArray actual=entry.getAsJsonArray(key);
+                    Vec3 converted=new Vec3(actual.get(0).getAsDouble()*factor,
+                            (1.8D-actual.get(2).getAsDouble())*factor,
+                            actual.get(1).getAsDouble()*factor);
+                    Vec3 evaluated=clip.socketPoint(pose,tip);
+                    assertEquals(converted.x(),evaluated.x(),.02,key+" X frame "+i);
+                    assertEquals(converted.y(),evaluated.y(),.02,key+" Y frame "+i);
+                    assertEquals(converted.z(),evaluated.z(),.02,key+" Z frame "+i);
+                }
+            }
+        }
     }
 
     @Test void parserHasFiniteResourceBudget() {
