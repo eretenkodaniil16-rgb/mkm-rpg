@@ -71,6 +71,23 @@ final class CombatWeaponAndShieldRegressionTest {
         assertTrue(receipts.consume(defender, sameSource, 100));
     }
 
+    @Test void clientPredictionIsNeverAcceptedAsDamageConfirmation() {
+        var prediction = new WeaponPresentationResolver.Hands(
+                "minecraft:iron_sword", "minecraft:shield", AttackPresentationEvent.Arm.RIGHT);
+        var preview = WeaponPresentationResolver.resolveVanillaAttack(prediction,
+                AttackPresentationEvent.ActionKind.VANILLA_SWING, null, 100);
+        assertEquals(AttackPresentationEvent.Outcome.LOCAL_PREDICTED,
+                preview.event().outcome());
+        assertFalse(HitFeedbackRules.validServerConfirmedHit(
+                HitFeedbackRules.Evidence.CLIENT_PREDICTION, false, 42, 8F));
+        assertFalse(HitFeedbackRules.validServerConfirmedHit(
+                HitFeedbackRules.Evidence.SERVER_AFTER_DAMAGE, true, 42, 8F));
+        assertFalse(HitFeedbackRules.validServerConfirmedHit(
+                HitFeedbackRules.Evidence.SERVER_AFTER_DAMAGE, false, 42, 0F));
+        assertTrue(HitFeedbackRules.validServerConfirmedHit(
+                HitFeedbackRules.Evidence.SERVER_AFTER_DAMAGE, false, 42, 8F));
+    }
+
     @Test void serverHitFeedbackOnlyAfterPositiveUnblockedDamage() {
         assertFalse(HitFeedbackRules.validConfirmedHit(2, 0F));
         assertFalse(HitFeedbackRules.validConfirmedHit(2, Float.NaN));

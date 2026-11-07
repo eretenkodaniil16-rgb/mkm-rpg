@@ -13,7 +13,7 @@ import java.util.Optional;
 public final class EnemyCombatFeatureRegistry {
     public static final int MAX_TYPES = 256;
     private volatile Map<String, EnemyCombatProfile> registered = Map.of();
-    private boolean sealed;
+    private volatile boolean sealed;
 
     public synchronized void register(String entityTypeId, EnemyCombatProfile profile) {
         Objects.requireNonNull(entityTypeId, "entityTypeId");

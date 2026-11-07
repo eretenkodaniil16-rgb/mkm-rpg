@@ -123,7 +123,9 @@ public final class CombatEvents {
             ActionTimeline action = player.getAttachedOrCreate(CombatAttachments.TIMELINE);
             if (action.kind() == ActionTimeline.Kind.LIGHT_COMBO
                     && action.phase() == ActionTimeline.Phase.ACTIVE
-                    && HitFeedbackRules.validConfirmedHit(mob.getId(), damageTaken)
+                    && HitFeedbackRules.validServerConfirmedHit(
+                            HitFeedbackRules.Evidence.SERVER_AFTER_DAMAGE,
+                            blocked, mob.getId(), damageTaken)
                     && ServerPlayNetworking.canSend(player, HitConfirm.TYPE)) {
                 ServerPlayNetworking.send(player,
                         new HitConfirm(mob.getId(), damageTaken, result.staggered()));
