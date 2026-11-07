@@ -118,19 +118,21 @@ jobs:
                   start_new_session=True)
               initialized = False
               ready = False
+              encounter_data_loaded = False
               try:
                   for i in range(100):
                       time.sleep(1)
                       text = log_path.read_text(encoding="utf-8", errors="replace")
                       initialized = "MKM Fabric 26.3 initialized" in text
                       ready = "Done (" in text and 'For help, type "help"' in text
-                      if initialized and ready:
+                      encounter_data_loaded = "Loaded encounter mkm:ford_ambush with 3 mobs" in text
+                      if initialized and ready and encounter_data_loaded:
                           print("PASS: MKM loaded and dedicated server reached ready state.", flush=True)
                           break
                       if process.poll() is not None:
                           break
-                  if not (initialized and ready):
-                      print("FAIL: server did not initialize and reach ready state.", flush=True)
+                  if not (initialized and ready and encounter_data_loaded):
+                      print("FAIL: server did not initialize, load encounter datapack, or reach ready state.", flush=True)
                       print(log_path.read_text(encoding="utf-8", errors="replace")[-15000:], flush=True)
                       raise SystemExit(1)
               finally:
