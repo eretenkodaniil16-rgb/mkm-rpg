@@ -6,6 +6,9 @@ import com.eretenkodaniil.mkm.abilities.net.AbilityNetworking;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.net.CharacterNetworking;
 import com.eretenkodaniil.mkm.character.CharacterEvents;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
+import com.eretenkodaniil.mkm.character.origin.net.CharacterOriginNetworking;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
@@ -38,6 +41,7 @@ public final class MkmMod implements ModInitializer {
     public void onInitialize() {
         // Explicit static initialization registers Fabric attachments before player data is read.
         CharacterAttachments.initialize();
+        CharacterOriginAttachments.initialize();
         AbilityAttachments.initialize();
         CombatAttachments.initialize();
         FordQuestAttachments.initialize();
@@ -45,12 +49,14 @@ public final class MkmMod implements ModInitializer {
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
         CharacterNetworking.initialize();
+        CharacterOriginNetworking.initialize();
         AbilityNetworking.initialize();
         FordQuestNetworking.initialize();
         FordQuestService.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
+            CharacterOriginService.onLogin(handler.player);
             CombatService.onLogin(handler.player);
             AbilityService.onLogin(handler.player);
             FordQuestService.onLogin(handler.player);
