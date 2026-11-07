@@ -40,16 +40,17 @@ public record CharacterOriginData(int schemaVersion, int revision, String raceId
             };
 
     public CharacterOriginData {
-        if (schemaVersion < 1 || revision < 0 || revision > 1
+        if (schemaVersion < 1 || revision < 0
+                || (schemaVersion == SCHEMA_VERSION && revision > 1)
                 || raceId == null || classId == null
                 || (raceId.isEmpty() != classId.isEmpty())) {
             throw new IllegalArgumentException("Invalid origin state");
         }
         if (!raceId.isEmpty() && (!OriginIds.valid(raceId) || !OriginIds.valid(classId)))
             throw new IllegalArgumentException("Invalid stored origin IDs");
-        if (raceId.isEmpty() && revision != 0)
+        if (schemaVersion == SCHEMA_VERSION && raceId.isEmpty() && revision != 0)
             throw new IllegalArgumentException("Unselected origin cannot have revision");
-        if (!raceId.isEmpty() && revision != 1)
+        if (schemaVersion == SCHEMA_VERSION && !raceId.isEmpty() && revision != 1)
             throw new IllegalArgumentException("Selected origin requires revision one");
         // Unknown future schema and catalog IDs are preserved but cannot be mutated.
     }
