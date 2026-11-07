@@ -76,6 +76,27 @@ public record EncounterLedger(Map<String, Entry> encounters) {
         public Entry claim() { return phase.equals(DEFEATED)
                 ? new Entry(schemaVersion, ownerId, x, y, z, rewardXp, CLAIMED, members) : this; }
         public int aliveCount() { return (int) members.stream().filter(m -> !m.dead()).count(); }
+
+        /** Whitelist-only transitions; owner, reward, spawn anchor and roster identity never change. */
+        public boolean mayAdvanceTo(Entry next) {
+            if (next == null || schemaVersion != next.schemaVersion
+                    || !ownerId.equals(next.ownerId) || x != next.x || y != next.y || z != next.z
+                    || rewardXp != next.rewardXp || members.size() != next.members.size()) return false;
+            for (int i = 0; i < members.size(); i++) {
+                Member before = members.get(i), after = next.members.get(i);
+                if (!before.uuid().equals(after.uuid()) || !before.entityId().equals(after.entityId())
+                        || !before.role().equals(after.role()) || before.elite() != after.elite()
+                        || before.dead() && !after.dead()) return false;
+            }
+            if (phase.equals(CLAIMED) || phase.equals(DEFEATED) && !next.phase.equals(CLAIMED)) return false;
+            if (phase.equals(RESERVED) && !(next.phase.equals(RESERVED)
+                    || next.phase.equals(ACTIVE) || next.phase.equals(DEFEATED))) return false;
+            if (phase.equals(ACTIVE) && !(next.phase.equals(ACTIVE)
+                    || next.phase.equals(DEFEATED))) return false;
+            if ((next.phase.equals(DEFEATED) || next.phase.equals(CLAIMED))
+                    && next.aliveCount() != 0) return false;
+            return true;
+        }
     }
 
     public static final Codec<EncounterLedger> CODEC = Codec.unboundedMap(Codec.STRING, Entry.CODEC)
@@ -105,7 +126,7 @@ public record EncounterLedger(Map<String, Entry> encounters) {
     }
     public EncounterLedger replace(String id, Entry old, Entry replacement) {
         if (old == null || replacement == null || old == replacement
-                || encounters.get(id) != old) return this;
+                || encounters.get(id) != old || !old.mayAdvanceTo(replacement)) return this;
         Map<String, Entry> next = new HashMap<>(encounters);
         next.put(id, replacement);
         return new EncounterLedger(next);
