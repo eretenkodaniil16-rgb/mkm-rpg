@@ -12,6 +12,7 @@ import com.eretenkodaniil.mkm.combat.CombatService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
+import com.eretenkodaniil.mkm.environment.WatchtowerPlacementCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
@@ -69,6 +70,7 @@ public final class MkmMod implements ModInitializer {
         ServerLivingEntityEvents.AFTER_DEATH.register(FordQuestService::onDeath);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> WatchtowerPlacementCommands.register(dispatcher));
         LOGGER.info("MKM Fabric 26.3 initialized");
     }
 }
