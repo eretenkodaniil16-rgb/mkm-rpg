@@ -5,6 +5,8 @@ import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatState;
+import java.util.Map;
+import java.util.WeakHashMap;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -14,10 +16,12 @@ import net.minecraft.server.level.ServerPlayer;
  */
 public final class AbilityService {
     private static final long SYNC_INTERVAL_TICKS = 5L;
+    private static final Map<ServerPlayer, Long> LAST_REQUEST_TICK = new WeakHashMap<>();
 
     private AbilityService() {}
 
     public static void onLogin(ServerPlayer player) {
+        LAST_REQUEST_TICK.remove(player);
         if (player.getAttached(AbilityAttachments.PLAYER) == null) {
             PlayerModifierSnapshot stats = stats(player);
             long now = player.level().getGameTime();
@@ -47,10 +51,18 @@ public final class AbilityService {
     }
 
     public static boolean tryCast(ServerPlayer player, String id) {
-        // Hard effect allowlist. Other catalog entries are design prototypes.
-        if (!AbilityAccessRules.executableNow(id)) return false;
+        // Player grants are independent of the AI's opt-in permission.
+        // Existing public Renewal remains available before Character Core
+        // implements class choice; other catalog entries stay nonexecutable.
+        if (!AbilityGrantPolicy.executable(
+                AbilityGrantPolicy.Grants.currentPlayer(), id)) return false;
 
         long now = player.level().getGameTime();
+        // Limit malformed/repeated client intents to one attempt per server
+        // tick for this actor. Persistent cooldown is the final authority.
+        Long last = LAST_REQUEST_TICK.get(player);
+        if (last != null && last == now) return false;
+        LAST_REQUEST_TICK.put(player, now);
         boolean actorValid = player.isAlive() && !player.isSpectator() && !player.isPassenger();
         CombatState combat = player.getAttachedOrCreate(CombatAttachments.PLAYER);
         boolean actionIdle = player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle()
@@ -61,24 +73,16 @@ public final class AbilityService {
         PlayerModifierSnapshot stats = stats(player);
         RenewalParameters parameters = RenewalParameters.from(stats);
         ManaLedger previous = player.getAttachedOrCreate(AbilityAttachments.PLAYER);
-        ManaLedger current = AbilityRules.regenerate(previous, now,
-                parameters.maximumMana(), parameters.manaRegeneration());
-        if (RenewalEligibility.check(actorValid, actionIdle, injured, current, now,
-                parameters.cost())
-                != RenewalEligibility.Result.READY) return false;
-
-        ManaLedger paid = AbilityRules.spend(
-                current, AbilityCatalog.RENEWAL, now, parameters.cost(),
-                parameters.cooldownTicks(), parameters.regenerationDelayTicks());
+        ManaLedger paid = RenewalCastPlan.spendIfAllowed(
+                actorValid, actionIdle, injured, previous, now, parameters);
         if (paid == null) return false;
 
-        // Commit exactly once before the native healing effect. Retransmitted
-        // packets see the updated cooldown on the next server-side invocation.
+        // The same spend plan and native heal effect are used by opt-in AI.
+        // Commit before effect so a retransmitted intent cannot double-cast.
         player.setAttached(AbilityAttachments.PLAYER, paid);
         float beforeHealth = player.getHealth();
-        player.heal(parameters.healing());
-        // Cosmetic signal is emitted only AFTER authoritative, positive healing.
-        // No MNAE marker can influence the above transaction.
+        float actualHealed = RenewalEffect.healSelf(player, parameters.healing());
+        if (actualHealed <= 0F) return false; // no successful APPLIED
         AbilityVisualEmitter.onRenewalApplied(player, beforeHealth);
         player.sendOverlayMessage(Component.translatable("message.mkm.renewal.cast"));
         return true;
