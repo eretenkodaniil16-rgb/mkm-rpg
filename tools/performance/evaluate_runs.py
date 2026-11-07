@@ -17,7 +17,7 @@ def compare(baseline: dict, candidate: dict) -> dict:
     missing = [key for key in MATCH_FIELDS if key not in a or key not in b]
     if missing:
         raise ValueError('Missing benchmark identity fields: ' + ', '.join(missing))
-    different = [key for key in MATCH_FIELDS if a[key] != b[key]
+    different = [key for key in MATCH_FIELDS if a[key] != b[key]]
     if different:
         raise ValueError('Workloads are not comparable: ' + ', '.join(different))
     if a.get('minecraft') != '26.3':
