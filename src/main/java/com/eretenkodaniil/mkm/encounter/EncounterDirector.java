@@ -219,6 +219,13 @@ public final class EncounterDirector {
             inform(player, "Ночная засада ещё не запускалась в этом мире.");
             return;
         }
+        // Public status must not expose another player's encounter UUIDs,
+        // roster or exact home coordinates (multiplayer griefing).
+        if (!event.ownerId().equals(player.getUUID().toString())) {
+            inform(player, "Встреча находится в состоянии " + event.phase()
+                    + ". Подробности доступны только назначенному владельцу.");
+            return;
+        }
         inform(player, "state=" + event.phase() + ", rewardXp=" + event.rewardXp()
                 + ", owner=" + event.ownerId() + ", anchor=" + event.x() + "/"
                 + event.y() + "/" + event.z() + ", remaining=" + event.aliveCount());
