@@ -11,24 +11,39 @@ public final class AbilityGrantPolicy {
 
     public record Grants(
             Actor actor, String classId, String raceId,
-            Set<String> learned, Set<String> equipment, Set<String> ai) {
+            Set<String> learned, Set<String> equipment, Set<String> ai,
+            int actorLevel) {
         public Grants {
-            if (actor == null || learned == null || equipment == null || ai == null)
+            if (actor == null || learned == null || equipment == null || ai == null
+                    || actorLevel < 1 || actorLevel > 100)
                 throw new IllegalArgumentException("Missing grant source");
             learned = Set.copyOf(learned);
             equipment = Set.copyOf(equipment);
             ai = Set.copyOf(ai);
         }
 
+        /** Compatibility constructor for existing class/AI contract tests. */
+        public Grants(Actor actor, String classId, String raceId,
+                Set<String> learned, Set<String> equipment, Set<String> ai) {
+            this(actor, classId, raceId, learned, equipment, ai, 1);
+        }
+
         public static Grants currentPlayer() {
-            // CharacterData v3/v4 does not yet store a chosen class/race/grants.
-            // Keep existing public Renewal accessible, do not invent a class.
-            return new Grants(Actor.PLAYER, null, null, Set.of(), Set.of(), Set.of());
+            return currentPlayer(1);
+        }
+
+        public static Grants currentPlayer(int authoritativeLevel) {
+            // No selected class or race is persisted in CharacterData v3/v4.
+            // Level is server-owned CharacterData.level() or owner-synced HUD level.
+            return new Grants(Actor.PLAYER, null, null,
+                    Set.of(), Set.of(), Set.of(), authoritativeLevel);
         }
 
         public static Grants taggedHostileRenewal() {
+            // AI level defaults to I; a future AI tier policy must pass a
+            // verified level rather than assume player progression.
             return new Grants(Actor.HOSTILE_AI, null, null,
-                    Set.of(), Set.of(), Set.of(AbilityCatalog.RENEWAL.id()));
+                    Set.of(), Set.of(), Set.of(AbilityCatalog.RENEWAL.id()), 1);
         }
     }
 
@@ -50,7 +65,9 @@ public final class AbilityGrantPolicy {
 
     public static boolean executable(Grants grants, String abilityId) {
         AbilityDefinition definition = AbilityCatalog.get(abilityId);
-        return granted(grants, abilityId) && definition.kind() == AbilityDefinition.Kind.ACTIVE
+        return granted(grants, abilityId)
+                && SpellProgression.meetsLevel(abilityId, grants.actorLevel())
+                && definition.kind() == AbilityDefinition.Kind.ACTIVE
                 && AbilityAccessRules.executableNow(abilityId)
                 && (grants.actor() != Actor.HOSTILE_AI
                     || AbilityCatalog.RENEWAL.id().equals(abilityId));
