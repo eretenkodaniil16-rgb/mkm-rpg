@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.MkmMod;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchool;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolState;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
@@ -65,6 +67,33 @@ public final class CombatAttachments {
                     .initializer(ActionTimeline::new)
                     .syncWith(TIMELINE_CODEC, AttachmentSyncPredicate.targetOnly()));
 
+    // Only this player's client receives the school cue. It is NOT a
+    // client-writable command or persistent CharacterData schema field.
+    private static final StreamCodec<RegistryFriendlyByteBuf, FencingSchoolState> FENCING_CODEC =
+            new StreamCodec<>() {
+                @Override
+                public FencingSchoolState decode(RegistryFriendlyByteBuf buf) {
+                    int ordinal = buf.readUnsignedByte();
+                    if (ordinal >= FencingSchool.values().length) {
+                        throw new IllegalArgumentException("Unknown fencing school");
+                    }
+                    return new FencingSchoolState(
+                            FencingSchool.values()[ordinal], buf.readVarLong(), buf.readVarLong());
+                }
+
+                @Override
+                public void encode(RegistryFriendlyByteBuf buf, FencingSchoolState state) {
+                    buf.writeByte(state.school().ordinal());
+                    buf.writeVarLong(state.effectiveFromTick());
+                    buf.writeVarLong(state.nextSwitchTick());
+                }
+            };
+
+    public static final AttachmentType<FencingSchoolState> FENCING_SCHOOL = AttachmentRegistry.create(
+            MkmMod.id("fencing_school"), builder -> builder
+                    .initializer(FencingSchoolState::new)
+                    .syncWith(FENCING_CODEC, AttachmentSyncPredicate.targetOnly()));
+
     public static final AttachmentType<PoiseState> POISE = AttachmentRegistry.createDefaulted(
             MkmMod.id("poise"), PoiseState::new);
 
@@ -74,5 +103,6 @@ public final class CombatAttachments {
         PLAYER.identifier();
         TIMELINE.identifier();
         POISE.identifier();
+        FENCING_SCHOOL.identifier();
     }
 }

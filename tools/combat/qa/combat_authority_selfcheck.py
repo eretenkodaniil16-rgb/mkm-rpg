@@ -15,6 +15,8 @@ COSMETIC_FILES = (
     "combat/presentation/AttackPresentationEvent.java",
     "combat/presentation/WeaponPresentationResolver.java",
     "combat/presentation/MnaeDemoClipRouting.java",
+    "combat/fencing/FencingSchoolMotionCues.java",
+    "combat/fencing/FencingSchoolRules.java",
     "combat/ServerSpecialAttackContract.java",
 )
 FORBIDDEN_DAMAGE = re.compile(
