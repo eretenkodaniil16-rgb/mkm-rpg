@@ -1,0 +1,204 @@
+package com.eretenkodaniil.mkm.client.gui;
+
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginData;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginRules;
+import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
+import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionRequest;
+import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionResult;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
+
+/**
+ * Lightweight real character creation UI, opened via K character sheet.
+ * Stage changes and bonuses remain purely preview until the server confirms one-time selection.
+ * Existing progressed v4 worlds are NEVER forced to recreate or lose their stats.
+ */
+public final class CharacterOriginScreen extends Screen {
+    private static final int BACKGROUND = 0xE8161B23;
+    private static final int BORDER = 0xFF947752;
+    private static final int LIGHT = 0xFFE8E7DA;
+    private static final int MUTED = 0xFFACB3BF;
+
+    private String raceId = OriginCatalog.HUMAN.id();
+    private String classId = OriginCatalog.WARRIOR.id();
+    private Button human, dwarf, warrior, mage, confirm;
+    private boolean awaiting;
+    private int requestId;
+    private Component status;
+
+    public CharacterOriginScreen() {
+        super(Component.translatable("screen.mkm.origin.title"));
+    }
+
+    private CharacterOriginData current() {
+        return minecraft == null || minecraft.player == null ? null
+                : minecraft.player.getAttached(CharacterOriginAttachments.PROFILE);
+    }
+
+    @Override
+    protected void init() {
+        super.init();
+        int left = (width - Math.min(328, width - 12)) / 2;
+        int panelWidth = Math.min(328, width - 12);
+        int top = (height - Math.min(228, height - 12)) / 2;
+        int column = Math.min(146, (panelWidth - 26) / 2);
+        int space = panelWidth - 16 - 2 * column;
+        int rightX = left + 8 + column + space;
+
+        human = addRenderableWidget(Button.builder(
+                Component.translatable("screen.mkm.origin.human"), b -> chooseRace(OriginCatalog.HUMAN.id()))
+                .size(column, 20).pos(left + 8, top + 69).build());
+        dwarf = addRenderableWidget(Button.builder(
+                Component.translatable("screen.mkm.origin.dwarf"), b -> chooseRace(OriginCatalog.DWARF.id()))
+                .size(column, 20).pos(left + 8, top + 94).build());
+        warrior = addRenderableWidget(Button.builder(
+                Component.translatable("screen.mkm.origin.warrior"), b -> chooseClass(OriginCatalog.WARRIOR.id()))
+                .size(column, 20).pos(rightX, top + 69).build());
+        mage = addRenderableWidget(Button.builder(
+                Component.translatable("screen.mkm.origin.mage"), b -> chooseClass(OriginCatalog.MAGE.id()))
+                .size(column, 20).pos(rightX, top + 94).build());
+        confirm = addRenderableWidget(Button.builder(
+                Component.translatable("screen.mkm.origin.confirm"), b -> submit())
+                .size(panelWidth / 2 - 12, 20).pos(left + 8, top + 190).build());
+        addRenderableWidget(Button.builder(
+                Component.translatable("screen.mkm.origin.back"), b -> onClose())
+                .size(panelWidth / 2 - 12, 20)
+                .pos(left + panelWidth / 2 + 4, top + 190).build());
+        updateButtons();
+    }
+
+    private void chooseRace(String id) {
+        if (!awaiting && (current() == null || !current().selected())) {
+            raceId = id;
+            status = null;
+            updateButtons();
+        }
+    }
+
+    private void chooseClass(String id) {
+        if (!awaiting && (current() == null || !current().selected())) {
+            classId = id;
+            status = null;
+            updateButtons();
+        }
+    }
+
+    private void updateButtons() {
+        CharacterOriginData data = current();
+        boolean locked = awaiting || (data != null && data.selected());
+        if (human != null) {
+            human.active = !locked;
+            dwarf.active = !locked;
+            warrior.active = !locked;
+            mage.active = !locked;
+            human.setMessage(Component.literal(raceId.equals(OriginCatalog.HUMAN.id()) ? "✓ " : "")
+                    .append(Component.translatable("screen.mkm.origin.human")));
+            dwarf.setMessage(Component.literal(raceId.equals(OriginCatalog.DWARF.id()) ? "✓ " : "")
+                    .append(Component.translatable("screen.mkm.origin.dwarf")));
+            warrior.setMessage(Component.literal(classId.equals(OriginCatalog.WARRIOR.id()) ? "✓ " : "")
+                    .append(Component.translatable("screen.mkm.origin.warrior")));
+            mage.setMessage(Component.literal(classId.equals(OriginCatalog.MAGE.id()) ? "✓ " : "")
+                    .append(Component.translatable("screen.mkm.origin.mage")));
+        }
+        if (confirm != null) {
+            confirm.active = !locked && data != null
+                    && ClientPlayNetworking.canSend(OriginSelectionRequest.TYPE);
+        }
+    }
+
+    private void submit() {
+        CharacterOriginData state = current();
+        if (state == null || state.selected() || awaiting
+                || !ClientPlayNetworking.canSend(OriginSelectionRequest.TYPE)) return;
+        requestId = requestId == Integer.MAX_VALUE ? 1 : requestId + 1;
+        awaiting = true;
+        status = Component.translatable("screen.mkm.origin.sending");
+        ClientPlayNetworking.send(new OriginSelectionRequest(
+                requestId, state.revision(), raceId, classId));
+        updateButtons();
+    }
+
+    @Override
+    public void tick() {
+        super.tick();
+        CharacterOriginData saved = current();
+        if (saved != null && saved.selected() && !awaiting) {
+            raceId = saved.raceId();
+            classId = saved.classId();
+        }
+        updateButtons();
+    }
+
+    public void onSelectionResult(OriginSelectionResult result) {
+        if (!awaiting || result.requestId() != requestId) return;
+        awaiting = false;
+        status = Component.translatable(switch (result.status()) {
+            case SELECTED -> "screen.mkm.origin.saved";
+            case ALREADY_SELECTED -> "screen.mkm.origin.already";
+            case LOCKED -> "screen.mkm.origin.locked";
+            case STALE -> "screen.mkm.origin.stale";
+            case INVALID -> "screen.mkm.origin.invalid";
+            case UNSUPPORTED -> "screen.mkm.origin.unsupported";
+        });
+        updateButtons();
+    }
+
+    @Override
+    public void onClose() {
+        minecraft.gui.setScreen(new CharacterSheetScreen());
+    }
+
+    @Override
+    public void extractRenderState(GuiGraphicsExtractor graphics, int mx, int my, float delta) {
+        int panelWidth = Math.min(328, width - 12);
+        int panelHeight = Math.min(228, height - 12);
+        int left = (width - panelWidth) / 2;
+        int top = (height - panelHeight) / 2;
+        int column = Math.min(146, (panelWidth - 26) / 2);
+        int rightX = left + panelWidth - 8 - column;
+
+        graphics.fill(0, 0, width, height, 0x99000000);
+        graphics.fill(left, top, left + panelWidth, top + panelHeight, BACKGROUND);
+        graphics.fill(left, top, left + panelWidth, top + 2, BORDER);
+        graphics.centeredText(font, title, width / 2, top + 12, LIGHT);
+        graphics.centeredText(font, Component.translatable("screen.mkm.origin.subtitle"),
+                width / 2, top + 30, MUTED);
+        graphics.text(font, Component.translatable("screen.mkm.origin.race"),
+                left + 10, top + 54, BORDER);
+        graphics.text(font, Component.translatable("screen.mkm.origin.clazz"),
+                rightX, top + 54, BORDER);
+
+        CharacterOriginData state = current();
+        if (state != null && state.selected()) {
+            graphics.centeredText(font, Component.translatable(
+                    "screen.mkm.origin.saved_pair",
+                    Component.translatable(OriginCatalog.race(state.raceId()) == null
+                            ? "screen.mkm.origin.unknown"
+                            : OriginCatalog.race(state.raceId()).titleKey()),
+                    Component.translatable(OriginCatalog.clazz(state.classId()) == null
+                            ? "screen.mkm.origin.unknown"
+                            : OriginCatalog.clazz(state.classId()).titleKey())),
+                    width / 2, top + 128, LIGHT);
+            graphics.centeredText(font, Component.translatable("screen.mkm.origin.permanent"),
+                    width / 2, top + 146, MUTED);
+        } else {
+            graphics.centeredText(font,
+                    Component.translatable("screen.mkm.origin.bonuses"),
+                    width / 2, top + 128, LIGHT);
+            graphics.centeredText(font, Component.translatable(
+                    raceId.equals(OriginCatalog.HUMAN.id())
+                            ? "screen.mkm.origin.human_desc" : "screen.mkm.origin.dwarf_desc"),
+                    width / 2, top + 145, MUTED);
+            graphics.centeredText(font, Component.translatable(
+                    classId.equals(OriginCatalog.WARRIOR.id())
+                            ? "screen.mkm.origin.warrior_desc" : "screen.mkm.origin.mage_desc"),
+                    width / 2, top + 158, MUTED);
+        }
+        if (status != null) graphics.centeredText(font, status, width / 2, top + 177, LIGHT);
+        super.extractRenderState(graphics, mx, my, delta);
+    }
+}
