@@ -22,6 +22,8 @@ import com.eretenkodaniil.mkm.quests.FordQuestAttachments;
 import com.eretenkodaniil.mkm.quests.FordQuestCommands;
 import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
+import com.eretenkodaniil.mkm.enemy.EnemyService;
+import com.eretenkodaniil.mkm.enemy.EnemyCommands;
 import com.eretenkodaniil.mkm.performance.MkmPerformanceRuntime;
 import com.eretenkodaniil.mkm.performance.MkmPerformanceCommands;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
@@ -54,6 +56,7 @@ public final class MkmMod implements ModInitializer {
         EncounterAttachments.initialize();
         EncounterDefinitions.initialize();
         MkmItems.initialize();
+        EnemyService.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
         CharacterNetworking.initialize();
@@ -75,14 +78,18 @@ public final class MkmMod implements ModInitializer {
                 AbilityService.onPlayerTick(player);
             }
         });
+        ServerTickEvents.END_SERVER_TICK.register(EnemyService::onServerTick);
         ServerLivingEntityEvents.AFTER_DAMAGE.register(CombatEvents::afterDamage);
+        ServerLivingEntityEvents.AFTER_DAMAGE.register(EnemyService::afterDamage);
         ServerLivingEntityEvents.AFTER_DEATH.register(CombatEvents::afterDeath);
         ServerLivingEntityEvents.AFTER_DEATH.register(CharacterEvents::onEntityDeath);
         ServerLivingEntityEvents.AFTER_DEATH.register(FordQuestService::onDeath);
         ServerLivingEntityEvents.AFTER_DEATH.register(EncounterDirector::onDeath);
+        ServerLivingEntityEvents.AFTER_DEATH.register(EnemyService::afterDeath);
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> EncounterCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> EnemyCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmPerformanceCommands.register(dispatcher));
         // Register the timing END callback after MKM's own end-tick work.
         MkmPerformanceRuntime.initialize();
