@@ -2,6 +2,7 @@
 """Compare externally measured MKM benchmark JSON runs; never invent metrics."""
 import argparse
 import json
+import math
 from pathlib import Path
 
 MATCH_FIELDS = (
@@ -13,7 +14,10 @@ MATCH_FIELDS = (
 
 def compare(baseline: dict, candidate: dict) -> dict:
     a, b = baseline['environment'], candidate['environment']
-    different = [key for key in MATCH_FIELDS if a.get(key) != b.get(key)]
+    missing = [key for key in MATCH_FIELDS if key not in a or key not in b]
+    if missing:
+        raise ValueError('Missing benchmark identity fields: ' + ', '.join(missing))
+    different = [key for key in MATCH_FIELDS if a[key] != b[key]
     if different:
         raise ValueError('Workloads are not comparable: ' + ', '.join(different))
     if a.get('minecraft') != '26.3':
@@ -22,13 +26,14 @@ def compare(baseline: dict, candidate: dict) -> dict:
     for key in ('tick_p95_ms', 'tick_p99_ms'):
         if not isinstance(am.get(key), (int, float)) or not isinstance(bm.get(key), (int, float)):
             raise ValueError(f'Missing numeric metric: {key}')
-        if am[key] <= 0 or bm[key] <= 0:
+        if not math.isfinite(am[key]) or not math.isfinite(bm[key]) or am[key] <= 0 or bm[key] <= 0:
             raise ValueError(f'Non-positive timing metric: {key}')
     p95_gain = (am['tick_p95_ms'] - bm['tick_p95_ms']) / am['tick_p95_ms'] * 100
     p99_gain = (am['tick_p99_ms'] - bm['tick_p99_ms']) / am['tick_p99_ms'] * 100
     chunk_gain = None
     if 'chunks_per_second' in am and 'chunks_per_second' in bm:
-        if am['chunks_per_second'] > 0 and bm['chunks_per_second'] >= 0:
+        if (math.isfinite(am['chunks_per_second']) and math.isfinite(bm['chunks_per_second'])
+                and am['chunks_per_second'] > 0 and bm['chunks_per_second'] >= 0):
             chunk_gain = (bm['chunks_per_second'] - am['chunks_per_second']) / am['chunks_per_second'] * 100
     improved = p95_gain >= 10.0 or (chunk_gain is not None and chunk_gain >= 20.0)
     safe_p99 = p99_gain >= -5.0
