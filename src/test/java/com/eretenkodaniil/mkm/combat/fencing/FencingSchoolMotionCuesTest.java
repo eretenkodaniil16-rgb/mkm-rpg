@@ -57,6 +57,9 @@ final class FencingSchoolMotionCuesTest {
                 AttackPresentationEvent.Arm.RIGHT, 1,
                 AttackPresentationEvent.Outcome.LOCAL_PREDICTED);
         assertTrue(FencingSchoolMotionCues.forEvent(selected, ev, 219L).isEmpty());
+        // Buffered attack from before the selected stance became effective
+        // must never be retrospectively re-labeled by render-time state.
+        assertTrue(FencingSchoolMotionCues.forEvent(selected, ev, 250L).isEmpty());
         assertTrue(FencingSchoolMotionCues.forEvent(
                 selected, ev.withOutcome(AttackPresentationEvent.Outcome.CANCELLED), 250L).isEmpty());
         assertTrue(FencingSchoolMotionCues.forEvent(
