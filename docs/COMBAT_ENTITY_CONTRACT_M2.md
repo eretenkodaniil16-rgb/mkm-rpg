@@ -126,3 +126,7 @@ Manual review gates (not accomplished by this PR): two-player PvP sword/axe/trid
 **Mob direct-melee type hardening:** `ServerEnemyCombatAdapter.selectDirectMeleeType(mainhandId, registeredProfile)` always prioritizes a recognized equipped melee weapon and only uses a registered *natural* damage type if `AttackDelivery.DIRECT_MELEE` applies. A projectile-only profile cannot change a real `DamageTypes.MOB_ATTACK` into a piercing attack by accident. The pure selection method is tested without loading Minecraft entities.
 
 **Stagger delivery validation:** the mob's offensive stagger multiplier is also selected only if a registered profile is `DIRECT_MELEE` and the actual server damage source is direct mob melee; an otherwise projectile-only profile remains neutral for any unexpected physical melee action. A ranged projectile does not use this direct melee path.
+
+### Automated no-double-damage architecture gate
+
+GitHub Actions now runs `tools/combat/qa/combat_authority_selfcheck.py`. It fails if presentation LMB/MNAE contracts or future special-attack policy contain known damage, movement or server packet calls, or if more than one `LivingEntity.hurtServer` variable modification is present in MKM mixins. This is **static source inspection**, not a proof against arbitrary third-party mods or Minecraft/Fabric callback duplication. Server combat integration and live PvP/mining tests remain mandatory.

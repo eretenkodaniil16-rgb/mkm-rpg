@@ -55,6 +55,8 @@ jobs:
         run: |
           chmod +x ./gradlew
           ./gradlew build --no-daemon
+      - name: Verify MNAE cannot duplicate Combat damage
+        run: python3 tools/combat/qa/combat_authority_selfcheck.py
       - name: Self-check animation choreography and generate storyboard
         run: python3 tools/animation/qa/forward_roll_selfcheck.py --out build/reports/animation-qa
       - name: Self-check six attacks against authoritative hit ticks
