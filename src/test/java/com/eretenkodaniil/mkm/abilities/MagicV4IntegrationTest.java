@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.abilities;
 
 import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.character.CharacterRewardRules;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginData;
 import com.eretenkodaniil.mkm.character.origin.OriginModifierRules;
@@ -85,6 +86,27 @@ class MagicV4IntegrationTest {
         assertTrue(SpellProgression.meetsLevel("mkm:arcane_barrier",1));
         assertEquals(10, SpellProgression.maximumTierAtLevel(100));
         assertThrows(IllegalArgumentException.class,()->ManaCapacityPolicy.levelBonus(101));
+    }
+
+    @Test void existingCharacterV4QuestReceiptsSurviveMagicScalingWithoutRepeatXp() {
+        var reward = CharacterRewardRules.grantOnce(
+                new CharacterData(), "mkm:magic_qa/one_time", 200L);
+        assertEquals(CharacterRewardRules.Status.GRANTED, reward.status());
+        CharacterData awarded = reward.character();
+        assertEquals(4, awarded.schemaVersion());
+        assertTrue(awarded.hasClaimedReward("mkm:magic_qa/one_time"));
+        double manaBonus = ManaCapacityPolicy.extra(awarded);
+        assertTrue(manaBonus > 0D);
+        var snapshot = OriginModifierRules.snapshot(awarded,
+                Map.of(PlayerModifierId.MAX_MANA, manaBonus), origin("mkm:mage"));
+        assertTrue(snapshot.get(PlayerModifierId.MAX_MANA) >= 100D);
+        assertEquals(java.util.List.of("mkm:magic_qa/one_time"),
+                awarded.claimedRewardIds());
+        var second = CharacterRewardRules.grantOnce(
+                awarded, "mkm:magic_qa/one_time", 200L);
+        assertEquals(CharacterRewardRules.Status.ALREADY_GRANTED, second.status());
+        assertSame(awarded, second.character());
+        assertEquals(awarded.experience(), second.character().experience());
     }
 
     @Test void expiredFutureOriginSchemaFailsClosed() {
