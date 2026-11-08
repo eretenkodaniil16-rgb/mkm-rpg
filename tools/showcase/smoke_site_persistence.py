@@ -32,6 +32,8 @@ def launch():
     )
     try:
         env.wait_for_ready(proc)
+        env.wait_for_marker("Loaded encounter mkm:ford_ambush with 3 mobs")
+        env.wait_for_marker("Loaded encounter mkm:showcase_watchtower with 3 mobs")
         return proc, stream
     except BaseException:
         terminate(proc)
