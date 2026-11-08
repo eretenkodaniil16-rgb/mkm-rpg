@@ -20,7 +20,7 @@ jobs:
       - name: Install X11 recording tools plus private QA-only NBT parser
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends xvfb xdotool ffmpeg mesa-utils libgl1 python3-venv
+          sudo apt-get install -y --no-install-recommends xvfb xdotool x11-utils ffmpeg mesa-utils libgl1 python3-venv
           python3 -m venv build/r07/f5env
           build/r07/f5env/bin/pip install --disable-pip-version-check nbtlib==2.0.4
       - name: Reproduce actual in-world F5 / 3 render modes

@@ -116,6 +116,8 @@ def main():
     env=os.environ.copy()
     env.update({"DISPLAY":":98","LIBGL_ALWAYS_SOFTWARE":"1","GDK_BACKEND":"x11",
                 "SDL_VIDEODRIVER":"x11"})
+    # xdotool/chat/snapshot helpers inherit this explicit test display.
+    os.environ.update(env)
     xvfb=spawn(["Xvfb",":98","-screen","0","1280x720x24","-ac",
                  "+extension","GLX"],QA/"xvfb.log",env=env)
     time.sleep(2)
