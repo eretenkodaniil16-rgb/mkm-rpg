@@ -1,6 +1,12 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
+import com.eretenkodaniil.mkm.character.origin.OriginShowcaseRules;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressService;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
@@ -129,6 +135,40 @@ public final class CombatService {
             // enchantments, i-frames and our existing melee damage mixin.
             player.attack(nearest);
         }
+    }
+
+    /**
+     * Warrior-only brace, owned by Combat. Reuses CombatRules.heavy for
+     * server stamina debit and the existing timeline interlock. No extra damage
+     * event and no pose/animation state is stored in CharacterData.
+     */
+    public static boolean tryWarriorBrace(ServerPlayer player) {
+        boolean warrior = OriginShowcaseRules.allowedClassAction(
+                CharacterOriginService.get(player), "mkm:warrior");
+        boolean shield = player.getMainHandItem().is(Items.SHIELD)
+                || player.getOffhandItem().is(Items.SHIELD);
+        long now = player.level().getGameTime();
+        long ready = player.getAttachedOrCreate(CombatAttachments.BRACE_READY_TICK);
+        if (!WarriorBraceRules.eligible(warrior,
+                player.isAlive() && !player.isSpectator() && !player.isPassenger(),
+                player.onGround(), shield,
+                player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle(), now, ready)) {
+            return false;
+        }
+        PlayerModifierSnapshot stats = modifiers(player);
+        CombatState current = fresh(player, stats, now);
+        float cost = (float) (WarriorBraceRules.BASE_COST
+                * stats.get(PlayerModifierId.STAMINA_COST));
+        CombatState paid = CombatRules.heavy(current, now, cost, regenerationDelay(stats));
+        if (paid == null) return false;
+        player.setAttached(CombatAttachments.PLAYER, paid);
+        player.setAttached(CombatAttachments.BRACE_READY_TICK,
+                now + WarriorBraceRules.COOLDOWN_TICKS);
+        int duration = WarriorBraceRules.duration(OriginProgressService.mastered(player));
+        player.addEffect(new MobEffectInstance(MobEffects.RESISTANCE, duration, 0));
+        player.sendOverlayMessage(Component.literal(
+                "[Воин] Защитная стойка: сопротивление, -" + Math.round(cost) + " выносливости"));
+        return true;
     }
 
     public static boolean tryHeavy(ServerPlayer player) {
