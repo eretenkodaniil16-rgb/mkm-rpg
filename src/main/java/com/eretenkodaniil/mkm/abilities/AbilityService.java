@@ -1,6 +1,11 @@
 package com.eretenkodaniil.mkm.abilities;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
+import com.eretenkodaniil.mkm.character.origin.OriginShowcaseRules;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressService;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
@@ -88,6 +93,42 @@ public final class AbilityService {
         player.setAttached(AbilityAttachments.PLAYER, paid);
         player.heal((float) amount);
         player.sendOverlayMessage(Component.translatable("message.mkm.renewal.cast"));
+        return true;
+    }
+
+    /**
+     * Executable M5 mage-only ward: an actual visible vanilla Absorption status,
+     * not a second spell/effect engine. Identical authoritative ManaLedger spend
+     * and cooldown machinery as Renewal; no new combat damage or target packets.
+     */
+    public static boolean tryMageWard(ServerPlayer player) {
+        if (!OriginShowcaseRules.allowedClassAction(
+                CharacterOriginService.get(player), "mkm:mage")) return false;
+        long now = player.level().getGameTime();
+        if (!player.isAlive() || player.isSpectator() || player.isPassenger()
+                || !player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle()
+                || player.hasEffect(MobEffects.ABSORPTION)) return false;
+
+        PlayerModifierSnapshot modifiers = stats(player);
+        var skill = AbilityCatalog.MAGE_WARD;
+        double cost = AbilityRules.scaledCost(skill.baseCost(),
+                modifiers.get(PlayerModifierId.MANA_COST));
+        ManaLedger current = AbilityRules.regenerate(
+                player.getAttachedOrCreate(AbilityAttachments.PLAYER), now,
+                modifiers.get(PlayerModifierId.MAX_MANA),
+                modifiers.get(PlayerModifierId.MANA_REGENERATION));
+        ManaLedger paid = AbilityRules.spend(current, skill, now, cost,
+                AbilityRules.scaledCooldown(skill.cooldownTicks(),
+                        modifiers.get(PlayerModifierId.COOLDOWN_RECOVERY)),
+                AbilityRules.regenDelayTicks(modifiers.get(PlayerModifierId.MANA_REGEN_DELAY)));
+        if (paid == null) return false;
+
+        // Commit mana/cooldown before any visible status is applied.
+        player.setAttached(AbilityAttachments.PLAYER, paid);
+        int duration = OriginProgressService.mastered(player) ? 180 : 100;
+        player.addEffect(new MobEffectInstance(MobEffects.ABSORPTION, duration, 0));
+        player.sendOverlayMessage(Component.literal(
+                "[Маг] Тайный оберег: 2 дополнительных сердца, -" + Math.round(cost) + " маны"));
         return true;
     }
 
