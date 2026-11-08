@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.environment;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.encounter.EncounterDirector;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -19,7 +21,8 @@ public final class ShowcaseCommands {
         dispatcher.register(Commands.literal("mkmshowcase")
                 .executes(ctx -> guide(ctx.getSource()))
                 .then(Commands.literal("guide").executes(ctx -> guide(ctx.getSource())))
-                .then(Commands.literal("status").executes(ctx -> status(ctx.getSource()))));
+                .then(Commands.literal("status").executes(ctx -> status(ctx.getSource())))
+                .then(Commands.literal("ambush").executes(ctx -> ambush(ctx.getSource()))));
     }
 
     private static int guide(CommandSourceStack source) throws CommandSyntaxException {
@@ -28,6 +31,39 @@ public final class ShowcaseCommands {
         player.sendSystemMessage(Component.translatable("message.mkm.showcase.guide2"));
         player.sendSystemMessage(Component.translatable("message.mkm.showcase.guide3"));
         return status(source);
+    }
+
+    /**
+     * After registered rune discovery, players can trigger the EXISTING
+     * EncounterDirector: same 3 mobs, same world-once reservation, same
+     * source of XP. This exposes no new client packet or GM spawn loophole.
+     */
+    private static int ambush(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        if (!(player.level() instanceof ServerLevel world)) return 0;
+        var origin = player.getAttached(CharacterOriginAttachments.PROFILE);
+        boolean selected = origin != null
+                && origin.schemaVersion() == 1 && origin.selected();
+        boolean v4 = CharacterService.get(player).schemaVersion() == CharacterData.CURRENT_SCHEMA_VERSION;
+        boolean receipt = CharacterService.hasExperienceReward(player, RUNE_REWARD);
+        var sites = world.getAttached(WatchtowerAttachments.SITES);
+        boolean near = sites != null && sites.sites().stream()
+                .filter(site -> site.phase().equals(WatchtowerSiteRegistry.Site.PLACED))
+                .anyMatch(site -> {
+                    double dx = player.getX() - (site.x() + 11.5);
+                    double dy = player.getY() - (site.y() + 5.0);
+                    double dz = player.getZ() - (site.z() + 9.5);
+                    return dx * dx + dy * dy + dz * dz
+                            <= ShowcaseAmbushGate.MAX_DISTANCE_SQUARED;
+                });
+        if (!ShowcaseAmbushGate.allowed(player.isAlive(), player.isSpectator(),
+                v4, selected, receipt, near)) {
+            player.sendSystemMessage(Component.translatable("message.mkm.showcase.ambush_locked"));
+            return 0;
+        }
+        // Downstream enforces overworld, loaded spawn positions, night/biome,
+        // Peaceful denial, single event reservation and owner reward.
+        return EncounterDirector.start(player) ? 1 : 0;
     }
 
     private static int status(CommandSourceStack source) throws CommandSyntaxException {
