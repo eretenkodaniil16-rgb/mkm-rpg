@@ -66,6 +66,10 @@ def verify():
         "src/main/java/com/eretenkodaniil/mkm/character/origin/CharacterOriginService.java")
     assert "HudElementRegistry.attachElementAfter" in client
     assert "MkmCombatHud::extract" in client and "MkmAbilityHud::extract" in client
+    assert "MkmShowcaseHud::extract" in client
+    assert "ShowcaseAccessibility.load();" in client
+    for text in ("ShowcaseCommands.register(dispatcher)", "RuneSlateInteraction.initialize();"):
+        exact_once(mod, text)
 
     # Global server payload receivers may be registered only once by TYPE.
     receivers = {}
@@ -91,6 +95,9 @@ def verify():
         for name in TOWER_BLOCKS:
             assert "block.mkm." + name in translations
         assert "message.mkm.showcase.reward" in translations
+        for text in ("key.mkm.showcase_hud", "key.mkm.showcase_contrast",
+                     "key.mkm.showcase_vfx", "message.mkm.showcase.site"):
+            assert text in translations
         assert "message.mkm.showcase.unverified" in translations
         assert "key.mkm.open_character_sheet" in translations
         assert "key.mkm.cast_renewal" in translations
