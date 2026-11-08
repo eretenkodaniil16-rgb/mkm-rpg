@@ -27,7 +27,7 @@ public final class AbilityVisualPolicy {
         return (AbilityCatalog.RENEWAL.id().equals(e.abilityId())
                     && RENEWAL_ACTION_ID.equals(e.visualActionId())
                     && e.visualDurationTicks() == RENEWAL_VISUAL_TICKS)
-                || ("mkm:arcane_barrier".equals(e.abilityId())
+                || ("mkm:mage_ward".equals(e.abilityId())
                     && WARD_ACTION_ID.equals(e.visualActionId())
                     && e.visualDurationTicks() == WARD_VISUAL_TICKS);
     }
