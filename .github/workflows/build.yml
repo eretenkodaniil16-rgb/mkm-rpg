@@ -24,6 +24,7 @@ on:
       - 'integration/fabric-v4-encounters-perf-qa3'
       - 'integration/fabric-v4-encounter-origins-perf-qa4'
       - 'integration/fabric-v4-world-origins-enemy-perf-qa5'
+      - 'feature/world-showcase01-ilra-tower-issue78'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -47,6 +48,7 @@ on:
       - 'integration/fabric-v4-encounters-perf-qa3'
       - 'integration/fabric-v4-encounter-origins-perf-qa4'
       - 'integration/fabric-v4-world-origins-enemy-perf-qa5'
+      - 'feature/world-showcase01-ilra-tower-issue78'
       - 'feature/action-combat-v1'
       - 'foundation/project-bootstrap'
       - 'main'
@@ -68,6 +70,8 @@ jobs:
         run: python3 -m unittest discover -s tools/performance -p 'test_*.py' -v
       - name: Verify offline world backup preflight (Python stdlib)
         run: python3 -m unittest discover -s tools/integration -p 'test_*.py' -v
+      - name: Verify authored Watchtower visual assets, templates and placement contract
+        run: python3 tools/environment/verify_watchtower.py
       - name: Self-check animation choreography and generate storyboard
         run: python3 tools/animation/qa/forward_roll_selfcheck.py --out build/reports/animation-qa
       - name: Self-check six attacks against authoritative hit ticks
@@ -90,7 +94,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.6-fabric.0-qa.5.jar")
+              if p.endswith("0.0.6-fabric.0-qa.6-world.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -222,7 +226,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.6-fabric.0-qa.5.jar
+          path: build/libs/mkm-rpg-0.0.6-fabric.0-qa.6-world.jar
           if-no-files-found: error
           retention-days: 14
 
