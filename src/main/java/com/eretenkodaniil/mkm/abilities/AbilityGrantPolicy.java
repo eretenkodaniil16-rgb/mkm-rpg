@@ -22,9 +22,12 @@ public final class AbilityGrantPolicy {
     }
 
     public static Grants fromSaved(CharacterData character, CharacterOriginData origin) {
-        if (character == null || character.schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION
-                || origin == null || origin.schemaVersion() != CharacterOriginData.SCHEMA_VERSION
-                || !origin.selected()
+        if (character == null || character.schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION)
+            return null;
+        // Preserve QA5 Renewal for legacy/unselected v4 characters.
+        if (origin == null || !origin.selected())
+            return new Grants("", character.level(), Set.of());
+        if (origin.schemaVersion() != CharacterOriginData.SCHEMA_VERSION
                 || OriginCatalog.clazz(origin.classId()) == null
                 || OriginCatalog.race(origin.raceId()) == null) return null;
         return new Grants(origin.classId(), character.level(), Set.of());
