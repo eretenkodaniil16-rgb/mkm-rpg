@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.character.origin;
 
 import com.eretenkodaniil.mkm.abilities.AbilityService;
+import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.combat.CombatService;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
@@ -11,6 +13,8 @@ public final class OriginClassActionService {
 
     public static boolean execute(ServerPlayer player, byte intent) {
         if (intent != 1 || player == null || !player.isAlive() || player.isSpectator()) return false;
+        if (CharacterService.get(player).schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION)
+            return false;
         var profile = CharacterOriginService.get(player);
         if (profile.schemaVersion() != CharacterOriginData.SCHEMA_VERSION
                 || OriginCatalog.race(profile.raceId()) == null) return false;
