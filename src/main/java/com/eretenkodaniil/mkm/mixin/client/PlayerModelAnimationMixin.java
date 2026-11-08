@@ -7,6 +7,7 @@ import com.eretenkodaniil.mkm.client.animation.ArticulatedMode;
 import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
 import com.eretenkodaniil.mkm.client.animation.MnaEVisibleProbe;
 import com.eretenkodaniil.mkm.client.animation.R07SixPartProxy;
+import com.eretenkodaniil.mkm.client.animation.EvasionChoreography;
 import com.eretenkodaniil.mkm.client.animation.MnaEWeaponVisualPolicy;
 import com.eretenkodaniil.mkm.client.animation.engine.ArticulatedClipV3;
 import com.eretenkodaniil.mkm.client.animation.engine.Vec3;
@@ -61,6 +62,29 @@ public abstract class PlayerModelAnimationMixin {
         }
         if (frame == null || frame.weight() <= 0.0001F) return;
         ActionTimeline action = frame.timeline();
+        if(NativeAnimationToggle.enabled()
+                && action.phase()==ActionTimeline.Phase.DODGING) {
+            var pose=EvasionChoreography.sample(action.dodgeDirection(),frame.progress());
+            float tuck=pose.tuck();
+            model.body.xRot+=.45F*tuck;
+            model.head.xRot+=.30F*tuck;
+            model.rightArm.xRot-=1.15F*tuck;
+            model.leftArm.xRot-=1.15F*tuck;
+            model.rightLeg.xRot+=1.10F*tuck;
+            model.leftLeg.xRot+=.95F*tuck;
+            // Side-step and backward-hop have independent counter-stride.
+            model.rightLeg.zRot+=.45F*pose.stride();
+            model.leftLeg.zRot-=.45F*pose.stride();
+            copyAngles(model.rightSleeve,model.rightArm);
+            copyAngles(model.leftSleeve,model.leftArm);
+            copyAngles(model.rightPants,model.rightLeg);
+            copyAngles(model.leftPants,model.leftLeg);
+            copyAngles(model.jacket,model.body);
+            if(Minecraft.getInstance().level!=null)
+                MnaEVisibleProbe.mark(Minecraft.getInstance().level.getGameTime(),
+                      "EVADE_MODEL_SETUP",pose.kind().name());
+            return;
+        }
         // Unsupported hand/offhand combinations never activate sword C2 poses.
         if(action.kind()==ActionTimeline.Kind.LIGHT_COMBO
                 && ArticulatedMode.weapon().presentation()==
