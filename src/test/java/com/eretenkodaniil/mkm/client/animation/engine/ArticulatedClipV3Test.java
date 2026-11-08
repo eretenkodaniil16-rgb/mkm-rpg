@@ -98,6 +98,20 @@ class ArticulatedClipV3Test {
         }
     }
 
+    @Test void originalSeventeenBoneActionTransfersMassWithoutMovingHitbox(){
+        ArticulatedClipV3 clip=read();
+        var origin=clip.sample(0).get("pelvis").pivot();
+        double displacement=0;
+        for(int i=0;i<=42;i++){
+            var p=clip.sample(i/42D).get("pelvis").pivot();
+            double dx=p.x()-origin.x(),dy=p.y()-origin.y(),dz=p.z()-origin.z();
+            displacement=Math.max(displacement,Math.sqrt(dx*dx+dy*dy+dz*dz));
+        }
+        assertTrue(displacement>.5,"17-bone pelvis must carry a measurable authored weight shift");
+        assertEquals(14,clip.durationTicks());
+        assertEquals(43,clip.frameCount());
+    }
+
     @Test void parserHasFiniteResourceBudget() {
         byte[] oversized=new byte[1024*1024+1];
         Arrays.fill(oversized,(byte)' ');
