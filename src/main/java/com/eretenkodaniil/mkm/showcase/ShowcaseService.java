@@ -69,8 +69,11 @@ public final class ShowcaseService {
     public static ShowcaseProgress get(ServerPlayer player) {
         return player.getAttachedOrCreate(ShowcaseAttachments.PROGRESS);
     }
+    public static ShowcaseSite site(ServerLevel level) {
+        return level.getAttachedOrCreate(ShowcaseAttachments.SITE);
+    }
     public static ShowcaseSite site(ServerPlayer player) {
-        return ((ServerLevel)player.level()).getAttachedOrCreate(ShowcaseAttachments.SITE);
+        return site((ServerLevel)player.level());
     }
     private static EncounterLedger ledger(ServerPlayer player) {
         return ((ServerLevel)player.level()).getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
@@ -78,27 +81,35 @@ public final class ShowcaseService {
     private static void say(ServerPlayer player,String line) {
         player.sendSystemMessage(Component.literal("[MKM · Башня] " + line));
     }
-    public static boolean bind(ServerPlayer player, BlockPos origin) {
-        if (!(player.level() instanceof ServerLevel level) || !level.dimension().equals(Level.OVERWORLD))
-            return false;
-        ShowcaseSite previous=site(player);
-        if (previous.configured()) {
-            say(player,"Регион уже закреплён за башней: " + previous.origin() + ". Повторная привязка запрещена.");
-            return false;
-        }
+    /** Server/operator binding is independent of any logged-in account. */
+    public static boolean bindWorld(ServerLevel level, BlockPos origin) {
+        if (!level.dimension().equals(Level.OVERWORLD)) return false;
+        ShowcaseSite previous=site(level);
+        if (previous.schemaVersion()!=ShowcaseSite.SCHEMA_VERSION || previous.configured()) return false;
         BlockPos rune=origin.offset(7,5,6);
         var wall=level.getBlockState(origin.offset(4,5,4));
         if (!level.hasChunkAt(rune)
                 || !level.getBlockState(rune).is(MkmBlocks.RUNE_SLATE)
                 || !(wall.is(MkmBlocks.AGED_ASHLAR) || wall.is(MkmBlocks.MOSSY_ASHLAR)
-                        || wall.is(MkmBlocks.CRACKED_ASHLAR))) {
-            say(player,"Сначала безопасно установите башню PR #60: маркеры стен и руны не обнаружены.");
-            return false;
-        }
+                        || wall.is(MkmBlocks.CRACKED_ASHLAR))) return false;
         level.setAttached(ShowcaseAttachments.SITE,previous.place(origin));
-        say(player,"Маршрут привязан к " + origin + ". Игроки смогут получить координаты у Ильры.");
         return true;
     }
+    public static boolean bind(ServerPlayer player, BlockPos origin) {
+        ServerLevel level=(ServerLevel)player.level();
+        ShowcaseSite previous=site(level);
+        if (previous.configured()) {
+            say(player,"Регион уже закреплён: " + previous.origin() + ". Повторная привязка запрещена.");
+            return false;
+        }
+        if (!bindWorld(level,origin)) {
+            say(player,"Маркер башни недоступен; сначала установите PR #60 в свободных загруженных чанках.");
+            return false;
+        }
+        say(player,"Маршрут привязан к " + origin + ". Координаты открываются у Ильры.");
+        return true;
+    }
+
     public static void onIlra(ServerPlayer player) {
         ShowcaseSite site=site(player);
         if (!site.configured()) return;
