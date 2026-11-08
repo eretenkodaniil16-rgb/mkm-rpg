@@ -45,12 +45,15 @@ public record OriginProgressData(int schemaVersion, List<String> unlockedNodes) 
     }
     public OriginProgressData() { this(SCHEMA_VERSION, List.of()); }
     public boolean has(String id) {
-        return schemaVersion == SCHEMA_VERSION && unlockedNodes.contains(id);
+        return schemaVersion == SCHEMA_VERSION && FORD_MENTORSHIP.equals(id)
+                && unlockedNodes.contains(id);
     }
     public OriginProgressData unlock(String id) {
         if (schemaVersion != SCHEMA_VERSION || has(id) || unlockedNodes.size() >= MAX_NODES)
             throw new IllegalStateException("Progress ledger locked, duplicate or full");
         OriginIds.require(id);
+        if (!FORD_MENTORSHIP.equals(id))
+            throw new IllegalArgumentException("Learning node has no registered M5 handler");
         java.util.ArrayList<String> next = new java.util.ArrayList<>(unlockedNodes);
         next.add(id);
         return new OriginProgressData(schemaVersion, next);
