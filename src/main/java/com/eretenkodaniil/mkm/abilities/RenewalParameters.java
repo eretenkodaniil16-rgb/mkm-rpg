@@ -24,7 +24,7 @@ public record RenewalParameters(
             throw new IllegalArgumentException("Invalid healing magnitude");
         }
         return new RenewalParameters(
-                ManaCapacityPolicy.maximum(stats, characterLevel),
+                stats.get(PlayerModifierId.MAX_MANA),
                 stats.get(PlayerModifierId.MANA_REGENERATION),
                 AbilityRules.regenDelayTicks(stats.get(PlayerModifierId.MANA_REGEN_DELAY)),
                 AbilityRules.scaledCost(AbilityCatalog.RENEWAL.baseCost(),
