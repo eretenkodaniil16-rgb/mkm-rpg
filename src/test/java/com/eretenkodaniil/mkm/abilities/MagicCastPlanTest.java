@@ -19,20 +19,20 @@ class MagicCastPlanTest {
         assertEquals(80D,renewal.mana(),1e-8);
         assertEquals(160L,renewal.readyTick("mkm:renewal"));
         assertNull(plan("mkm:renewal",renewal,true,true,true,100));
-        var ward=plan("mkm:arcane_barrier",initial,true,true,true,100);
+        var ward=plan("mkm:mage_ward",initial,true,true,true,100);
         assertNotNull(ward);
         assertEquals(75D,ward.mana(),1e-8);
-        assertEquals(260L,ward.readyTick("mkm:arcane_barrier"));
-        assertNull(plan("mkm:arcane_barrier",ward,true,true,true,101));
+        assertEquals(280L,ward.readyTick("mkm:mage_ward"));
+        assertNull(plan("mkm:mage_ward",ward,true,true,true,101));
     }
 
     @Test void invalidActorBusyEffectAlreadyActiveAndNoManaNeverSpend() {
         var full=new ManaLedger(100D,100L,100L,Map.of());
-        assertNull(plan("mkm:arcane_barrier",full,false,true,true,100));
-        assertNull(plan("mkm:arcane_barrier",full,true,false,true,100));
-        assertNull(plan("mkm:arcane_barrier",full,true,true,false,100));
+        assertNull(plan("mkm:mage_ward",full,false,true,true,100));
+        assertNull(plan("mkm:mage_ward",full,true,false,true,100));
+        assertNull(plan("mkm:mage_ward",full,true,true,false,100));
         var empty=new ManaLedger(1D,100L,100L,Map.of());
-        assertNull(plan("mkm:arcane_barrier",empty,true,true,true,100));
+        assertNull(plan("mkm:mage_ward",empty,true,true,true,100));
         assertFalse(ArcaneWardEffect.eligible(true,true));
         assertTrue(ArcaneWardEffect.eligible(true,false));
         assertEquals(100D,full.mana(),1e-8);
@@ -41,6 +41,7 @@ class MagicCastPlanTest {
     @Test void spellsWithUnapprovedCastChannelOrDamageStillDenied() {
         var full=new ManaLedger(100D,100L,100L,Map.of());
         assertNull(plan("mkm:arcane_bolt",full,true,true,true,100));
+        assertNull(plan("mkm:arcane_barrier",full,true,true,true,100));
         assertNull(plan("mkm:repulsion_wave",full,true,true,true,100));
         assertEquals(8,AbilityCatalog.get("mkm:arcane_bolt").castTicks());
     }
@@ -49,7 +50,7 @@ class MagicCastPlanTest {
         var renewal=new AbilityVisualEvent("mkm:renewal","mkm:renewal_cast",
                 42,1,AbilityVisualEvent.Hand.MAIN_HAND,
                 AbilityVisualEvent.Phase.APPLIED,100L,14,"minecraft:overworld");
-        var ward=new AbilityVisualEvent("mkm:arcane_barrier","mkm:arcane_ward_cast",
+        var ward=new AbilityVisualEvent("mkm:mage_ward","mkm:arcane_ward_cast",
                 42,2,AbilityVisualEvent.Hand.MAIN_HAND,
                 AbilityVisualEvent.Phase.APPLIED,101L,20,"minecraft:overworld");
         assertTrue(AbilityVisualPolicy.allowedForPlayback(renewal));
