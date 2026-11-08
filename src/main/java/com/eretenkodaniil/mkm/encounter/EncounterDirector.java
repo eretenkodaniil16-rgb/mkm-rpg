@@ -44,8 +44,22 @@ public final class EncounterDirector {
     }
 
     public static boolean start(ServerPlayer player) {
+        return startAt(player, player.blockPosition(), PILOT_ID, false, 0);
+    }
+
+    /** Player-owned narrative encounter, separate from the old GM-only pilot ID. */
+    public static boolean startStoryAt(ServerPlayer player, BlockPos anchor, String approach) {
+        return startAt(player, anchor, "mkm:ford_ambush/" + player.getUUID()
+                + "_" + approach, true,
+                approach.equals("study") ? 25 : 0);
+    }
+
+    private static boolean startAt(ServerPlayer player, BlockPos anchor, String eventKey,
+                                   boolean story, int bonusXp) {
         if (!(player.level() instanceof ServerLevel level)
                 || !player.isAlive() || player.isSpectator()) return false;
+        if (story && player.distanceToSqr(anchor.getX() + .5,anchor.getY(),anchor.getZ() + .5)
+                > 64.0 * 64.0) return false;
         EncounterDefinition config = EncounterDefinitions.ford();
         if (config == null) {
             inform(player, "JSON не загружен или отклонён сервером. Посмотрите лог /reload.");
@@ -56,7 +70,7 @@ public final class EncounterDirector {
             inform(player, "Нужен обычный мир и сложность не Peaceful.");
             return false;
         }
-        String biome = level.getBiome(player.blockPosition()).unwrapKey()
+        String biome = level.getBiome(anchor).unwrapKey()
                 .map(key -> key.identifier().toString()).orElse("unknown");
         if (!config.accepts(biome, level.getDefaultClockTime())) {
             inform(player, "Требуется разрешённый биом и ночное время: " + biome
@@ -64,7 +78,7 @@ public final class EncounterDirector {
             return false;
         }
         EncounterLedger ledger = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
-        if (!ledger.canReserve(config.id(), config.roster().size())) {
+        if (!ledger.canReserve(eventKey, config.roster().size())) {
             inform(player, "Встреча уже зарезервирована/завершена или превышен бюджет сущностей. "
                     + "Повторное появление запрещено.");
             return false;
@@ -74,7 +88,6 @@ public final class EncounterDirector {
         // chunk loading and without modifying terrain or vanilla mob-spawn rules.
         List<Mob> prepared = new ArrayList<>();
         List<EncounterLedger.Member> roster = new ArrayList<>();
-        BlockPos anchor = player.blockPosition();
         for (EncounterDefinition.Spawn spec : config.roster()) {
             Mob mob = newMob(level, spec);
             if (mob == null) return false;
@@ -112,15 +125,15 @@ public final class EncounterDirector {
 
         EncounterLedger.Entry reserved = new EncounterLedger.Entry(
                 EncounterLedger.SCHEMA_VERSION, player.getUUID().toString(),
-                anchor.getX(), anchor.getY(), anchor.getZ(), config.rewardXp(),
+                anchor.getX(), anchor.getY(), anchor.getZ(), config.rewardXp() + bonusXp,
                 EncounterLedger.RESERVED, roster);
         // Persist UUIDs BEFORE any entity is inserted. A failed/partial spawn
         // stays reserved for manual audit; it never causes automatic duplicates.
-        level.setAttached(EncounterAttachments.ENCOUNTERS, ledger.reserve(config.id(), reserved));
+        level.setAttached(EncounterAttachments.ENCOUNTERS, ledger.reserve(eventKey, reserved));
         for (Mob mob : prepared) {
             if (!level.addFreshEntity(mob)) {
                 MkmMod.LOGGER.error("Encounter {} partially spawned; reserved roster retained, owner {}",
-                        config.id(), player.getUUID());
+                        eventKey, player.getUUID());
                 inform(player, "Часть группы не появилась. Резервирование сохранено, "
                         + "автоматическая повторная генерация запрещена.");
                 return false;
@@ -129,12 +142,14 @@ public final class EncounterDirector {
             NpcVisualSignals.emit(mob, NpcVisualSignals.Cue.THREAT);
         }
         EncounterLedger current = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
-        EncounterLedger.Entry latest = current.find(config.id());
+        EncounterLedger.Entry latest = current.find(eventKey);
         // Preserve any death already confirmed while the group was materializing.
         level.setAttached(EncounterAttachments.ENCOUNTERS,
-                current.replace(config.id(), latest, latest.start()));
-        inform(player, "Ночная засада началась: 2 хуска и командир-скелет. "
-                + "Победите троих и вернитесь к месту начала за наградой.");
+                current.replace(eventKey, latest, latest.start()));
+        inform(player, story
+                ? "Стражи башни пробудились. Победите двоих иссушённых и командира-лучника."
+                : "Ночная засада началась: 2 хуска и командир-скелет. "
+                  + "Победите троих и вернитесь к месту начала за наградой.");
         return true;
     }
 
@@ -166,29 +181,44 @@ public final class EncounterDirector {
     public static void onDeath(LivingEntity victim, net.minecraft.world.damagesource.DamageSource source) {
         if (!(victim.level() instanceof ServerLevel level) || !victim.entityTags().contains(MOB_TAG)) return;
         EncounterLedger ledger = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
-        EncounterLedger.Entry event = ledger.find(PILOT_ID);
-        if (event == null) return;
         String deadId = victim.getUUID().toString();
+        // Death callbacks are rare. At most 128 saved occurrences per level;
+        // look up a typed member by UUID without ever scanning unloaded chunks.
+        String eventKey = null;
+        EncounterLedger.Entry event = null;
+        for (var candidate : ledger.encounters().entrySet()) {
+            if (candidate.getValue().members().stream().anyMatch(member -> member.uuid().equals(deadId))) {
+                eventKey = candidate.getKey();
+                event = candidate.getValue();
+                break;
+            }
+        }
+        if (event == null) return;
         boolean authorized = event.members().stream().anyMatch(member -> member.uuid().equals(deadId)
                 && member.entityId().equals(victim.getType() == EntityTypes.HUSK
                         ? "minecraft:husk" : victim.getType() == EntityTypes.SKELETON
                         ? "minecraft:skeleton" : "unknown")
                 && victim.entityTags().contains(OWNER_TAG + event.ownerId()));
         if (!authorized) return;
-        EncounterLedger after = ledger.markDeath(PILOT_ID, deadId);
+        EncounterLedger after = ledger.markDeath(eventKey, deadId);
         if (after == ledger) return; // duplicated or unrelated death callback
         level.setAttached(EncounterAttachments.ENCOUNTERS, after);
         NpcVisualSignals.emit(victim, NpcVisualSignals.Cue.DEATH);
-        var changed = after.find(PILOT_ID);
+        var changed = after.find(eventKey);
         ServerPlayer owner = null;
         try {
             owner = level.getServer().getPlayerList().getPlayer(UUID.fromString(event.ownerId()));
         } catch (IllegalArgumentException badOwner) {
-            MkmMod.LOGGER.error("Encounter {} has invalid saved owner UUID {}", PILOT_ID, event.ownerId());
+            MkmMod.LOGGER.error("Encounter {} has invalid saved owner UUID {}", eventKey, event.ownerId());
         }
-        if (owner != null) inform(owner, changed.phase().equals(EncounterLedger.DEFEATED)
-                ? "Засада уничтожена. Вернитесь к месту начала и выполните /mkmencounter claim."
-                : "Противник уничтожен. Осталось: " + changed.aliveCount());
+        if (owner != null) {
+            boolean narrative = !eventKey.equals(PILOT_ID);
+            inform(owner, changed.phase().equals(EncounterLedger.DEFEATED)
+                    ? (narrative ? "Защитники башни повержены. Вернитесь к руне для завершения."
+                            : "Засада уничтожена. Вернитесь к месту начала и выполните /mkmencounter claim.")
+                    : "Противник уничтожен. Осталось: " + changed.aliveCount());
+            if (narrative) com.eretenkodaniil.mkm.quests.net.FordQuestNetworking.sendJournal(owner);
+        }
     }
 
     public static boolean claim(ServerPlayer player) {
