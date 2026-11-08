@@ -83,7 +83,7 @@ public final class AbilityService {
         boolean effectAllowed = switch (id) {
             case "mkm:renewal" ->
                     player.getHealth() < player.getMaxHealth() - 0.001F;
-            case "mkm:arcane_barrier" -> ArcaneWardEffect.canApply(player);
+            case "mkm:mage_ward" -> ArcaneWardEffect.canApply(player);
             default -> false;
         };
         if (!actorValid || !actionIdle || !effectAllowed) return false;
@@ -96,7 +96,7 @@ public final class AbilityService {
                 stats.get(PlayerModifierId.MAX_MANA),
                 stats.get(PlayerModifierId.MANA_REGENERATION),
                 stats.get(PlayerModifierId.MANA_COST)
-                        * ("mkm:arcane_barrier".equals(id)
+                        * ("mkm:mage_ward".equals(id)
                             ? SpellLicenseService.offClassManaMultiplier(
                                     grants.classId(), licenses.contains(id)) : 1D),
                 stats.get(PlayerModifierId.COOLDOWN_RECOVERY),
@@ -117,7 +117,7 @@ public final class AbilityService {
             return true;
         }
 
-        if ("mkm:arcane_barrier".equals(id)) {
+        if ("mkm:mage_ward".equals(id)) {
             boolean applied = ArcaneWardEffect.apply(player);
             if (!applied) return false;
             AbilityVisualEmitter.onWardApplied(player, true);
