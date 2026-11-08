@@ -107,5 +107,7 @@
   "screen.mkm.origin.warrior_short": "Melee and stamina cost",
   "screen.mkm.origin.mage_short": "Mana and healing",
   "item.mkm.raider_insignia": "Raider's Insignia",
-  "item.mkm.stalker_fang": "Stalker's Fang"
+  "item.mkm.stalker_fang": "Stalker's Fang",
+  "key.mkm.cast_arcane_ward": "Arcane Ward (Mage)",
+  "message.mkm.arcane_ward.cast": "Arcane Ward: damage absorption"
 }
