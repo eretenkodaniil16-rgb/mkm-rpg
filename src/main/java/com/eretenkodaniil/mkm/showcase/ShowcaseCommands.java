@@ -10,46 +10,51 @@ import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerPlayer;
 
-/** All privileged commands are scene preparation, not normal player progression. */
+/** All commands prepare the world for players; story progression requires no commands. */
 public final class ShowcaseCommands {
     private ShowcaseCommands() {}
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
+        var setup=Commands.literal("setup");
+        var variant=Commands.argument("variant",IntegerArgumentType.integer(1,3));
+        var x=Commands.argument("x",IntegerArgumentType.integer(-29999000,29999000));
+        var y=Commands.argument("y",IntegerArgumentType.integer(-64,400));
+        var z=Commands.argument("z",IntegerArgumentType.integer(-29999000,29999000));
+        z.executes(c->setup(c.getSource(),IntegerArgumentType.getInteger(c,"variant"),
+                new BlockPos(IntegerArgumentType.getInteger(c,"x"),
+                        IntegerArgumentType.getInteger(c,"y"),
+                        IntegerArgumentType.getInteger(c,"z"))));
+        y.then(z);
+        x.then(y);
+        variant.then(x);
+        setup.then(variant);
+
+        var bind=Commands.literal("bind");
+        var bindX=Commands.argument("x",IntegerArgumentType.integer(-29999000,29999000));
+        var bindY=Commands.argument("y",IntegerArgumentType.integer(-64,400));
+        var bindZ=Commands.argument("z",IntegerArgumentType.integer(-29999000,29999000));
+        bindZ.executes(c->bind(c.getSource(),new BlockPos(
+                IntegerArgumentType.getInteger(c,"x"),
+                IntegerArgumentType.getInteger(c,"y"),
+                IntegerArgumentType.getInteger(c,"z"))));
+        bindY.then(bindZ);
+        bindX.then(bindY);
+        bind.then(bindX);
         dispatcher.register(Commands.literal("mkmshowcase")
                 .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
-                .then(Commands.literal("setup")
-                        .then(Commands.argument("variant",IntegerArgumentType.integer(1,3))
-                                .then(Commands.argument("x",IntegerArgumentType.integer(-29999000,29999000))
-                                        .then(Commands.argument("y",IntegerArgumentType.integer(-64,400))
-                                                .then(Commands.argument("z",IntegerArgumentType.integer(-29999000,29999000))
-                                                        .executes(c->setup(c.getSource(),
-                                                                IntegerArgumentType.getInteger(c,"variant"),
-                                                                pos(c.getSource(),
-                                                                    IntegerArgumentType.getInteger(c,"x"),
-                                                                    IntegerArgumentType.getInteger(c,"y"),
-                                                                    IntegerArgumentType.getInteger(c,"z")))))))))
-                .then(Commands.literal("bind")
-                        .then(Commands.argument("x",IntegerArgumentType.integer(-29999000,29999000))
-                                .then(Commands.argument("y",IntegerArgumentType.integer(-64,400))
-                                        .then(Commands.argument("z",IntegerArgumentType.integer(-29999000,29999000))
-                                                .executes(c->bind(c.getSource(),pos(c.getSource(),
-                                                        IntegerArgumentType.getInteger(c,"x"),
-                                                        IntegerArgumentType.getInteger(c,"y"),
-                                                        IntegerArgumentType.getInteger(c,"z"))))))));
+                .then(setup)
+                .then(bind));
     }
-    private static BlockPos pos(CommandSourceStack source,int x,int y,int z) {
-        return new BlockPos(x,y,z);
-    }
-    private static int setup(CommandSourceStack source,int variant,BlockPos at) throws CommandSyntaxException {
+    private static int setup(CommandSourceStack source,int variant,BlockPos at)
+            throws CommandSyntaxException {
         if (WatchtowerPlacementCommands.place(source,variant,at.getX(),at.getY(),at.getZ())!=1)
             return 0;
         ServerPlayer admin=source.getPlayerOrException();
         if (!ShowcaseService.bind(admin,at)) return 0;
-        // Place Ilra near the operator's current starting point, not at the tower.
-        // If an Ilra already exists this is a no-op, keeping authored NPC state.
         FordQuestService.placeWarden(admin);
         return 1;
     }
-    private static int bind(CommandSourceStack source,BlockPos at) throws CommandSyntaxException {
+    private static int bind(CommandSourceStack source,BlockPos at)
+            throws CommandSyntaxException {
         return ShowcaseService.bind(source.getPlayerOrException(),at)?1:0;
     }
 }
