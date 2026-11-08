@@ -27,6 +27,8 @@ public final class CombatModeClient {
             "key.mkm.combat_mode", InputConstants.KEY_F6, CATEGORY);
     private static boolean enabled;
     private static boolean holding;
+    private static boolean queued;
+    private static long queuedTick;
     private static int serial;
     private static long pressedTick;
     private static Object level;
@@ -45,7 +47,11 @@ public final class CombatModeClient {
 
     public static void onStatus(Minecraft client, CombatModeStatus status) {
         enabled = status.enabled();
-        if (!enabled) holding = false;
+        if (!enabled) {
+            holding = false;
+            queued = false;
+            lastContact = null;
+        }
         // The server sends the authoritative action-bar feedback; this ACK
         // only controls whether the client may redirect entity-only LMB.
     }
@@ -55,11 +61,23 @@ public final class CombatModeClient {
         if (!enabled || client.level == null) return;
         lastContact = contact;
         lastContactLocalTick = client.level.getGameTime();
+        queued = false;
     }
 
     /** Called by Minecraft.startAttack at HEAD; true ONLY when vanilla LMB is suppressed. */
     public static boolean interceptAttack(Minecraft client) {
         if (!enabled || client.player == null || client.level == null) return false;
+        // A queued sword strike can be canceled by switching to block mining,
+        // which must remain vanilla. Do not emit another entity hit in between.
+        if (queued) {
+            if (client.hitResult instanceof net.minecraft.world.phys.BlockHitResult) {
+                if (canSend()) ClientPlayNetworking.send(
+                        new CombatStrikeIntent((byte) 2, serial));
+                queued = false;
+                return false;
+            }
+            return true;
+        }
         String id = BuiltInRegistries.ITEM.getKey(
                 client.player.getMainHandItem().getItem()).toString();
         boolean sword = EquipmentRules.profile(id, EquipmentRules.Slot.MAIN_HAND).family()
@@ -90,12 +108,14 @@ public final class CombatModeClient {
             level = client.level;
             enabled = false;
             holding = false;
+            queued = false;
             serial = 0;
             lastContact = null;
         }
         if (client.player == null || client.level == null || !client.player.isAlive()) {
             enabled = false;
             holding = false;
+            queued = false;
             lastContact = null;
             return;
         }
@@ -105,8 +125,22 @@ public final class CombatModeClient {
                     ClientPlayNetworking.send(new CombatStrikeIntent((byte) 2, serial));
                     holding = false;
                 }
+                queued = false;
                 // Do not enable locally until server ACK confirms QA flag.
                 ClientPlayNetworking.send(new CombatModeRequest(!enabled));
+            }
+        }
+        if (queued) {
+            boolean invalid = !enabled || client.gui.screen() != null
+                    || client.player.isSpectator()
+                    || EquipmentRules.profile(BuiltInRegistries.ITEM.getKey(
+                            client.player.getMainHandItem().getItem()).toString(),
+                            EquipmentRules.Slot.MAIN_HAND).family() != EquipmentRules.Family.SWORD
+                    || client.level.getGameTime() - queuedTick > 40L;
+            if (invalid) {
+                if (canSend()) ClientPlayNetworking.send(
+                        new CombatStrikeIntent((byte) 2, serial));
+                queued = false;
             }
         }
         if (holding) {
@@ -121,6 +155,10 @@ public final class CombatModeClient {
                 if (canSend()) ClientPlayNetworking.send(
                         new CombatStrikeIntent((byte) (cancel ? 2 : 1), serial));
                 holding = false;
+                if (!cancel) {
+                    queued = true;
+                    queuedTick = client.level.getGameTime();
+                }
             }
         }
     }
@@ -128,6 +166,7 @@ public final class CombatModeClient {
     public static String hudText(Minecraft client) {
         if (!enabled || client.level == null) return "";
         if (!holding) {
+            if (queued) return "F6 COMBAT | SERVER WINDUP (no hit predicted)";
             if (lastContact != null && client.level.getGameTime() >= lastContactLocalTick
                     && client.level.getGameTime() - lastContactLocalTick <= 40L) {
                 return lastContact.confirmedHealthHit()

@@ -10,6 +10,7 @@ import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatRules;
 import com.eretenkodaniil.mkm.combat.CombatState;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchool;
+import com.eretenkodaniil.mkm.combat.fencing.FencingRiposteRules;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolRules;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
 import com.eretenkodaniil.mkm.combat.net.CombatModeStatus;
@@ -119,7 +120,8 @@ public final class CombatModeService {
         String id = mainhand(player);
         boolean allowed = eligible(player, id);
         if (phase == 2) {
-            if (old.phase() == CombatModeRules.Phase.HELD
+            if ((old.phase() == CombatModeRules.Phase.HELD
+                    || old.phase() == CombatModeRules.Phase.QUEUED)
                     && old.latestSequence() == serial) s.state = CombatModeRules.cancel(old);
             return;
         }
@@ -247,10 +249,8 @@ public final class CombatModeService {
                 attacker.getId(), victim.getId(), s.resolving, healthDamage);
         CombatModeRules.Strike kind = s.resolving;
         FencingSchool style = school(attacker).orElse(FencingSchool.NONE);
-        boolean riposte = kind == CombatModeRules.Strike.QUICK
-                && style == FencingSchool.FIORE
-                && s.riposteUntil > 0L
-                && attacker.level().getGameTime() <= s.riposteUntil;
+        boolean riposte = FencingRiposteRules.riposte(style, kind, true,
+                attacker.level().getGameTime(), s.riposteUntil);
         if (riposte) s.riposteUntil = 0L;
 
         // Real, visible on victim, no additional HP mutation or attack.
@@ -275,10 +275,12 @@ public final class CombatModeService {
     public static void onVanillaShieldBlock(ServerPlayer defender, DamageSource source,
                                             float blockedDamage) {
         Session s = SESSIONS.get(defender);
-        if (s == null || !s.state.enabled() || !Float.isFinite(blockedDamage)
-                || blockedDamage <= 0F || !defender.getUseItem().is(Items.SHIELD)
-                || school(defender).orElse(FencingSchool.NONE) != FencingSchool.FIORE) return;
-        s.riposteUntil = defender.level().getGameTime() + 40L;
+        if (s == null || !Float.isFinite(blockedDamage) || blockedDamage <= 0F) return;
+        long validUntil = FencingRiposteRules.openedUntil(
+                school(defender).orElse(FencingSchool.NONE), s.state.enabled(),
+                true, defender.getUseItem().is(Items.SHIELD), defender.level().getGameTime());
+        if (validUntil == 0L) return;
+        s.riposteUntil = validUntil;
         defender.sendOverlayMessage(Component.literal("FIORE BLOCK | RIPOSTE READY 40t"));
     }
 
