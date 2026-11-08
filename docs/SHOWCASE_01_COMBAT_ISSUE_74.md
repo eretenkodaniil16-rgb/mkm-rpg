@@ -61,3 +61,9 @@ CI выполняет JUnit для press/release, 12-tick charge, однораз
 **World/AI:** effects only after actual server health damage. Mob attacks continue original vanilla/Enemy AI routes; no extra rewards or new target scans beyond bounded local contact query on each queued hit. Do not register a new AI damage hook.
 
 **Magic:** preserve original AbilityService and magic school channels, no damage from combat pose events.
+
+## Серверная отметка контакта для MNAE (дополнение)
+
+`CombatModeContact` — новый **server→owner** пакет строго после `player.attack(victim)`, когда вызовы `AFTER_DAMAGE` уже завершились. Поля: серверный target entity ID либо −1, QUICK/CHARGED, серверный game tick, `confirmedHealthHit`, `actualHealthDamage`. Формат кодека проверяется JUnit, включая отклонение противоречивых значений. Это **доказательство фактического повреждения**, а не просьба воспроизвести урон: MNAE может использовать пакет исключительно как метку времени. HUD отличает `predicted hold`, `SERVER WINDUP`, `SERVER HIT` и `BLOCKED/MISSED` без fake hit. Стороннему игроку пакет не рассылается: spectator synchronization остаётся открытой задачей команды Animation.
+
+GUI/добыча в ожидании: если после RELEASE игрок открывает инвентарь, меняет оружие или начинает добывать блок, клиент отправляет CANCEL с тем же sequence, а сервер отклоняет ещё не наступивший контакт. При реальном лаге отмена может прийти после уже подтверждённого серверного контакта: это **не** rollback урона. Подобное обязательно проверить на двух клиентах с искусственной задержкой. Сценарий неоднозначного нажатия: только initial EntityHitResult запускает новый боевой input, любой initial BlockHitResult сохраняет mining. Механика не претендует на полноценный server-validated swept blade trace и пока требует QA согласования для PvP.

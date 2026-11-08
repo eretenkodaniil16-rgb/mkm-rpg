@@ -16,7 +16,8 @@ public final class FencingRiposteRules {
                                    long serverTick) {
         if (school != FencingSchool.FIORE || !combatMode || !vanillaBlocked
                 || !actualShield || serverTick < 0L) return 0L;
-        return Math.min(Long.MAX_VALUE, serverTick + RIPOSTE_WINDOW_TICKS);
+        return serverTick > Long.MAX_VALUE - RIPOSTE_WINDOW_TICKS
+                ? Long.MAX_VALUE : serverTick + RIPOSTE_WINDOW_TICKS;
     }
 
     public static boolean riposte(FencingSchool school, CombatModeRules.Strike originalImpact,
