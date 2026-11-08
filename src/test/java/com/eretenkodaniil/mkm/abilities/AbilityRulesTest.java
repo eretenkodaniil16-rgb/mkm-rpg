@@ -7,7 +7,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class AbilityRulesTest {
     @Test void catalogDefinitionsAreStable() {
-        assertEquals(5, AbilityCatalog.all().size());
+        assertEquals(6, AbilityCatalog.all().size());
+        assertSame(AbilityCatalog.MAGE_WARD, AbilityCatalog.get("mkm:mage_ward"));
+        assertEquals(0, AbilityCatalog.MAGE_WARD.castTicks());
         assertSame(AbilityCatalog.RENEWAL, AbilityCatalog.get("mkm:renewal"));
         assertEquals(AbilityDefinition.TargetMode.SELF, AbilityCatalog.RENEWAL.targetMode());
         assertEquals(AbilityDefinition.Kind.PASSIVE, AbilityCatalog.get("mkm:iron_will").kind());
