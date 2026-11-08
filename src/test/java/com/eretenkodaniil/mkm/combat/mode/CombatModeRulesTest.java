@@ -62,9 +62,9 @@ final class CombatModeRulesTest {
         var done = CombatModeRules.cancel(good);
         assertSame(done, CombatModeRules.press(done, 100, 2000, SWORD, true));
         assertSame(done, CombatModeRules.press(done, 99, 2000, SWORD, true));
-        assertSame(done, CombatModeRules.press(done, 101, 1023, SWORD, true));
+        assertSame(done, CombatModeRules.press(done, 101, 1035, SWORD, true));
         assertEquals(CombatModeRules.Phase.HELD,
-                CombatModeRules.press(done, 101, 1024, SWORD, true).phase());
+                CombatModeRules.press(done, 101, 1036, SWORD, true).phase());
     }
 
     @Test void guiCancellationAndExpiryFailClosed() {
