@@ -39,7 +39,8 @@ public final class CombatEvents {
             CombatModeRules.Strike modeHit = CombatModeService.currentImpact(attacker);
             // Opt-in native impact already spent stamina exactly once on RELEASE.
             // Never run separate Shift+LMB heavy cost during a queued charge.
-            boolean heavy = modeHit == CombatModeRules.Strike.CHARGED
+            boolean heavy = (modeHit == CombatModeRules.Strike.CHARGED
+                    && CombatModeService.isSelectedImpactTarget(attacker, target))
                     || (modeHit == CombatModeRules.Strike.NONE
                         && attacker.isShiftKeyDown() && CombatService.tryHeavy(attacker));
             if (heavy) PENDING_HEAVY.record(target, source, target.level().getGameTime());
