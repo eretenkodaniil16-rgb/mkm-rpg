@@ -36,7 +36,8 @@ public final class SpellProgression {
         Map<String, SpellProfile> map = new LinkedHashMap<>();
         put(map, "mkm:renewal", SpellSchool.RESTORATION, 1);
         put(map, "mkm:arcane_bolt", SpellSchool.EVOCATION, 1);
-        put(map, "mkm:arcane_barrier", SpellSchool.ABJURATION, 1);
+        put(map, "mkm:mage_ward", SpellSchool.ABJURATION, 1);
+        put(map, "mkm:arcane_barrier", SpellSchool.ABJURATION, 3);
         put(map, "mkm:repulsion_wave", SpellSchool.EVOCATION, 4);
         put(map, "mkm:iron_will", SpellSchool.NONE, 0);
         if (!map.keySet().equals(AbilityCatalog.all().keySet()))
