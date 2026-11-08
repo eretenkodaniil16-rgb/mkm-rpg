@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.showcase.ShowcaseService;
 import com.eretenkodaniil.mkm.character.QuestRewardRecovery;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
 import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
@@ -56,6 +57,7 @@ public final class FordQuestService {
         if (!(entity instanceof Villager npc) || !requireWarden(player)) return;
         FordQuestState state = get(player);
         if (!state.wardenId().isBlank() && !state.wardenId().equals(npc.getUUID().toString())) return;
+        ShowcaseService.onIlra(player);
         if (FordQuestNetworking.showDialogue(player, npc)) {
             NpcVisualSignals.emit(npc, NpcVisualSignals.Cue.GREET);
         } else talk(player);
@@ -186,6 +188,7 @@ public final class FordQuestService {
         if (!requireWarden(player)) {
             return;
         }
+        ShowcaseService.onIlra(player);
         FordQuestState state = get(player);
         NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.TALK);
         switch (state.stage()) {

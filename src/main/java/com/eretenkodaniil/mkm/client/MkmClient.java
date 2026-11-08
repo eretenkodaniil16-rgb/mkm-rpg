@@ -63,6 +63,7 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(COMBO);
         KeyMappingHelper.registerKeyMapping(JOURNAL);
         FordClientNetworking.initialize();
+        ShowcaseClientNetworking.initialize();
         KeyMappingHelper.registerKeyMapping(RENEWAL);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);

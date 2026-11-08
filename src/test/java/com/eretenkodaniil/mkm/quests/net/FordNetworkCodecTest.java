@@ -27,7 +27,8 @@ final class FordNetworkCodecTest {
             FordJournalRequest.CODEC.encode(request,q);
             assertEquals(q,FordJournalRequest.CODEC.decode(request));
             for (int stage=0;stage<=4;stage++) {
-                var view=new FordJournalView((byte)stage,true,stage==1,34543);
+                var view=new FordJournalView((byte)stage,true,stage==1,34543,
+                        (byte)2,(byte)1,120,67,-20,2);
                 FordJournalView.CODEC.encode(response,view);
                 assertEquals(view,FordJournalView.CODEC.decode(response));
             }
