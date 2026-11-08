@@ -6,8 +6,8 @@
 
 - **Road Raider guard:** vanilla Husk silhouette, equipped iron helmet, leather chestplate, sword and visible offhand shield; shield raise occurs in ~24-tick guarded window when a visible target is within distance² 22 (mob uses vanilla shield item). CRIT particle accompanies deliberate guard.
 - **Road Raider flank:** alternate same-size Husk host with axe/leather chestplate, fewer metallic accents. Moving around guard-target is tactical but cannot guarantee complete collision-aware circling until actual test.
-- **Cave Stalker:** vanilla spider silhouette, low dark crawler. Ambient spider sound and smoke preceding ~15-tick velocity-only pounce in dark.
-- **Elite Shadow Alpha:** same Spider entity dimensions, differentiated by visible soul-flame aura, 20-tick warning, brief lateral feint and sharper leap impulse. No independent damage formula or boosted boss HP.
+- **Cave Stalker:** vanilla spider silhouette, low dark crawler. Ambient spider sound, smoke and a 4-point ground approach line preceding ~15-tick velocity-only pounce in dark.
+- **Elite Shadow Alpha:** same Spider entity dimensions, differentiated by visible soul-flame aura, a 6-point ground line with two sector-side markers, 20-tick warning, brief lateral feint and sharper leap impulse. No independent damage formula or boosted boss HP.
 - Two new **original author-drawn 16×16 PNG loot icons**: `assets/mkm/textures/item/raider_insignia.png` (bronze/crimson badge) and `stalker_fang.png` (mint-green claw/drop). Own work created for MKM; standard vanilla item renderer and no external copyright source.
 
 ## Target distinctive silhouette (Environment backlog)

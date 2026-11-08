@@ -205,6 +205,7 @@ final class EnemyRuntime {
                 level.sendParticles(elite ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.SMOKE,
                         mob.getX(), mob.getY() + 0.65, mob.getZ(),
                         elite ? 5 : 3, 0.45, 0.2, 0.45, 0.02);
+                drawGroundTelegraph(level, target);
                 if (elite && now + 10 >= pounceWindupUntil
                         && EnemyTactics.shouldRepath(now, mob.getId(), 10))
                     orbit(target, 1.6, 1.08); // short visible feint
@@ -234,6 +235,39 @@ final class EnemyRuntime {
             level.sendParticles(elite ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.SMOKE,
                     mob.getX(), mob.getY() + 0.65, mob.getZ(),
                     14, 0.55, 0.35, 0.55, 0.04);
+        }
+    }
+
+    /**
+     * Server-packet-visible ground line / elite sector. Bounded to at most eight
+     * particles per phased windup tick; it never changes hit detection or damage.
+     * The geometry is a telegraph, not a raycast or a targeting authority.
+     */
+    private void drawGroundTelegraph(ServerLevel level, LivingEntity target) {
+        if (!mob.onGround()) return;
+        double dx = target.getX() - mob.getX();
+        double dz = target.getZ() - mob.getZ();
+        double length = Math.sqrt(dx * dx + dz * dz);
+        if (!Double.isFinite(length) || length < 0.01) return;
+        double ux = dx / length, uz = dz / length;
+        int segments = elite ? 6 : 4;
+        for (int i = 1; i <= segments; i++) {
+            double distance = Math.min(length, i * 0.70);
+            double x = mob.getX() + ux * distance;
+            double z = mob.getZ() + uz * distance;
+            if (!level.hasChunkAt(BlockPos.containing(x, mob.getY(), z))) continue;
+            level.sendParticles(elite ? ParticleTypes.SOUL_FIRE_FLAME : ParticleTypes.CRIT,
+                    x, mob.getY() + 0.10, z, 1, 0.0, 0.0, 0.0, 0.0);
+        }
+        if (elite) {
+            double reach = Math.min(4.2, length);
+            for (int side = -1; side <= 1; side += 2) {
+                double x = mob.getX() + ux * reach - uz * side * 1.2;
+                double z = mob.getZ() + uz * reach + ux * side * 1.2;
+                if (!level.hasChunkAt(BlockPos.containing(x, mob.getY(), z))) continue;
+                level.sendParticles(ParticleTypes.SOUL_FIRE_FLAME,
+                        x, mob.getY() + 0.10, z, 1, 0.0, 0.0, 0.0, 0.0);
+            }
         }
     }
 
