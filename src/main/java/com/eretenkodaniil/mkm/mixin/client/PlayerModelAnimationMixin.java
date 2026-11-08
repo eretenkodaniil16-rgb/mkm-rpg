@@ -3,6 +3,17 @@ package com.eretenkodaniil.mkm.mixin.client;
 import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
 import com.eretenkodaniil.mkm.client.animation.AnimationClip;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
+import com.eretenkodaniil.mkm.client.animation.ArticulatedMode;
+import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.MnaEVisibleProbe;
+import com.eretenkodaniil.mkm.client.animation.R07SixPartProxy;
+import com.eretenkodaniil.mkm.client.animation.EvasionChoreography;
+import com.eretenkodaniil.mkm.client.animation.MnaEWeaponVisualPolicy;
+import com.eretenkodaniil.mkm.client.animation.engine.ArticulatedClipV3;
+import com.eretenkodaniil.mkm.client.animation.engine.Vec3;
+import com.eretenkodaniil.mkm.client.animation.engine.Quat;
+import com.mojang.blaze3d.vertex.PoseStack;
+import org.joml.Quaternionf;
 import net.minecraft.client.Minecraft;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import net.minecraft.client.model.player.PlayerModel;
@@ -20,14 +31,64 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(PlayerModel.class)
 public abstract class PlayerModelAnimationMixin {
+    @org.spongepowered.asm.mixin.Unique private boolean mkm$hadHiddenVanilla;
+
+    @Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",
+            at = @At("HEAD"))
+    private void mkm$restorePreviousR07(AvatarRenderState state,CallbackInfo ci){
+        if(!mkm$hadHiddenVanilla)return;
+        PlayerModel model=(PlayerModel)(Object)this;
+        setHidden(model,false);
+        mkm$hadHiddenVanilla=false;
+    }
+
     @Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",
             at = @At("TAIL"))
     private void mkm$animateLocalCombat(AvatarRenderState state, CallbackInfo ci) {
-        LocalCombatAnimation.Frame frame = LocalCombatAnimation.frame(state);
-        if (frame == null || frame.weight() <= 0.0001F) return;
-
         PlayerModel model = (PlayerModel) (Object) this;
+        LocalCombatAnimation.Frame frame = LocalCombatAnimation.frame(state);
+        if(ArticulatedMode.active(state,frame)){
+            setHidden(model,true);
+            mkm$hadHiddenVanilla=true;
+            return;
+        }
+        if(ArticulatedMode.sixPart(state,frame)){
+            R07SixPartProxy.apply(model,state.mainArm,ArticulatedMode.clip(),
+                    ArticulatedMode.time(frame));
+            if(Minecraft.getInstance().level!=null)
+                MnaEVisibleProbe.mark(Minecraft.getInstance().level.getGameTime(),
+                        "MNAE6_PROXY",ArticulatedMode.clip().id());
+            return;
+        }
+        if (frame == null || frame.weight() <= 0.0001F) return;
         ActionTimeline action = frame.timeline();
+        if(NativeAnimationToggle.enabled()
+                && action.phase()==ActionTimeline.Phase.DODGING) {
+            var pose=EvasionChoreography.sample(action.dodgeDirection(),frame.progress());
+            float tuck=pose.tuck();
+            model.body.xRot+=.45F*tuck;
+            model.head.xRot+=.30F*tuck;
+            model.rightArm.xRot-=1.15F*tuck;
+            model.leftArm.xRot-=1.15F*tuck;
+            model.rightLeg.xRot+=1.10F*tuck;
+            model.leftLeg.xRot+=.95F*tuck;
+            // Side-step and backward-hop have independent counter-stride.
+            model.rightLeg.zRot+=.45F*pose.stride();
+            model.leftLeg.zRot-=.45F*pose.stride();
+            copyAngles(model.rightSleeve,model.rightArm);
+            copyAngles(model.leftSleeve,model.leftArm);
+            copyAngles(model.rightPants,model.rightLeg);
+            copyAngles(model.leftPants,model.leftLeg);
+            copyAngles(model.jacket,model.body);
+            if(Minecraft.getInstance().level!=null)
+                MnaEVisibleProbe.mark(Minecraft.getInstance().level.getGameTime(),
+                      "EVADE_MODEL_SETUP",pose.kind().name());
+            return;
+        }
+        // Unsupported hand/offhand combinations never activate sword C2 poses.
+        if(action.kind()==ActionTimeline.Kind.LIGHT_COMBO
+                && ArticulatedMode.weapon().presentation()==
+                    MnaEWeaponVisualPolicy.Presentation.VANILLA)return;
         float w = frame.weight();
 
         if (frame.sampledClip() != null) {
@@ -91,6 +152,43 @@ public abstract class PlayerModelAnimationMixin {
         copyAngles(model.rightPants, model.rightLeg);
         copyAngles(model.leftPants, model.leftLeg);
         copyAngles(model.jacket, model.body);
+    }
+
+    /** MNAE world-space sword socket for third-person vanilla held-item layer.
+     * ItemInHandLayer's downstream translation still requires real F5 validation.
+     */
+    @Inject(method = "translateToHand(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lnet/minecraft/world/entity/HumanoidArm;Lcom/mojang/blaze3d/vertex/PoseStack;)V",
+            at = @At("HEAD"), cancellable = true)
+    private void mkm$showcaseR07Grip(AvatarRenderState state,HumanoidArm arm,
+                                      PoseStack stack,CallbackInfo ci) {
+        LocalCombatAnimation.Frame frame=LocalCombatAnimation.frame(state);
+        if(!ArticulatedMode.active(state,frame)||arm!=state.mainArm)return;
+        ArticulatedClipV3 clip=ArticulatedMode.clip();
+        var pose=clip.sample(ArticulatedMode.time(frame));
+        var hand=pose.get("hand.R");
+        if(hand==null)return;
+        Quat q=hand.rotation();
+        Vec3 grip=clip.socketPoint(pose,false);
+        if(arm==HumanoidArm.LEFT){
+            grip=new Vec3(-grip.x(),grip.y(),grip.z());
+            q=new Quat(q.x(),-q.y(),-q.z(),q.w());
+        }
+        PlayerModel model=(PlayerModel)(Object)this;
+        model.root().translateAndRotate(stack);
+        stack.translate(grip.x()/16D,grip.y()/16D,grip.z()/16D);
+        stack.rotate(new Quaternionf((float)q.x(),(float)q.y(),
+                                      (float)q.z(),(float)q.w()));
+        ci.cancel();
+    }
+
+    @org.spongepowered.asm.mixin.Unique
+    private static void setHidden(PlayerModel m,boolean hidden){
+        m.head.skipDraw=hidden;m.hat.skipDraw=hidden;
+        m.body.skipDraw=hidden;m.jacket.skipDraw=hidden;
+        m.leftArm.skipDraw=hidden;m.rightArm.skipDraw=hidden;
+        m.leftSleeve.skipDraw=hidden;m.rightSleeve.skipDraw=hidden;
+        m.leftLeg.skipDraw=hidden;m.rightLeg.skipDraw=hidden;
+        m.leftPants.skipDraw=hidden;m.rightPants.skipDraw=hidden;
     }
 
     private static void applyClip(

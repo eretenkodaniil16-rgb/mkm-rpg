@@ -1,0 +1,37 @@
+name: R07 optional actual F5 client video experiment
+on:
+  push:
+    branches: ['feature/mnae-showcase-r07-v4-issue73']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  real-world-capture:
+    if: contains(github.event.head_commit.message, '[capture-r07]') || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/wrapper-validation@v4
+      - name: Install X11 recording tools plus private QA-only NBT parser
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb xdotool x11-utils ffmpeg mesa-utils libgl1 python3-venv
+          python3 -m venv build/r07/f5env
+          build/r07/f5env/bin/pip install --disable-pip-version-check nbtlib==2.0.4
+      - name: Reproduce actual in-world F5 / 3 render modes
+        timeout-minutes: 12
+        run: |
+          chmod +x ./gradlew
+          build/r07/f5env/bin/python tools/animation/r07/ci_f5_video.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mkm-r07-v4-actual-f5-world-attempt-logs-frames-video
+          path: build/reports/mnae-r07-v4-f5/
+          if-no-files-found: warn
+          retention-days: 30

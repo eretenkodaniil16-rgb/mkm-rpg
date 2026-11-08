@@ -3,6 +3,9 @@ package com.eretenkodaniil.mkm.client;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
+import com.eretenkodaniil.mkm.client.animation.ArticulatedMode;
+import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.MnaEVisibleProbe;
 import net.fabricmc.loader.api.FabricLoader;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
@@ -40,7 +43,9 @@ public final class MkmCombatHud {
         String version = FabricLoader.getInstance().getModContainer("mkm")
                 .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
-        graphics.text(client.font, Component.literal("MKM RPG " + version + "  [C3.7]"),
+        graphics.text(client.font, Component.literal("MKM RPG " + version
+                + (NativeAnimationToggle.enabled() ? " [MNAE-SIX]" : " [C3.7]")
+                + (ArticulatedMode.enabled() ? " [R07-F9 ON]" : " [R07-F9 OFF]")),
                 x, y - 24, TEXT);
         CombatState combat = client.player.getAttached(CombatAttachments.PLAYER);
         var character = client.player.getAttached(CharacterAttachments.CHARACTER);
@@ -75,10 +80,18 @@ public final class MkmCombatHud {
                 };
         graphics.text(client.font, Component.literal(description), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
-        if (timeline != null && !timeline.idle() && client.level != null) {
-            graphics.text(client.font,
-                    Component.literal(AnimationRenderProbe.status(client.level.getGameTime())),
-                    x, y + 24, TEXT);
+        if(client.level!=null) {
+            String status = NativeAnimationToggle.enabled()
+                    ? MnaEVisibleProbe.status(client.level.getGameTime())
+                    : AnimationRenderProbe.status(client.level.getGameTime());
+            graphics.text(client.font,Component.literal(status),x,y+24,TEXT);
+            if(NativeAnimationToggle.enabled()){
+                graphics.text(client.font,Component.literal(
+                    ArticulatedMode.assetStatus()),x,y+35,MUTED);
+                graphics.text(client.font,Component.literal(
+                    "MAIN/OFF: "+ArticulatedMode.weapon().reason()
+                    +" | spectator sync PENDING"),x,y+46,MUTED);
+            }
         }
     }
 }

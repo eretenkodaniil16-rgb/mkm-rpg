@@ -1,0 +1,193 @@
+name: MNAE R07 v4 17-bone Fabric 26.3 vertical
+on:
+  push:
+    branches: ['feature/mnae-showcase-r07-v4-issue73']
+  pull_request:
+    branches: ['integration/fabric-v4-world-origins-enemy-perf-qa5']
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  frozen-r06-to-r07:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 24
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Read exact immutable approved R06 Blender binary
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin refs/tags/mkm-guards-r06-approved:refs/tags/mkm-guards-r06-approved
+          test "$(git rev-parse 'mkm-guards-r06-approved^{}')" = 5cae0c0dae1daf1bc7cfe07945af1fb67ea741b8
+          mkdir -p build/r07/source
+          git show 'mkm-guards-r06-approved:assets/animation/approved/mkm_sword_guards_r06/MKM_Three_Sword_Guards_R06.blend' > build/r07/source/R06_APPROVED.blend
+          echo "024d2f85e0bef85ec3bb493d0011ceaf7c147c41131048635db76d7305c05581  build/r07/source/R06_APPROVED.blend" | sha256sum -c -
+      - name: Blender software render and 17-bone export
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender xvfb libgl1
+          python3 -m py_compile tools/animation/r07/export_r07_blender.py
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a blender -b --factory-startup \
+            --python tools/animation/r07/export_r07_blender.py -- \
+            --source-blend build/r07/source/R06_APPROVED.blend \
+            --out build/r07/export --render
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          d=json.loads(Path('build/r07/export/r07_mid_guard_cut_v3.json').read_text())
+          assert d['source']['approved_tag']=='mkm-guards-r06-approved'
+          assert d['source']['approved_blend_sha256']=='024d2f85e0bef85ec3bb493d0011ceaf7c147c41131048635db76d7305c05581'
+          assert d['source']['selected_guard']=='MKM_GUARD_MID_02'
+          assert d['duration_ticks']==14 and len(d['bones'])==17 and len(d['frames'])==43
+          assert next(x for x in d['markers'] if x['name']=='impact')['frame']==16
+          assert d['qa']['min_head_proxy_clearance']>=0
+          assert d['qa']['max_toe_xy_drift_blender']<=.15
+          assert len(list(Path('build/r07/export').glob('frame_*.png')))==9
+          print('R07 source guard, Blender 17-bone frames, impact and 9 frame checks PASS')
+          PY
+      - name: Pin generated v3 resource on this v4 feature branch only
+        if: github.event_name == 'push'
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p src/main/resources/assets/mkm/mnae
+          cp build/r07/export/r07_mid_guard_cut_v3.json src/main/resources/assets/mkm/mnae/r07_mid_guard_cut_v3.json
+          git add src/main/resources/assets/mkm/mnae/r07_mid_guard_cut_v3.json
+          if git diff --cached --quiet; then
+            echo "Frozen-source export matches checked-in content"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git commit -m "R07-v4: commit reproducible frozen-source 17-bone Blender export"
+            git push origin HEAD:refs/heads/feature/mnae-showcase-r07-v4-issue73
+          fi
+          echo "export tested at $(git rev-parse HEAD)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mkm-r07-v4-frozen-r06-blender-export
+          path: build/r07/export/
+          retention-days: 30
+          if-no-files-found: error
+
+  fabric-v4:
+    needs: frozen-r06-to-r07
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: mkm-r07-v4-frozen-r06-blender-export
+          path: build/r07/export/
+      - name: Use exact Blender v3 export from same workflow
+        run: |
+          mkdir -p src/main/resources/assets/mkm/mnae
+          cp build/r07/export/r07_mid_guard_cut_v3.json src/main/resources/assets/mkm/mnae/r07_mid_guard_cut_v3.json
+          python3 -m json.tool src/main/resources/assets/mkm/mnae/r07_mid_guard_cut_v3.json >/dev/null
+          test "$(grep -o 'CURRENT_SCHEMA_VERSION = 4' src/main/java/com/eretenkodaniil/mkm/character/CharacterData.java | wc -l)" -eq 1
+      - name: Java 25 Fabric Gradle, JUnit, deterministic animation/weapon QA
+        run: |
+          chmod +x ./gradlew
+          ./gradlew clean build --no-daemon --stacktrace
+      - name: Verify exact JAR asset, version and no server side shader dependency
+        run: |
+          python3 - <<'PY'
+          import glob,zipfile,json,hashlib
+          jars=[x for x in glob.glob('build/libs/mkm-rpg-*.jar') if 'sources' not in x]
+          assert len(jars)==1,jars
+          jar=jars[0]
+          with zipfile.ZipFile(jar) as z:
+              m=json.loads(z.read('fabric.mod.json'))
+              assert m['version']=='0.0.6-fabric.1-r07-v4',m['version']
+              assert m['id']=='mkm'
+              assert 'assets/mkm/mnae/r07_mid_guard_cut_v3.json' in z.namelist()
+              assert z.read('assets/mkm/mnae/r07_mid_guard_cut_v3.json')==open(
+                  'src/main/resources/assets/mkm/mnae/r07_mid_guard_cut_v3.json','rb').read()
+              assert 'com/eretenkodaniil/mkm/client/animation/ArticulatedAvatarLayer.class' in z.namelist()
+          print('Verified',jar,'SHA256',hashlib.sha256(open(jar,'rb').read()).hexdigest())
+          PY
+      - name: Dedicated server startup smoke
+        timeout-minutes: 3
+        run: |
+          mkdir -p run
+          echo eula=true > run/eula.txt
+          python3 - <<'PY'
+          import os,signal,subprocess,time
+          from pathlib import Path
+          log=Path('r07-v4-server-smoke.log')
+          with log.open('w') as out:
+              p=subprocess.Popen(['./gradlew','runServer','--no-daemon'],
+                     stdout=out,stderr=subprocess.STDOUT,start_new_session=True)
+              try:
+                  for _ in range(110):
+                      time.sleep(1)
+                      s=log.read_text(errors='replace')
+                      if 'MKM Fabric 26.3 initialized' in s and 'Done (' in s:
+                          print('Dedicated server PASS')
+                          break
+                      if p.poll() is not None:
+                          raise RuntimeError('Server exited before ready')
+                  else:raise RuntimeError('Server startup timeout')
+              except Exception:
+                  print(log.read_text(errors='replace')[-18000:])
+                  raise
+              finally:
+                  if p.poll() is None:
+                      os.killpg(p.pid,signal.SIGTERM)
+                      try:p.wait(timeout=10)
+                      except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL)
+          PY
+      - name: Client bootstrap smoke with MNAE render layer registered
+        timeout-minutes: 4
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends xvfb libgl1
+          python3 - <<'PY'
+          import os,signal,subprocess,time
+          from pathlib import Path
+          log=Path('r07-v4-client-smoke.log')
+          env=dict(os.environ,LIBGL_ALWAYS_SOFTWARE='1')
+          with log.open('w') as out:
+              p=subprocess.Popen(['xvfb-run','-a','./gradlew','runClient','--no-daemon'],
+                      stdout=out,stderr=subprocess.STDOUT,env=env,start_new_session=True)
+              try:
+                  start=None
+                  for i in range(120):
+                      time.sleep(1)
+                      s=log.read_text(errors='replace')
+                      if any(err in s for err in ['MixinApplyError','Mixin apply failed',
+                         'Could not execute entrypoint','Game crashed!']):
+                          raise RuntimeError('Fabric R07 client initialization error')
+                      if 'MKM Fabric 26.3 initialized' in s and start is None:start=i
+                      if p.poll() is not None:raise RuntimeError('Client exited early')
+                      if start is not None and i-start>=17:
+                          print('Client startup PASS; actual F5 strike capture PENDING')
+                          break
+                  else:raise RuntimeError('Client bootstrap timed out')
+              except Exception:
+                  print(log.read_text(errors='replace')[-18000:])
+                  raise
+              finally:
+                  if p.poll() is None:
+                      os.killpg(p.pid,signal.SIGTERM)
+                      try:p.wait(timeout=10)
+                      except subprocess.TimeoutExpired:os.killpg(p.pid,signal.SIGKILL)
+          PY
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mkm-r07-v4-fabric26.3-jar
+          path: build/libs/mkm-rpg-0.0.6-fabric.1-r07-v4.jar
+          retention-days: 30
+          if-no-files-found: error

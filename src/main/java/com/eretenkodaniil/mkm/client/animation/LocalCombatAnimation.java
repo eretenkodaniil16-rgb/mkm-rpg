@@ -3,6 +3,7 @@ package com.eretenkodaniil.mkm.client.animation;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import com.eretenkodaniil.mkm.combat.CombatAnimationMath;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 
@@ -28,9 +29,15 @@ public final class LocalCombatAnimation {
                 timeline, client.level.getGameTime(),
                 client.getDeltaTracker().getGameTimeDeltaPartialTick(false));
         float weight = CombatAnimationMath.poseWeight(timeline.phase(), progress);
-        String profile = AnimationController.profileForEmptyMainHand(
-                client.player.getMainHandItem().isEmpty());
-        AnimationController.Frame clip = AnimationController.sample(
+        MnaEWeaponVisualPolicy.Choice choice = MnaEWeaponVisualPolicy.select(
+                ArticulatedMode.itemId(client.player.getMainHandItem()),
+                ArticulatedMode.itemId(client.player.getOffhandItem()));
+        String profile = switch (choice.presentation()) {
+            case SWORD -> AnimationController.FIRST_PROFILE;
+            case UNARMED -> AnimationController.UNARMED_PROFILE;
+            case VANILLA -> null;
+        };
+        AnimationController.Frame clip = profile == null ? null : AnimationController.sample(
                 AnimationLibrary.embedded(), profile, timeline, progress);
         float attackLegWeight = CombatStanceMath.attackLegWeight(
                 client.player.onGround(),

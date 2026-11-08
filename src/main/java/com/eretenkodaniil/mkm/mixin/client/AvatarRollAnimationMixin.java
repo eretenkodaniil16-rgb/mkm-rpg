@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.mixin.client;
 
 import com.eretenkodaniil.mkm.client.animation.LocalCombatAnimation;
+import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.EvasionChoreography;
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import com.eretenkodaniil.mkm.combat.DirectionalRollChoreography;
 import com.eretenkodaniil.mkm.combat.ForwardRollChoreography;
@@ -28,6 +30,15 @@ public abstract class AvatarRollAnimationMixin {
         if (frame == null || frame.timeline().phase() != ActionTimeline.Phase.DODGING) return;
         float p = frame.progress();
         if (p <= 0.0001F || p >= 0.9999F) return;
+        if(NativeAnimationToggle.enabled()){
+            EvasionChoreography.Pose pose=EvasionChoreography.sample(
+                    frame.timeline().dodgeDirection(),p);
+            stack.translate(0F,pose.lift()*entityScale,0F);
+            stack.rotate(new Quaternionf().rotationXYZ(
+                    pose.pitch(),pose.yaw(),pose.roll()));
+            // Different tuck / lateral step / retreat, no 2pi rigid-body turn.
+            return;
+        }
 
         if (frame.timeline().dodgeDirection() == DodgeDirection.FORWARD) {
             // Do not flip the character backwards while it moves forward.
