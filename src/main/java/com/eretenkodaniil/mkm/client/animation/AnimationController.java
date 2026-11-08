@@ -4,6 +4,8 @@ import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import com.eretenkodaniil.mkm.combat.ActionTimelineRules;
 import com.eretenkodaniil.mkm.combat.CombatAnimationMath;
 import java.util.Map;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.item.ItemStack;
 
 /**
  * Bridges a server-owned combat timeline to client-only sampled pose data.
@@ -16,6 +18,20 @@ public final class AnimationController {
     /** An empty main hand should not trigger sword slashes. */
     public static String profileForEmptyMainHand(boolean emptyHand) {
         return emptyHand ? UNARMED_PROFILE : FIRST_PROFILE;
+    }
+
+    /**
+     * The R timeline attacks with MAIN_HAND; OFF_HAND inventory is not another
+     * hit. Never map an axe, tool or held shield to the sword clip.
+     * Dodge clips are shared and remain independent of held items.
+     */
+    public static String profileForHands(ActionTimeline timeline,ItemStack main,ItemStack off) {
+        if(timeline==null || timeline.idle())return null;
+        if(timeline.phase()==ActionTimeline.Phase.DODGING)return FIRST_PROFILE;
+        if(main==null||off==null)return null;
+        if(main.is(ItemTags.SWORDS))return FIRST_PROFILE;
+        if(main.isEmpty() && off.isEmpty())return UNARMED_PROFILE;
+        return null;
     }
 
     private AnimationController() {}

@@ -81,6 +81,9 @@ public final class ArticulatedAvatarLayer
         collector.submitModelPart(rigRoot,matrix,
                 RenderTypes.entityTranslucent(state.skin.body().texturePath()),
                 light,OverlayTexture.NO_OVERLAY,null);
+        var client=net.minecraft.client.Minecraft.getInstance();
+        if(client.level!=null)NativeRenderDiagnostics.mark(client.level.getGameTime(),
+                "R07_17_SUBMITTED",clip.id(),"COMBO1_MAINHAND_SWORD");
     }
 
     private static String swap(String id){
