@@ -229,12 +229,13 @@ public final class EncounterDirector {
             }
         }
         if (event == null) return;
-        boolean authorized = event.members().stream().anyMatch(member -> member.uuid().equals(deadId)
+        EncounterLedger.Entry verifiedEvent=event;
+        boolean authorized = verifiedEvent.members().stream().anyMatch(member -> member.uuid().equals(deadId)
                 && member.entityId().equals(victim.getType() == EntityTypes.HUSK
                         ? "minecraft:husk" : victim.getType() == EntityTypes.SPIDER
                         ? "minecraft:spider" : victim.getType() == EntityTypes.SKELETON
                         ? "minecraft:skeleton" : "unknown")
-                && victim.entityTags().contains(OWNER_TAG + event.ownerId()));
+                && victim.entityTags().contains(OWNER_TAG + verifiedEvent.ownerId()));
         if (!authorized) return;
         EncounterLedger after = ledger.markDeath(eventKey, deadId);
         if (after == ledger) return; // duplicated or unrelated death callback

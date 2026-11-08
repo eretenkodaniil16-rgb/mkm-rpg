@@ -51,10 +51,10 @@ public final class ShowcaseService {
         return player.getAttachedOrCreate(ShowcaseAttachments.PROGRESS);
     }
     public static ShowcaseSite site(ServerPlayer player) {
-        return player.serverLevel().getAttachedOrCreate(ShowcaseAttachments.SITE);
+        return ((ServerLevel)player.level()).getAttachedOrCreate(ShowcaseAttachments.SITE);
     }
     private static EncounterLedger ledger(ServerPlayer player) {
-        return player.serverLevel().getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
+        return ((ServerLevel)player.level()).getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
     }
     private static void say(ServerPlayer player,String line) {
         player.sendSystemMessage(Component.literal("[MKM · Башня] " + line));
@@ -154,7 +154,7 @@ public final class ShowcaseService {
         boolean canStudy=ShowcaseRules.mayStudy(CharacterService.get(player).perception(),
                 CharacterOriginService.get(player));
         long token=ShowcaseSessions.open(player,s.runePos(),mode,
-                player.serverLevel().getGameTime()).nonce();
+                ((ServerLevel)player.level()).getGameTime()).nonce();
         byte branch=(byte)(p.approach().equals(ShowcaseProgress.DEFEND)?1:
                 p.approach().equals(ShowcaseProgress.STUDY)?2:0);
         ShowcaseNetworking.show(player,new ShowcaseDecisionView(s.x(),s.z(),mode,canStudy,branch,token));
@@ -225,14 +225,14 @@ public final class ShowcaseService {
         }
         if (entry.phase().equals(EncounterLedger.DEFEATED)) {
             EncounterLedger old=ledger(player);
-            player.serverLevel().setAttached(EncounterAttachments.ENCOUNTERS,old.claim(key));
+            ((ServerLevel)player.level()).setAttached(EncounterAttachments.ENCOUNTERS,old.claim(key));
         }
         player.setAttached(ShowcaseAttachments.PROGRESS,progress.finish());
         if (progress.approach().equals(ShowcaseProgress.DEFEND)) {
             tryCreateKeeper(player);
             say(player,"Переправа защищена. У подножия башни остался нейтральный хранитель. "
                     + "Награда: +" + result.creditedExperience() + " MKM XP.");
-            player.serverLevel().sendParticles(ParticleTypes.HAPPY_VILLAGER,
+            ((ServerLevel)player.level()).sendParticles(ParticleTypes.HAPPY_VILLAGER,
                     site(player).x()+9.5,site(player).y()+2,site(player).z()+22.5,
                     16,1.5,1,1.5,.02);
         } else {
@@ -242,10 +242,10 @@ public final class ShowcaseService {
             // An actual persistent visual change for the knowledge route.
             // Never overwrite another player's block or obstruct the rune itself.
             BlockPos lantern=rune.above();
-            if (player.serverLevel().getBlockState(lantern).isAir()) {
-                player.serverLevel().setBlock(lantern,Blocks.SOUL_LANTERN.defaultBlockState(),3);
+            if (((ServerLevel)player.level()).getBlockState(lantern).isAir()) {
+                ((ServerLevel)player.level()).setBlock(lantern,Blocks.SOUL_LANTERN.defaultBlockState(),3);
             }
-            player.serverLevel().sendParticles(ParticleTypes.END_ROD,
+            ((ServerLevel)player.level()).sendParticles(ParticleTypes.END_ROD,
                     rune.getX()+.5,rune.getY()+1,rune.getZ()+.5,35,1,1,1,.03);
         }
         FordQuestNetworking.sendJournal(player);
@@ -254,7 +254,7 @@ public final class ShowcaseService {
     private static void tryCreateKeeper(ServerPlayer player) {
         ShowcaseSite site=site(player);
         if (!site.keeperUuid().isBlank()) return;
-        ServerLevel level=player.serverLevel();
+        ServerLevel level=((ServerLevel)player.level());
         BlockPos origin=site.origin();
         BlockPos[] targets={origin.offset(9,0,23),origin.offset(10,0,23),
                 origin.offset(8,0,24),origin.offset(9,0,25)};
