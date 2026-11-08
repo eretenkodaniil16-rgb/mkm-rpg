@@ -6,6 +6,7 @@ import com.eretenkodaniil.mkm.abilities.AbilityGrantPolicy;
 import com.eretenkodaniil.mkm.abilities.AbilityModifierAccess;
 import com.eretenkodaniil.mkm.abilities.AbilityRules;
 import com.eretenkodaniil.mkm.abilities.ManaLedger;
+import com.eretenkodaniil.mkm.abilities.SpellLicenseService;
 import com.eretenkodaniil.mkm.abilities.RenewalEligibility;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
@@ -74,10 +75,14 @@ public final class MkmAbilityHud {
                 healKey + " HEAL: " + renewalStatus, heal == RenewalEligibility.Result.READY);
 
         var origin = client.player.getAttached(CharacterOriginAttachments.PROFILE);
-        var grant = AbilityGrantPolicy.fromSaved(character, origin);
+        var licenses = SpellLicenseService.heldResearchLicenses(client.player);
+        var grant = AbilityGrantPolicy.fromSaved(character, origin, licenses);
         boolean licensed = AbilityGrantPolicy.executable(grant, "mkm:arcane_barrier");
         var ward = AbilityCatalog.get("mkm:arcane_barrier");
-        double wardCost = AbilityRules.scaledCost(ward.baseCost(), costMultiplier);
+        double wardCost = AbilityRules.scaledCost(ward.baseCost(),
+                costMultiplier * (grant != null
+                        ? SpellLicenseService.offClassManaMultiplier(
+                                grant.classId(), licenses.contains(ward.id())) : 1D));
         String wardStatus;
         boolean wardReady = false;
         if (!licensed) wardStatus = "MAGE ONLY";
