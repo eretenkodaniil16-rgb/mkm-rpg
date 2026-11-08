@@ -4,12 +4,15 @@ import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
 import com.eretenkodaniil.mkm.character.origin.OriginModifierRules;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolModifierRules;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import java.util.EnumMap;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.ItemStack;
 
 /** Thin platform adapter. CharacterData and ordinary vanilla equipment remain the only state. */
@@ -25,7 +28,12 @@ public final class EquipmentSnapshots {
         equipped.put(EquipmentRules.Slot.LEGS, id(player.getItemBySlot(EquipmentSlot.LEGS)));
         equipped.put(EquipmentRules.Slot.FEET, id(player.getItemBySlot(EquipmentSlot.FEET)));
         // Original equip + origin deltas share the Character calculator and one final clamp.
-        return OriginModifierRules.snapshot(character, EquipmentRules.aggregate(equipped),
+        return OriginModifierRules.snapshot(character,
+                player instanceof ServerPlayer server
+                        ? FencingSchoolModifierRules.combine(
+                                EquipmentRules.aggregate(equipped),
+                                FencingSchoolService.activeDeltas(server))
+                        : EquipmentRules.aggregate(equipped),
                 player.getAttached(CharacterOriginAttachments.PROFILE));
     }
 

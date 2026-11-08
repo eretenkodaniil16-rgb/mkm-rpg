@@ -2,6 +2,11 @@ package com.eretenkodaniil.mkm.command;
 
 import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchool;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolRules;
+import com.eretenkodaniil.mkm.equipment.EquipmentRules;
+import net.minecraft.core.registries.BuiltInRegistries;
 import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.ProgressionRules;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -37,6 +42,13 @@ public final class MkmCommands {
                         .executes(context -> showStats(context.getSource())))
                 .then(Commands.literal("modifiers")
                         .executes(context -> showModifiers(context.getSource())))
+
+                .then(Commands.literal("fencing")
+                        .executes(ctx -> showFencing(ctx.getSource()))
+                        .then(Commands.literal("none").executes(ctx -> selectFencing(ctx.getSource(), FencingSchool.NONE)))
+                        .then(Commands.literal("liechtenauer").executes(ctx -> selectFencing(ctx.getSource(), FencingSchool.LIECHTENAUER)))
+                        .then(Commands.literal("fiore").executes(ctx -> selectFencing(ctx.getSource(), FencingSchool.FIORE)))
+                        .then(Commands.literal("destreza").executes(ctx -> selectFencing(ctx.getSource(), FencingSchool.DESTREZA))))
                 .then(Commands.literal("xp")
                         .requires(Commands.hasPermission(Commands.LEVEL_GAMEMASTERS))
                         .then(Commands.literal("add")
@@ -54,7 +66,7 @@ public final class MkmCommands {
 
     private static int showHelp(CommandSourceStack source) {
         source.sendSuccess(() -> Component.literal(
-                "MKM commands: /mkm ping, /mkm stats, /mkm modifiers. Admin/cheats: /mkm xp add <amount>, /mkm xp set <amount>."), false);
+                "MKM: /mkm ping, stats, modifiers, fencing [none|liechtenauer|fiore|destreza]. Admin: /mkm xp add <amount>, /mkm xp set <amount>."), false);
         return Command.SINGLE_SUCCESS;
     }
 
@@ -115,6 +127,33 @@ public final class MkmCommands {
                         + " | Mana regen " + modifiers.formatted(PlayerModifierId.MANA_REGENERATION)
                         + " | Magic resistance " + modifiers.formatted(PlayerModifierId.MAGIC_RESISTANCE)
                         + " | Weak point " + modifiers.formatted(PlayerModifierId.WEAK_POINT_DAMAGE)), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int showFencing(CommandSourceStack source) throws CommandSyntaxException {
+        ServerPlayer player = source.getPlayerOrException();
+        var state = FencingSchoolService.state(player);
+        long now = player.level().getGameTime();
+        String id = BuiltInRegistries.ITEM.getKey(player.getMainHandItem().getItem()).toString();
+        boolean active = FencingSchoolRules.effectiveSchool(state,
+                EquipmentRules.profile(id, EquipmentRules.Slot.MAIN_HAND).family(), now).isPresent();
+        source.sendSuccess(() -> Component.literal("Fencing: " + state.school().id()
+                + " | " + (active ? "ACTIVE" : "NOT READY/NOT SWORD")
+                + " | warmup " + state.remainingWarmup(now) + "t"
+                + " | switch " + state.remainingSwitchCooldown(now) + "t"), false);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private static int selectFencing(CommandSourceStack source, FencingSchool school)
+            throws CommandSyntaxException {
+        var player = source.getPlayerOrException();
+        var result = FencingSchoolService.select(player, school);
+        if (!result.applied()) {
+            source.sendFailure(Component.literal("Fencing refused: " + result.code()));
+            return 0;
+        }
+        source.sendSuccess(() -> Component.literal("School " + school.id()
+                + " selected | 20t warmup | 80t switch cooldown"), false);
         return Command.SINGLE_SUCCESS;
     }
 
