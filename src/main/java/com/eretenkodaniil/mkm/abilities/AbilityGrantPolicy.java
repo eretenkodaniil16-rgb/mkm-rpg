@@ -31,11 +31,14 @@ public final class AbilityGrantPolicy {
         if (serverVerifiedLicenses == null) return null;
         if (character == null || character.schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION)
             return null;
-        // Preserve QA5 Renewal for legacy/unselected v4 characters.
+        // Do not reinterpret a future origin schema as an old unselected
+        // profile: future fields may contain non-public class permissions.
+        if (origin != null
+                && origin.schemaVersion() != CharacterOriginData.SCHEMA_VERSION) return null;
+        // Preserve legacy QA5 Renewal for genuinely unselected v1 players.
         if (origin == null || !origin.selected())
             return new Grants("", character.level(), Set.of());
-        if (origin.schemaVersion() != CharacterOriginData.SCHEMA_VERSION
-                || OriginCatalog.clazz(origin.classId()) == null
+        if (OriginCatalog.clazz(origin.classId()) == null
                 || OriginCatalog.race(origin.raceId()) == null) return null;
         return new Grants(origin.classId(), character.level(), serverVerifiedLicenses);
     }
