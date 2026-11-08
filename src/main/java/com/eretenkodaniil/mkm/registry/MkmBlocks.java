@@ -3,6 +3,9 @@ package com.eretenkodaniil.mkm.registry;
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.environment.RuneSlateBlock;
 import net.minecraft.core.Registry;
+import net.minecraft.core.component.DataComponents;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.item.equipment.Equippable;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
@@ -11,7 +14,7 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 
-/** Six original 16px decorative blocks. No tickable block entities or global renderer. */
+/** Original Vanilla+ 16px blocks, plus the Raider's zero-armor head marker. */
 public final class MkmBlocks {
     public static final Block AGED_ASHLAR = register("aged_ashlar", false);
     public static final Block MOSSY_ASHLAR = register("mossy_ashlar", false);
@@ -32,8 +35,18 @@ public final class MkmBlocks {
         Block block = rune ? new RuneSlateBlock(properties) : new Block(properties);
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
         ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, id);
-        Registry.register(BuiltInRegistries.ITEM, itemKey,
-                new BlockItem(block, new Item.Properties().setId(itemKey).useBlockDescriptionPrefix()));
+        Item.Properties itemProperties =
+                new Item.Properties().setId(itemKey).useBlockDescriptionPrefix();
+        if ("raider_war_mask".equals(path)) {
+            // 26.3 Equippable explicitly supports head-model fallback without an armor asset.
+            // Does not grant armor attributes or create a second combat/loot authority.
+            itemProperties = itemProperties.component(DataComponents.EQUIPPABLE,
+                    Equippable.builder(EquipmentSlot.HEAD)
+                            .setDamageOnHurt(false)
+                            .setSwappable(false)
+                            .build());
+        }
+        Registry.register(BuiltInRegistries.ITEM, itemKey, new BlockItem(block, itemProperties));
         return block;
     }
 
