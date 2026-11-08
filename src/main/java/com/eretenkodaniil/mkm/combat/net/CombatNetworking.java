@@ -10,6 +10,7 @@ public final class CombatNetworking {
     private CombatNetworking() {}
 
     public static void initialize() {
+        PayloadTypeRegistry.clientboundPlay().register(CombatModeContact.TYPE, CombatModeContact.STREAM_CODEC);
         PayloadTypeRegistry.clientboundPlay().register(CombatModeStatus.TYPE, CombatModeStatus.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(CombatModeRequest.TYPE, CombatModeRequest.STREAM_CODEC);
         PayloadTypeRegistry.serverboundPlay().register(CombatStrikeIntent.TYPE, CombatStrikeIntent.STREAM_CODEC);

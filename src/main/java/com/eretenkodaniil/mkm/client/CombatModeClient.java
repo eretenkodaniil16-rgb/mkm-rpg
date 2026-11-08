@@ -4,6 +4,7 @@ import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.combat.mode.CombatModeInputRules;
 import com.eretenkodaniil.mkm.combat.net.CombatModeRequest;
 import com.eretenkodaniil.mkm.combat.net.CombatModeStatus;
+import com.eretenkodaniil.mkm.combat.net.CombatModeContact;
 import com.eretenkodaniil.mkm.combat.net.CombatStrikeIntent;
 import com.eretenkodaniil.mkm.equipment.EquipmentRules;
 import com.mojang.blaze3d.platform.InputConstants;
@@ -29,6 +30,8 @@ public final class CombatModeClient {
     private static int serial;
     private static long pressedTick;
     private static Object level;
+    private static CombatModeContact lastContact;
+    private static long lastContactLocalTick;
 
     private CombatModeClient() {}
 
@@ -36,6 +39,8 @@ public final class CombatModeClient {
         KeyMappingHelper.registerKeyMapping(TOGGLE);
         ClientPlayNetworking.registerGlobalReceiver(CombatModeStatus.TYPE,
                 (status, context) -> context.client().execute(() -> onStatus(context.client(), status)));
+        ClientPlayNetworking.registerGlobalReceiver(CombatModeContact.TYPE,
+                (receipt, context) -> context.client().execute(() -> onContact(context.client(), receipt)));
     }
 
     public static void onStatus(Minecraft client, CombatModeStatus status) {
@@ -43,6 +48,13 @@ public final class CombatModeClient {
         if (!enabled) holding = false;
         // The server sends the authoritative action-bar feedback; this ACK
         // only controls whether the client may redirect entity-only LMB.
+    }
+
+    /** Read-only MNAE/UI consumer of the server event; never an attack source. */
+    public static void onContact(Minecraft client, CombatModeContact contact) {
+        if (!enabled || client.level == null) return;
+        lastContact = contact;
+        lastContactLocalTick = client.level.getGameTime();
     }
 
     /** Called by Minecraft.startAttack at HEAD; true ONLY when vanilla LMB is suppressed. */
@@ -79,10 +91,12 @@ public final class CombatModeClient {
             enabled = false;
             holding = false;
             serial = 0;
+            lastContact = null;
         }
         if (client.player == null || client.level == null || !client.player.isAlive()) {
             enabled = false;
             holding = false;
+            lastContact = null;
             return;
         }
         while (TOGGLE.consumeClick()) {
@@ -113,7 +127,16 @@ public final class CombatModeClient {
 
     public static String hudText(Minecraft client) {
         if (!enabled || client.level == null) return "";
-        if (!holding) return "F6 COMBAT | sword target → hold LMB";
+        if (!holding) {
+            if (lastContact != null && client.level.getGameTime() >= lastContactLocalTick
+                    && client.level.getGameTime() - lastContactLocalTick <= 40L) {
+                return lastContact.confirmedHealthHit()
+                        ? "SERVER HIT " + (lastContact.kind() == 2 ? "CHARGED " : "QUICK ")
+                            + Math.round(lastContact.actualHealthDamage())
+                        : "SERVER CONTACT | BLOCKED / MISSED";
+            }
+            return "F6 COMBAT | sword target → hold LMB";
+        }
         long ticks = Math.max(0L, client.level.getGameTime() - pressedTick);
         return "F6 COMBAT | " + (ticks >= 12 ? "CHARGED (predicted)" :
                 "QUICK (predicted) " + ticks + "/12t") + " | release to commit";

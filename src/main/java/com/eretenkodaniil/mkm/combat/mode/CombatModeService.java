@@ -13,6 +13,7 @@ import com.eretenkodaniil.mkm.combat.fencing.FencingSchool;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolRules;
 import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
 import com.eretenkodaniil.mkm.combat.net.CombatModeStatus;
+import com.eretenkodaniil.mkm.combat.net.CombatModeContact;
 import com.eretenkodaniil.mkm.equipment.EquipmentRules;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import java.util.Map;
@@ -48,6 +49,7 @@ public final class CombatModeService {
         CombatModeRules.Strike resolving = CombatModeRules.Strike.NONE;
         boolean hitConfirmed;
         int expectedTargetId = -1;
+        float confirmedDamage;
         long riposteUntil;
     }
 
@@ -183,6 +185,7 @@ public final class CombatModeService {
         s.state = CombatModeRules.cancel(s.state); // consume before attack
         s.resolving = kind;
         s.hitConfirmed = false;
+        s.confirmedDamage = 0F;
         try {
             LivingEntity victim = findTarget(player);
             s.expectedTargetId = victim == null ? -1 : victim.getId();
@@ -190,6 +193,14 @@ public final class CombatModeService {
             if (victim != null) {
                 // Only authoritative native hit. No second DamageSource or MNAE attack.
                 player.attack(victim);
+            }
+            // Exactly ONE S2C contact receipt after the native hit callback returns.
+            // A rendered impact marker cannot cause another damage event.
+            if (ServerPlayNetworking.canSend(player, CombatModeContact.TYPE)) {
+                ServerPlayNetworking.send(player, new CombatModeContact(
+                        s.expectedTargetId,
+                        kind == CombatModeRules.Strike.CHARGED ? (byte) 2 : (byte) 1,
+                        now, s.hitConfirmed, s.confirmedDamage));
             }
             if (QA_LOG) MkmMod.LOGGER.info(
                     "MKM_COMBAT_QA resolve actor={} target={} kind={} confirmed={}",
@@ -230,6 +241,7 @@ public final class CombatModeService {
                 || s.expectedTargetId != victim.getId()
                 || blocked || !Float.isFinite(healthDamage) || healthDamage <= 0F) return;
         s.hitConfirmed = true; // one receipt, no duplicated status effect
+        s.confirmedDamage = healthDamage;
         if (QA_LOG) MkmMod.LOGGER.info(
                 "MKM_COMBAT_QA confirmed actor={} target={} kind={} actualHealthDamage={}",
                 attacker.getId(), victim.getId(), s.resolving, healthDamage);
