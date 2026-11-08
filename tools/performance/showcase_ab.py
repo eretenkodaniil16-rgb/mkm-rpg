@@ -105,7 +105,9 @@ def evaluate_manifest(manifest):
         if common_identity is None:
             common_identity = identity
         elif common_identity != identity:
-            raise ValueError(f"Run {index} differs from the shared benchmark workload")
+            for (key, original), (_, actual) in zip(common_identity, identity):
+                if original != actual:
+                    raise ValueError(f"Run {index} mismatch in shared workload {key}")
         arm_identities[arm].add((env["mkm_sha"], json.dumps(env["modlist"], sort_keys=True),
                                   str(env["experiment_setting"]),
                                   str(env["jvm_args"])))
