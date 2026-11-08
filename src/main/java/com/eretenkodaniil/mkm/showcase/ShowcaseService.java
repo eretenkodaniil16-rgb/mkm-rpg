@@ -23,6 +23,7 @@ import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.EntityTypes;
 import net.minecraft.world.entity.npc.villager.Villager;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Blocks;
 
 /**
  * A self-contained 10–15-minute authored scenario. Existing E2.1 quests and
@@ -238,6 +239,12 @@ public final class ShowcaseService {
             say(player,"Руны расшифрованы: дозор запечатал источник нападений. "
                     + "Исследование сохранено в журнале. Награда: +" + result.creditedExperience() + " MKM XP.");
             BlockPos rune=site(player).runePos();
+            // An actual persistent visual change for the knowledge route.
+            // Never overwrite another player's block or obstruct the rune itself.
+            BlockPos lantern=rune.above();
+            if (player.serverLevel().getBlockState(lantern).isAir()) {
+                player.serverLevel().setBlock(lantern,Blocks.SOUL_LANTERN.defaultBlockState(),3);
+            }
             player.serverLevel().sendParticles(ParticleTypes.END_ROD,
                     rune.getX()+.5,rune.getY()+1,rune.getZ()+.5,35,1,1,1,.03);
         }
