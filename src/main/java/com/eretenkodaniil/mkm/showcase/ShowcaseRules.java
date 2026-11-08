@@ -10,7 +10,11 @@ public final class ShowcaseRules {
         return perception >= 12 || origin != null && origin.selected()
                 && origin.classId().equals("mkm:mage");
     }
-    public static String eventId(String owner) { return "mkm:ford_ambush/" + owner; }
+    public static String eventId(String owner, String approach) {
+        if (!java.util.List.of(ShowcaseProgress.DEFEND, ShowcaseProgress.STUDY).contains(approach))
+            throw new IllegalArgumentException("Unknown Showcase branch");
+        return "mkm:ford_ambush/" + owner + "_" + approach;
+    }
     public static String rewardId(String approach) {
         return ShowcaseProgress.DEFEND.equals(approach) ? "mkm:showcase/tower/defend"
                 : ShowcaseProgress.STUDY.equals(approach) ? "mkm:showcase/tower/study" : "";
