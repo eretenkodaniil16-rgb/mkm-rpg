@@ -35,7 +35,7 @@ public final class AbilityVisualEmitter {
 
     public static void onWardApplied(ServerPlayer player, boolean changed) {
         if (!AbilityVisualPolicy.wardApplied(true, player.isAlive(), changed)) return;
-        broadcast(player, "mkm:arcane_barrier",
+        broadcast(player, "mkm:mage_ward",
                 AbilityVisualPolicy.WARD_ACTION_ID,
                 AbilityVisualPolicy.WARD_VISUAL_TICKS);
         ServerLevel level = player.level();
