@@ -29,30 +29,44 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
  */
 @Mixin(PlayerModel.class)
 public abstract class PlayerModelAnimationMixin {
+    @org.spongepowered.asm.mixin.Unique
+    private boolean[] mkm$previousVisibility;
+
+    private static ModelPart[] mkm$visibilityParts(PlayerModel m) {
+        return new ModelPart[]{m.head,m.hat,m.body,m.jacket,
+                m.leftArm,m.rightArm,m.leftSleeve,m.rightSleeve,
+                m.leftLeg,m.rightLeg,m.leftPants,m.rightPants};
+    }
+    private void mkm$restorePreviousParts(PlayerModel model) {
+        if(mkm$previousVisibility==null)return;
+        ModelPart[] parts=mkm$visibilityParts(model);
+        for(int i=0;i<parts.length;i++)parts[i].skipDraw=mkm$previousVisibility[i];
+        mkm$previousVisibility=null;
+    }
+    private void mkm$hideForR07(PlayerModel model) {
+        ModelPart[] parts=mkm$visibilityParts(model);
+        mkm$previousVisibility=new boolean[parts.length];
+        for(int i=0;i<parts.length;i++) {
+            mkm$previousVisibility[i]=parts[i].skipDraw;
+            parts[i].skipDraw=true;
+        }
+    }
+
     @Inject(method = "setupAnim(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;)V",
             at = @At("TAIL"))
     private void mkm$animateLocalCombat(AvatarRenderState state, CallbackInfo ci) {
         PlayerModel model = (PlayerModel) (Object) this;
-        // Reused PlayerModel instances must not permanently inherit one
-        // experimental no-armor frame's hidden-geometry flags.
-        model.head.skipDraw=false; model.hat.skipDraw=false;
-        model.body.skipDraw=false; model.jacket.skipDraw=false;
-        model.leftArm.skipDraw=false; model.rightArm.skipDraw=false;
-        model.leftSleeve.skipDraw=false; model.rightSleeve.skipDraw=false;
-        model.leftLeg.skipDraw=false; model.rightLeg.skipDraw=false;
-        model.leftPants.skipDraw=false; model.rightPants.skipDraw=false;
+        // Restore only parts that THIS renderer hid in its previous frame;
+        // don't overwrite other mods' pre-existing visibility choices.
+        mkm$restorePreviousParts(model);
         LocalCombatAnimation.Frame frame = LocalCombatAnimation.frame(state);
         if (frame == null || frame.weight() <= 0.0001F) return;
 
         ArticulatedMode.Mode mode=ArticulatedMode.mode(state,frame);
         if(mode==ArticulatedMode.Mode.R07_17){
-            // Exactly one geometry owner this frame. Only render layer draws.
-            model.head.skipDraw=true; model.hat.skipDraw=true;
-            model.body.skipDraw=true; model.jacket.skipDraw=true;
-            model.leftArm.skipDraw=true; model.rightArm.skipDraw=true;
-            model.leftSleeve.skipDraw=true; model.rightSleeve.skipDraw=true;
-            model.leftLeg.skipDraw=true; model.rightLeg.skipDraw=true;
-            model.leftPants.skipDraw=true; model.rightPants.skipDraw=true;
+            // Exactly one geometry owner. Preserve previous visibility
+            // flags for the next frame/model reuse.
+            mkm$hideForR07(model);
             return;
         }
         if(mode==ArticulatedMode.Mode.SIX_PART_DERIVED){
