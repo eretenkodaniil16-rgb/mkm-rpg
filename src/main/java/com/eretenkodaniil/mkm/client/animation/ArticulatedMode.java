@@ -1,0 +1,127 @@
+package com.eretenkodaniil.mkm.client.animation;
+
+import com.eretenkodaniil.mkm.client.animation.engine.ArticulatedClipV3;
+import com.eretenkodaniil.mkm.combat.ActionTimeline;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.tags.ItemTags;
+import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.HumanoidArm;
+
+/**
+ * QA-v4-only opt-in client presentation. No server packets, gameplay handlers,
+ * persistent attachment or CharacterData write. F8: C3 vs derived six-part
+ * comparator; F9: experimental R07 17-bone renderer (requires F8).
+ */
+public final class ArticulatedMode {
+    public enum Mode { C3_QA5, SIX_PART_DERIVED, R07_17 }
+    private static boolean nativeEnabled;
+    private static boolean articulatedEnabled;
+    private static boolean layerReady;
+    private static final String RESOURCE="assets/mkm/mnae/r07_mid_guard_cut_v3.json";
+    private static String loadError="asset not loaded";
+    private ArticulatedMode(){}
+    private static final class Assets {
+        private static final ArticulatedClipV3 CLIP=load();
+    }
+    private static ArticulatedClipV3 load() {
+        try {
+            ArticulatedClipV3 clip=ArticulatedClipV3.readResource(RESOURCE);
+            loadError="";
+            return clip;
+        } catch(RuntimeException e) {
+            loadError=e.getClass().getSimpleName()+": "+e.getMessage();
+            return null;
+        }
+    }
+    public static boolean nativeEnabled(){return nativeEnabled;}
+    public static boolean articulatedEnabled(){return articulatedEnabled;}
+    public static boolean flipNative(){return nativeEnabled=!nativeEnabled;}
+    public static boolean flipArticulated(){return articulatedEnabled=!articulatedEnabled;}
+    public static ArticulatedClipV3 clip(){return Assets.CLIP;}
+    public static void markLayerReady(){layerReady=true;}
+    public static boolean layerReady(){return layerReady;}
+    public static String loadStatus(){return clip()==null?"R07 asset invalid: "+loadError:"R07 asset OK";}
+
+    /** The only action eligible for ANY new cosmetic pose in this slice. */
+    public static boolean eligible(AvatarRenderState state,LocalCombatAnimation.Frame frame) {
+        Minecraft client=Minecraft.getInstance();
+        if(client.player==null||client.level==null||state==null
+                ||frame==null||frame.sampledClip()==null
+                ||state.id!=client.player.getId()||client.player.isSpectator()
+                ||state.mainArm!=HumanoidArm.RIGHT)return false;
+        ActionTimeline timeline=frame.timeline();
+        if(timeline==null||timeline.idle()
+                ||timeline.kind()!=ActionTimeline.Kind.LIGHT_COMBO
+                ||timeline.comboStep()!=1)return false;
+        if(state.skin==null || state.skin.body()==null
+                ||client.options.getCameraType().isFirstPerson()
+                ||!client.player.getMainHandItem().is(ItemTags.SWORDS)
+                ||!client.player.getOffhandItem().isEmpty())return false;
+        for(EquipmentSlot slot:new EquipmentSlot[]{EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+            if(!client.player.getItemBySlot(slot).isEmpty())return false;
+        return true;
+    }
+    public static Mode mode(AvatarRenderState state,LocalCombatAnimation.Frame frame){
+        R07ModeGate.Choice choice=R07ModeGate.select(new R07ModeGate.Context(
+                nativeEnabled,articulatedEnabled,clip()!=null,layerReady,
+                eligible(state,frame),
+                state!=null && !Minecraft.getInstance().options.getCameraType().isFirstPerson(),
+                frame!=null && frame.timeline()!=null
+                    && frame.timeline().kind()==ActionTimeline.Kind.LIGHT_COMBO
+                    && frame.timeline().comboStep()==1,
+                Minecraft.getInstance().player!=null
+                    && Minecraft.getInstance().player.getMainHandItem().is(ItemTags.SWORDS),
+                Minecraft.getInstance().player!=null
+                    && Minecraft.getInstance().player.getOffhandItem().isEmpty(),
+                Minecraft.getInstance().player!=null
+                    && java.util.Arrays.stream(new EquipmentSlot[]{EquipmentSlot.HEAD,
+                        EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+                        .allMatch(slot->Minecraft.getInstance().player.getItemBySlot(slot).isEmpty())));
+        return switch(choice){
+            case C3_FALLBACK->Mode.C3_QA5;
+            case SIX_DERIVED->Mode.SIX_PART_DERIVED;
+            case ARTICULATED_17->Mode.R07_17;
+        };
+    }
+    public static boolean active(AvatarRenderState state,LocalCombatAnimation.Frame frame){
+        return mode(state,frame)==Mode.R07_17;
+    }
+    /** Visible client-only preflight; does not invent server action events. */
+    public static String quickFallback() {
+        if(!nativeEnabled)return "C3 QA5 selected";
+        if(clip()==null)return "R07 export absent/invalid";
+        if(articulatedEnabled && !layerReady)return "R07 LAYER MISSING: C3 fallback";
+        Minecraft client=Minecraft.getInstance();
+        if(client.player==null)return "R07 waiting for player";
+        if(client.options.getCameraType().isFirstPerson())return "R07 F5 required: C3 fallback";
+        if(client.player.getMainArm()!=HumanoidArm.RIGHT)
+            return "R07 LEFT MAIN ARM NOT CALIBRATED: C3 fallback";
+        if(!client.player.getMainHandItem().is(ItemTags.SWORDS))
+            return "R07 mainhand sword required: C3 fallback";
+        if(!client.player.getOffhandItem().isEmpty())return "R07 empty offhand required: C3 fallback";
+        for(EquipmentSlot slot:new EquipmentSlot[]{EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+            if(!client.player.getItemBySlot(slot).isEmpty())
+                return "R07 armor not mapped: C3 fallback";
+        return articulatedEnabled ? "R07 17 ready: press R once" : "R07 six preview: press R once";
+    }
+
+    public static String fallback(AvatarRenderState state,LocalCombatAnimation.Frame frame) {
+        if(!nativeEnabled)return "F8: C3 QA5";
+        if(clip()==null)return "R07_RESOURCE_MISSING";
+        if(articulatedEnabled&&!layerReady)return "R07_RENDER_LAYER_MISSING";
+        Minecraft client=Minecraft.getInstance();
+        if(client.player==null||client.level==null||state==null)return "R07_PLAYER_NOT_READY";
+        if(client.options.getCameraType().isFirstPerson())return "R07_FIRST_PERSON_VANILLA";
+        if(state.skin==null||state.skin.body()==null)return "R07_SKIN_UNAVAILABLE";
+        if(!client.player.getMainHandItem().is(ItemTags.SWORDS))return "R07_MAIN_HAND_NOT_SWORD";
+        if(!client.player.getOffhandItem().isEmpty())return "R07_OFFHAND_OCCUPIED";
+        for(EquipmentSlot slot:new EquipmentSlot[]{EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+            if(!client.player.getItemBySlot(slot).isEmpty())return "R07_ARMOR_NOT_MAPPED";
+        if(!eligible(state,frame))return "R07_WAITING_FOR_COMBO_STAGE1";
+        return articulatedEnabled?"R07_17_ACTIVE":"R07_SIX_DERIVED_ACTIVE";
+    }
+}
