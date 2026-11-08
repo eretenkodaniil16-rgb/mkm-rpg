@@ -88,7 +88,7 @@ public final class MkmCombatHud {
                     Component.literal(NativeRenderDiagnostics.status(client.level.getGameTime())),
                     x, y + 35, TEXT);
             graphics.text(client.font,
-                    Component.literal(ArticulatedMode.loadStatus()),
+                    Component.literal(ArticulatedMode.quickFallback()),
                     x, y + 46, MUTED);
         }
     }

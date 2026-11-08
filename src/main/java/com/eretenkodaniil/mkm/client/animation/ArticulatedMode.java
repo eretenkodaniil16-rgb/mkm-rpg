@@ -86,6 +86,24 @@ public final class ArticulatedMode {
     public static boolean active(AvatarRenderState state,LocalCombatAnimation.Frame frame){
         return mode(state,frame)==Mode.R07_17;
     }
+    /** Visible client-only preflight; does not invent server action events. */
+    public static String quickFallback() {
+        if(!nativeEnabled)return "C3 QA5 selected";
+        if(clip()==null)return "R07 export absent/invalid";
+        if(articulatedEnabled && !layerReady)return "R07 LAYER MISSING: C3 fallback";
+        Minecraft client=Minecraft.getInstance();
+        if(client.player==null)return "R07 waiting for player";
+        if(client.options.getCameraType().isFirstPerson())return "R07 F5 required: C3 fallback";
+        if(!client.player.getMainHandItem().is(ItemTags.SWORDS))
+            return "R07 mainhand sword required: C3 fallback";
+        if(!client.player.getOffhandItem().isEmpty())return "R07 empty offhand required: C3 fallback";
+        for(EquipmentSlot slot:new EquipmentSlot[]{EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+            if(!client.player.getItemBySlot(slot).isEmpty())
+                return "R07 armor not mapped: C3 fallback";
+        return articulatedEnabled ? "R07 17 ready: press R once" : "R07 six preview: press R once";
+    }
+
     public static String fallback(AvatarRenderState state,LocalCombatAnimation.Frame frame) {
         if(!nativeEnabled)return "F8: C3 QA5";
         if(clip()==null)return "R07_RESOURCE_MISSING";
