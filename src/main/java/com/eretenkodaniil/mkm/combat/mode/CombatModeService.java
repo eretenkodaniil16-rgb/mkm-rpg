@@ -50,7 +50,7 @@ public final class CombatModeService {
     private CombatModeService() {}
 
     private static Session session(ServerPlayer player) {
-        Session s = SESS.computeIfAbsent(player, ignored -> new Session());
+        Session s = SESSIONS.computeIfAbsent(player, ignored -> new Session());
         if (s.world != null && s.world != player.level()) {
             s.state = new CombatModeRules.State();
             sendStatus(player, false);
@@ -62,15 +62,15 @@ public final class CombatModeService {
     }
 
     public static void onLogin(ServerPlayer player) {
-        SESS.remove(player); // force explicit opt-in per connection
+        SESSIONS.remove(player); // force explicit opt-in per connection
     }
 
     public static void onDisconnect(ServerPlayer player) {
-        SESS.remove(player);
+        SESSIONS.remove(player);
     }
 
     public static boolean busy(ServerPlayer player) {
-        Session s = SESS.get(player);
+        Session s = SESSIONS.get(player);
         return s != null && s.state.busy();
     }
 
@@ -155,7 +155,7 @@ public final class CombatModeService {
 
     /** Process server actions once; never invoked from a client animation event. */
     public static void tick(ServerPlayer player) {
-        Session s = SESS.get(player);
+        Session s = SESSIONS.get(player);
         if (s == null) return;
         s = session(player); // resets client ACK and sequence on dimension transitions
         if (!s.state.enabled()) return;
@@ -191,7 +191,7 @@ public final class CombatModeService {
     }
 
     public static CombatModeRules.Strike currentImpact(ServerPlayer attacker) {
-        Session s = SESS.get(attacker);
+        Session s = SESSIONS.get(attacker);
         return s == null ? CombatModeRules.Strike.NONE : s.resolving;
     }
 
@@ -205,8 +205,8 @@ public final class CombatModeService {
 
     /** Called once by Fabric's AFTER_DAMAGE callback, not by a cosmetic packet. */
     public static void onConfirmedDamage(ServerPlayer attacker, LivingEntity victim,
-                                         float healthDamage, boolean blocked) {
-        Session s = SESS.get(attacker);
+                                         DamageSource actualSource, float healthDamage, boolean blocked) {
+        Session s = SESSIONS.get(attacker);
         if (s == null || s.resolving == CombatModeRules.Strike.NONE || s.hitConfirmed
                 || blocked || !Float.isFinite(healthDamage) || healthDamage <= 0F) return;
         s.hitConfirmed = true; // one receipt, no duplicated status effect
@@ -221,12 +221,13 @@ public final class CombatModeService {
         // Real, visible on victim, no additional HP mutation or attack.
         if (kind == CombatModeRules.Strike.CHARGED) {
             victim.knockback(style == FencingSchool.LIECHTENAUER ? 0.95D : 0.60D,
-                    attacker.getX() - victim.getX(), attacker.getZ() - victim.getZ());
+                    attacker.getX() - victim.getX(), attacker.getZ() - victim.getZ(),
+                    actualSource, 0F);
             victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 32, 1));
         } else if (riposte) {
             victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 50, 0));
             victim.knockback(0.30D, attacker.getX() - victim.getX(),
-                    attacker.getZ() - victim.getZ());
+                    attacker.getZ() - victim.getZ(), actualSource, 0F);
         } else if (style == FencingSchool.DESTREZA) {
             victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 20, 0));
         }
@@ -238,7 +239,7 @@ public final class CombatModeService {
     /** Called only AFTER vanilla reports a genuine blocked shield hit. */
     public static void onVanillaShieldBlock(ServerPlayer defender, DamageSource source,
                                             float blockedDamage) {
-        Session s = SESS.get(defender);
+        Session s = SESSIONS.get(defender);
         if (s == null || !s.state.enabled() || !Float.isFinite(blockedDamage)
                 || blockedDamage <= 0F || !defender.getUseItem().is(Items.SHIELD)
                 || school(defender).orElse(FencingSchool.NONE) != FencingSchool.FIORE) return;

@@ -42,9 +42,9 @@ public final class CombatModeClient {
     public static void onStatus(Minecraft client, CombatModeStatus status) {
         enabled = status.enabled();
         if (!enabled) holding = false;
-        if (client.player != null) client.player.displayClientMessage(Component.literal(
+        if (client.player != null) client.gui.setOverlayMessage(Component.literal(
                 enabled ? "MKM | COMBAT MODE ENABLED (F6 to exit)"
-                        : "MKM | VANILLA LMB / MINING"), true);
+                        : "MKM | VANILLA LMB / MINING"), false);
     }
 
     /** Called by Minecraft.startAttack at HEAD; true ONLY when vanilla LMB is suppressed. */

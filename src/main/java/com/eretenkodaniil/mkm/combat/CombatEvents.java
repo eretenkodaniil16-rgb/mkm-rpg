@@ -109,7 +109,7 @@ public final class CombatEvents {
                 damageTaken, staggerPower, staggerResistance, heavy && playerMelee);
         entity.setAttached(CombatAttachments.POISE, result.state());
         if (playerMelee && source.getEntity() instanceof ServerPlayer actualAttacker) {
-            CombatModeService.onConfirmedDamage(actualAttacker, entity, damageTaken, blocked);
+            CombatModeService.onConfirmedDamage(actualAttacker, entity, source, damageTaken, blocked);
         }
         // C3 hit VFX only on verified positive, unblocked damage, while D3 owns provenance.
         if (playerMelee && entity instanceof Mob mob
