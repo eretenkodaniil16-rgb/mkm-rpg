@@ -65,8 +65,8 @@ public final class EncounterDirector {
                                    boolean story, int bonusXp) {
         if (!(player.level() instanceof ServerLevel level)
                 || !player.isAlive() || player.isSpectator()) return false;
-        if (story && player.distanceToSqr(anchor.getX() + .5,anchor.getY(),anchor.getZ() + .5)
-                > 64.0 * 64.0) return false;
+        if (story && (player.distanceToSqr(anchor.getX() + .5,anchor.getY(),anchor.getZ() + .5)
+                > 64.0 * 64.0 || !level.hasChunkAt(anchor))) return false;
         EncounterDefinition config = EncounterDefinitions.ford();
         if (config == null) {
             inform(player, "JSON не загружен или отклонён сервером. Посмотрите лог /reload.");
@@ -102,6 +102,10 @@ public final class EncounterDirector {
             for (int[] offset : OFFSETS) {
                 BlockPos feet = anchor.offset(offset[0], 0, offset[1]);
                 if (!level.hasChunkAt(feet) || !level.getBlockState(feet.below()).isSolid()) continue;
+                if (story && (!EncounterGroundRules.isNaturalSurface(
+                        level.getBlockState(feet.below()).getBlock())
+                        || !level.getBlockState(feet).isAir()
+                        || !level.getBlockState(feet.above()).isAir())) continue;
                 mob.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5, 0.0F, 0.0F);
                 if (!level.noCollision(mob)
                         || prepared.stream().anyMatch(other -> other.getBoundingBox()

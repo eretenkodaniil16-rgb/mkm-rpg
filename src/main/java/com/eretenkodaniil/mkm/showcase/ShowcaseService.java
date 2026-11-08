@@ -68,9 +68,11 @@ public final class ShowcaseService {
             return false;
         }
         BlockPos rune=origin.offset(7,5,6);
+        var wall=level.getBlockState(origin.offset(4,5,4));
         if (!level.hasChunkAt(rune)
                 || !level.getBlockState(rune).is(MkmBlocks.RUNE_SLATE)
-                || !level.getBlockState(origin.offset(4,5,4)).is(MkmBlocks.AGED_ASHLAR)) {
+                || !(wall.is(MkmBlocks.AGED_ASHLAR) || wall.is(MkmBlocks.MOSSY_ASHLAR)
+                        || wall.is(MkmBlocks.CRACKED_ASHLAR))) {
             say(player,"Сначала безопасно установите башню PR #60: маркеры стен и руны не обнаружены.");
             return false;
         }
