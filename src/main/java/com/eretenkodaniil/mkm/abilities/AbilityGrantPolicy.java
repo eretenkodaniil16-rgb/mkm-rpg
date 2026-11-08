@@ -1,0 +1,49 @@
+package com.eretenkodaniil.mkm.abilities;
+
+import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginData;
+import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
+import java.util.Set;
+
+/**
+ * Authorization evidence comes only from persisted server Character v4 and
+ * Origin v1. Research license is an explicit trusted adapter input (currently
+ * empty); never interpret the quest reward receipt ledger as spell licenses.
+ */
+public final class AbilityGrantPolicy {
+    private AbilityGrantPolicy() {}
+
+    public record Grants(String classId, int level, Set<String> researched) {
+        public Grants {
+            if (level < 1 || level > 100 || researched == null)
+                throw new IllegalArgumentException("Invalid grants");
+            researched = Set.copyOf(researched);
+        }
+    }
+
+    public static Grants fromSaved(CharacterData character, CharacterOriginData origin) {
+        if (character == null || character.schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION
+                || origin == null || origin.schemaVersion() != CharacterOriginData.SCHEMA_VERSION
+                || !origin.selected()
+                || OriginCatalog.clazz(origin.classId()) == null
+                || OriginCatalog.race(origin.raceId()) == null) return null;
+        return new Grants(origin.classId(), character.level(), Set.of());
+    }
+
+    public static boolean granted(Grants grants, String id) {
+        if (grants == null || !AbilityIds.valid(id)
+                || AbilityCatalog.get(id) == null) return false;
+        if (AbilityCatalog.RENEWAL.id().equals(id)) return true; // existing player ability
+        if ("mkm:arcane_barrier".equals(id))
+            return OriginCatalog.MAGE.id().equals(grants.classId())
+                    || grants.researched().contains(id);
+        return grants.researched().contains(id);
+    }
+
+    public static boolean executable(Grants grants, String id) {
+        var def = AbilityCatalog.get(id);
+        return granted(grants, id) && SpellProgression.meetsLevel(id, grants.level())
+                && def.kind() == AbilityDefinition.Kind.ACTIVE
+                && ("mkm:renewal".equals(id) || "mkm:arcane_barrier".equals(id));
+    }
+}
