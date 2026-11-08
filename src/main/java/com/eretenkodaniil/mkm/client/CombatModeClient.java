@@ -85,7 +85,9 @@ public final class CombatModeClient {
         if (!CombatModeInputRules.intercept(enabled, holding, client.gui.screen() != null,
                 client.player.isAlive() && !client.player.isSpectator()
                         && !client.player.isUsingItem(),
-                sword, client.hitResult instanceof EntityHitResult, canSend())) return false;
+                sword, client.hitResult instanceof EntityHitResult hit
+                        && hit.getEntity() instanceof net.minecraft.world.entity.LivingEntity,
+                canSend())) return false;
         if (holding) return true;
         if (serial == Integer.MAX_VALUE) {
             // Return to vanilla if connection has exhausted monotonically increasing serials.
