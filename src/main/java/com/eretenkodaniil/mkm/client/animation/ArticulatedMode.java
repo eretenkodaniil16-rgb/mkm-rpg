@@ -6,7 +6,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
-import java.util.Objects;
 
 /**
  * QA-v4-only opt-in client presentation. No server packets, gameplay handlers,
@@ -53,7 +52,8 @@ public final class ArticulatedMode {
         if(timeline==null||timeline.idle()
                 ||timeline.kind()!=ActionTimeline.Kind.LIGHT_COMBO
                 ||timeline.comboStep()!=1)return false;
-        if(client.options.getCameraType().isFirstPerson()
+        if(state.skin==null || state.skin.body()==null
+                ||client.options.getCameraType().isFirstPerson()
                 ||!client.player.getMainHandItem().is(ItemTags.SWORDS)
                 ||!client.player.getOffhandItem().isEmpty())return false;
         for(EquipmentSlot slot:new EquipmentSlot[]{EquipmentSlot.HEAD,
@@ -73,7 +73,16 @@ public final class ArticulatedMode {
         if(!nativeEnabled)return "F8: C3 QA5";
         if(clip()==null)return "R07_RESOURCE_MISSING";
         if(articulatedEnabled&&!layerReady)return "R07_RENDER_LAYER_MISSING";
-        if(!eligible(state,frame))return "R07_CONTEXT_FALLBACK (item/offhand/armor/camera/timeline)";
+        Minecraft client=Minecraft.getInstance();
+        if(client.player==null||client.level==null||state==null)return "R07_PLAYER_NOT_READY";
+        if(client.options.getCameraType().isFirstPerson())return "R07_FIRST_PERSON_VANILLA";
+        if(state.skin==null||state.skin.body()==null)return "R07_SKIN_UNAVAILABLE";
+        if(!client.player.getMainHandItem().is(ItemTags.SWORDS))return "R07_MAIN_HAND_NOT_SWORD";
+        if(!client.player.getOffhandItem().isEmpty())return "R07_OFFHAND_OCCUPIED";
+        for(EquipmentSlot slot:new EquipmentSlot[]{EquipmentSlot.HEAD,
+                EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+            if(!client.player.getItemBySlot(slot).isEmpty())return "R07_ARMOR_NOT_MAPPED";
+        if(!eligible(state,frame))return "R07_WAITING_FOR_COMBO_STAGE1";
         return articulatedEnabled?"R07_17_ACTIVE":"R07_SIX_DERIVED_ACTIVE";
     }
 }
