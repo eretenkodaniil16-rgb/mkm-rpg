@@ -75,6 +75,10 @@ public final class MkmCombatHud {
                 };
         graphics.text(client.font, Component.literal(description), x, y + 12,
                 timeline != null && !timeline.idle() ? TEXT : MUTED);
+        String experimental = CombatModeClient.hudText(client);
+        if (!experimental.isEmpty()) {
+            graphics.text(client.font, Component.literal(experimental), x, y + 36, STAMINA_LOW);
+        }
         if (timeline != null && !timeline.idle() && client.level != null) {
             graphics.text(client.font,
                     Component.literal(AnimationRenderProbe.status(client.level.getGameTime())),

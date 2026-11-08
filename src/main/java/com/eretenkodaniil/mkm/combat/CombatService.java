@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
+import com.eretenkodaniil.mkm.combat.mode.CombatModeService;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -59,7 +60,7 @@ public final class CombatService {
      * damage: stamina, timing and the eventual target are server-controlled.
      */
     public static void tryCombo(ServerPlayer player, byte kind) {
-        if (kind != 1 || player.isSpectator() || !player.isAlive()
+        if (kind != 1 || CombatModeService.busy(player) || player.isSpectator() || !player.isAlive()
                 || player.isPassenger()) {
             return;
         }
@@ -132,7 +133,8 @@ public final class CombatService {
     }
 
     public static boolean tryHeavy(ServerPlayer player) {
-        if (!player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle()) return false;
+        if (CombatModeService.busy(player)
+                || !player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle()) return false;
         long now = player.level().getGameTime();
         PlayerModifierSnapshot modifiers = modifiers(player);
         CombatState current = fresh(player, modifiers, now);
@@ -150,7 +152,8 @@ public final class CombatService {
 
     public static void tryDodge(ServerPlayer player, byte direction) {
         // A one-byte packet is just an intent. Never trust a client-supplied velocity or position.
-        if (direction < 0 || direction > DodgeDirection.LAST
+        if (CombatModeService.busy(player)
+                || direction < 0 || direction > DodgeDirection.LAST
                 || player.isSpectator() || player.isPassenger() || !player.onGround()
                 || !player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle()) {
             return;
