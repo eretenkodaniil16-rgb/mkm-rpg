@@ -86,13 +86,11 @@ public final class MkmClient implements ClientModInitializer {
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (VISUAL_PROFILE.consumeClick()) {
                 var active = EnvironmentVisualSettings.cycleProfile();
-                if (client.player != null) client.gui.getChat().addMessage(
-                        Component.translatable("message.mkm.environment.profile", active.name()));
+                MkmMod.LOGGER.info("MKM client graphics profile -> {}", active);
             }
             while (REDUCED_EFFECTS.consumeClick()) {
                 boolean reduced = EnvironmentVisualSettings.toggleReducedEffects();
-                if (client.player != null) client.gui.getChat().addMessage(
-                        Component.translatable("message.mkm.environment.reduced_effects", reduced));
+                MkmMod.LOGGER.info("MKM client reduced visual effects -> {}", reduced);
             }
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
