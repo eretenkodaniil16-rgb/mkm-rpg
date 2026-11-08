@@ -63,16 +63,19 @@ public final class MkmAbilityHud {
         var heal = RenewalEligibility.check(active, idle, injured, current, now,
                 AbilityRules.scaledCost(renewal.baseCost(), costMultiplier));
         String renewalStatus = switch (heal) {
-            case READY -> "READY";
-            case INVALID_ACTOR, BUSY -> "BUSY";
-            case FULL_HEALTH -> "HP FULL";
-            case LOW_MANA -> "LOW MP";
-            case COOLDOWN -> String.format(java.util.Locale.ROOT, "%.1fs",
-                    Math.max(0D, current.readyTick(renewal.id()) - now) / 20D);
+            case READY -> Component.translatable("hud.mkm.renewal.ready").getString();
+            case INVALID_ACTOR, BUSY -> Component.translatable("hud.mkm.renewal.busy").getString();
+            case FULL_HEALTH -> Component.translatable("hud.mkm.renewal.full_health").getString();
+            case LOW_MANA -> Component.translatable("hud.mkm.renewal.low_mana").getString();
+            case COOLDOWN -> Component.translatable("hud.mkm.renewal.cooldown",
+                    String.format(java.util.Locale.ROOT, "%.1f",
+                            Math.max(0D, current.readyTick(renewal.id()) - now) / 20D))
+                    .getString();
         };
         String healKey = MkmClient.RENEWAL.getTranslatedKeyMessage().getString();
         draw(graphics, client, x, y + 11, width,
-                healKey + " HEAL: " + renewalStatus, heal == RenewalEligibility.Result.READY);
+                healKey + " " + Component.translatable("hud.mkm.renewal.short").getString()
+                        + ": " + renewalStatus, heal == RenewalEligibility.Result.READY);
 
         var origin = client.player.getAttached(CharacterOriginAttachments.PROFILE);
         var licenses = SpellLicenseService.heldResearchLicenses(client.player);
@@ -85,17 +88,24 @@ public final class MkmAbilityHud {
                                 grant.classId(), licenses.contains(ward.id())) : 1D));
         String wardStatus;
         boolean wardReady = false;
-        if (!licensed) wardStatus = "MAGE ONLY";
-        else if (!active || !idle) wardStatus = "BUSY";
-        else if (client.player.hasEffect(MobEffects.ABSORPTION)) wardStatus = "ACTIVE";
+        if (!licensed) wardStatus = Component.translatable("hud.mkm.ward.locked").getString();
+        else if (!active || !idle) wardStatus = Component.translatable("hud.mkm.renewal.busy").getString();
+        else if (client.player.hasEffect(MobEffects.ABSORPTION))
+            wardStatus = Component.translatable("hud.mkm.ward.active").getString();
         else if (now < current.readyTick(ward.id()))
-            wardStatus = String.format(java.util.Locale.ROOT, "%.1fs",
-                    (current.readyTick(ward.id()) - now) / 20D);
-        else if (current.mana() < wardCost) wardStatus = "LOW MP";
-        else { wardStatus = "READY"; wardReady = true; }
+            wardStatus = Component.translatable("hud.mkm.renewal.cooldown",
+                    String.format(java.util.Locale.ROOT, "%.1f",
+                            (current.readyTick(ward.id()) - now) / 20D)).getString();
+        else if (current.mana() < wardCost)
+            wardStatus = Component.translatable("hud.mkm.renewal.low_mana").getString();
+        else {
+            wardStatus = Component.translatable("hud.mkm.renewal.ready").getString();
+            wardReady = true;
+        }
         String wardKey = MkmClient.ARCANE_WARD.getTranslatedKeyMessage().getString();
         draw(graphics, client, x, y + 23, width,
-                wardKey + " WARD: " + wardStatus, wardReady);
+                wardKey + " " + Component.translatable("hud.mkm.ward.short").getString()
+                        + ": " + wardStatus, wardReady);
     }
 
     private static void draw(GuiGraphicsExtractor graphics, Minecraft client,
