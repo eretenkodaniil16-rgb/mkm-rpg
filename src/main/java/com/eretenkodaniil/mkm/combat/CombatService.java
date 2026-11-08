@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.character.CharacterService;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
 import com.eretenkodaniil.mkm.character.origin.OriginShowcaseRules;
 import com.eretenkodaniil.mkm.character.origin.OriginProgressService;
@@ -143,6 +145,8 @@ public final class CombatService {
      * event and no pose/animation state is stored in CharacterData.
      */
     public static boolean tryWarriorBrace(ServerPlayer player) {
+        if (CharacterService.get(player).schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION
+                || player.hasEffect(MobEffects.RESISTANCE)) return false;
         boolean warrior = OriginShowcaseRules.allowedClassAction(
                 CharacterOriginService.get(player), "mkm:warrior");
         boolean shield = player.getMainHandItem().is(Items.SHIELD)
