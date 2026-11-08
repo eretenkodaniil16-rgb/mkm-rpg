@@ -39,7 +39,7 @@ public final class WatchtowerPlacementCommands {
                                                                 IntegerArgumentType.getInteger(ctx, "z")))))))));
     }
 
-    private static int place(CommandSourceStack source, int variant, int x, int y, int z) {
+    public static int place(CommandSourceStack source, int variant, int x, int y, int z) {
         ServerLevel level = source.getLevel();
         if (!level.dimension().equals(Level.OVERWORLD)) return reject(source, "Overworld only");
         BlockPos origin = new BlockPos(x, y, z);
