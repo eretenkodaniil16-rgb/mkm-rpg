@@ -107,5 +107,11 @@
   "screen.mkm.origin.warrior_short": "Урон и экономия стамины",
   "screen.mkm.origin.mage_short": "Мана и лечение",
   "item.mkm.raider_insignia": "Знак налётчика",
-  "item.mkm.stalker_fang": "Клык охотника"
+  "item.mkm.stalker_fang": "Клык охотника",
+  "block.mkm.aged_ashlar": "Старый тесаный камень",
+  "block.mkm.mossy_ashlar": "Замшелый тесаный камень",
+  "block.mkm.cracked_ashlar": "Растрескавшийся тесаный камень",
+  "block.mkm.charred_timber": "Обугленное дерево",
+  "block.mkm.rusted_iron": "Ржавое железо",
+  "block.mkm.rune_slate": "Рунический сланец"
 }

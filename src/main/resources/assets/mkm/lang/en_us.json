@@ -107,5 +107,11 @@
   "screen.mkm.origin.warrior_short": "Melee and stamina cost",
   "screen.mkm.origin.mage_short": "Mana and healing",
   "item.mkm.raider_insignia": "Raider's Insignia",
-  "item.mkm.stalker_fang": "Stalker's Fang"
+  "item.mkm.stalker_fang": "Stalker's Fang",
+  "block.mkm.aged_ashlar": "Aged Ashlar",
+  "block.mkm.mossy_ashlar": "Mossy Ashlar",
+  "block.mkm.cracked_ashlar": "Fractured Ashlar",
+  "block.mkm.charred_timber": "Charred Timber",
+  "block.mkm.rusted_iron": "Rusted Iron",
+  "block.mkm.rune_slate": "Rune Slate"
 }
