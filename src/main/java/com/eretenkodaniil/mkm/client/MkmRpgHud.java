@@ -46,17 +46,20 @@ public final class MkmRpgHud {
         Component ancestry = Component.translatable("screen.mkm.origin.unselected");
         Component clazz = ancestry;
         boolean mage = false;
+        boolean selectedClass = false;
         if (origin != null && origin.selected()) {
             var race = OriginCatalog.race(origin.raceId());
             var profession = OriginCatalog.clazz(origin.classId());
             if (race != null) ancestry = Component.translatable(race.titleKey());
             if (profession != null) {
                 clazz = Component.translatable(profession.titleKey());
+                selectedClass = true;
                 mage = OriginCatalog.MAGE.id().equals(profession.id());
             }
         }
         drawText(graphics, mc, Component.translatable("hud.mkm.identity", ancestry, clazz), 7, 7, primary, 210);
-        drawText(graphics, mc, Component.translatable(mage ? "hud.mkm.mage_role" : "hud.mkm.warrior_role"),
+        drawText(graphics, mc, Component.translatable(!selectedClass ? "hud.mkm.select_role"
+                : mage ? "hud.mkm.mage_role" : "hud.mkm.warrior_role"),
                 7, 20, dim, 210);
 
         var combat = mc.player.getAttached(CombatAttachments.PLAYER);

@@ -21,18 +21,18 @@ public final class MkmActionPaletteScreen extends Screen {
         super.init();
         int w = Math.max(1, Math.min(width - 12, 256));
         int x = (width - w) / 2;
-        int start = Math.max(25, (height - 188) / 2);
+        int start = Math.max(2, (height - 164) / 2);
         addRenderableWidget(Button.builder(Component.translatable("screen.mkm.actions.combo"),
-                b -> send(ClientActionGate.Action.COMBO)).pos(x, start + 26).size(w, 20).build());
+                b -> send(ClientActionGate.Action.COMBO)).pos(x, start + 23).size(w, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.mkm.actions.dodge"),
-                b -> send(ClientActionGate.Action.DODGE)).pos(x, start + 50).size(w, 20).build());
+                b -> send(ClientActionGate.Action.DODGE)).pos(x, start + 47).size(w, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.mkm.actions.renewal"),
-                b -> send(ClientActionGate.Action.RENEWAL)).pos(x, start + 74).size(w, 20).build());
+                b -> send(ClientActionGate.Action.RENEWAL)).pos(x, start + 71).size(w, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.mkm.access.open"),
                 b -> minecraft.gui.setScreen(new MkmAccessibilityScreen(this)))
-                .pos(x, start + 102).size(w, 20).build());
+                .pos(x, start + 95).size(w, 20).build());
         addRenderableWidget(Button.builder(Component.translatable("screen.mkm.actions.close"),
-                b -> onClose()).pos(x, start + 126).size(w, 20).build());
+                b -> onClose()).pos(x, start + 119).size(w, 20).build());
     }
     private void send(ClientActionGate.Action action) {
         result = Component.translatable(MkmActionRouter.request(minecraft, action, true)
@@ -40,10 +40,10 @@ public final class MkmActionPaletteScreen extends Screen {
     }
     @Override
     public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
-        int y = Math.max(25, (height - 188) / 2);
+        int y = Math.max(2, (height - 164) / 2);
         graphics.fill(0, 0, width, height, 0xA0000000);
-        graphics.centeredText(font, title, width / 2, y, 0xFFFFFFFF);
-        if (result != null) graphics.centeredText(font, result, width / 2, y + 152, 0xFFFFFFA0);
+        graphics.centeredText(font, title, width / 2, y + 3, 0xFFFFFFFF);
+        if (result != null) graphics.centeredText(font, result, width / 2, y + 145, 0xFFFFFFA0);
         super.extractRenderState(graphics, mouseX, mouseY, partialTick);
     }
     @Override

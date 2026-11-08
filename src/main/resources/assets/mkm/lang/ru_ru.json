@@ -145,5 +145,8 @@
   "screen.mkm.access.off": "Выкл.",
   "screen.mkm.access.done": "Назад",
   "screen.mkm.access.mapping": "Переназначение MKM: Настройки > Управление",
-  "screen.mkm.access.controller_blocked": "Геймпад: адаптер пока не реализован"
+  "screen.mkm.access.controller_blocked": "Геймпад: адаптер пока не реализован",
+  "hud.mkm.select_role": "Выберите расу/класс (K)",
+  "screen.mkm.access.motion_note": "Тряска/вспышки: R07/Env ещё нет",
+  "screen.mkm.access.controller_map": "ПЛАН геймпада: B уклон., X серия"
 }

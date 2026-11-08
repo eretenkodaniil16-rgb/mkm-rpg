@@ -145,5 +145,8 @@
   "screen.mkm.access.off": "Off",
   "screen.mkm.access.done": "Back",
   "screen.mkm.access.mapping": "Rebind MKM keys: Options > Controls",
-  "screen.mkm.access.controller_blocked": "Gamepad adapter: not shipped"
+  "screen.mkm.access.controller_blocked": "Gamepad adapter: not shipped",
+  "hud.mkm.select_role": "Choose race/class in K",
+  "screen.mkm.access.motion_note": "Shake/flash: R07/Env not in QA5",
+  "screen.mkm.access.controller_map": "Controller PLAN: B Dodge, X Combo"
 }

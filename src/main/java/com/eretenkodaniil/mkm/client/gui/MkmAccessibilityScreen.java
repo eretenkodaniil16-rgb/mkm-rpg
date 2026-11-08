@@ -73,11 +73,17 @@ public final class MkmAccessibilityScreen extends Screen {
         int top = Math.max(2, (height - 184) / 2);
         graphics.fill(0, 0, width, height, 0xCC090F1C);
         graphics.centeredText(font, title, width / 2, top + 8, 0xFFFFFFFF);
+        if (page == Page.MOTION) {
+            graphics.centeredText(font, Component.translatable("screen.mkm.access.motion_note"),
+                    width / 2, top + 120, 0xFFFFCF89);
+        }
         if (page == Page.INPUT) {
             graphics.centeredText(font, Component.translatable("screen.mkm.access.mapping"),
                     width / 2, top + 81, 0xFFE1E7F1);
+            graphics.centeredText(font, Component.translatable("screen.mkm.access.controller_map"),
+                    width / 2, top + 98, 0xFFE1E7F1);
             graphics.centeredText(font, Component.translatable("screen.mkm.access.controller_blocked"),
-                    width / 2, top + 100, 0xFFFFCF89);
+                    width / 2, top + 114, 0xFFFFCF89);
         }
         super.extractRenderState(graphics, mx, my, delta);
     }
