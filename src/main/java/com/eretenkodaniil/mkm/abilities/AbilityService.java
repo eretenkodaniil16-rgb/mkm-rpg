@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.abilities;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
 import com.eretenkodaniil.mkm.character.origin.OriginShowcaseRules;
 import com.eretenkodaniil.mkm.character.origin.OriginProgressService;
@@ -102,6 +103,8 @@ public final class AbilityService {
      * and cooldown machinery as Renewal; no new combat damage or target packets.
      */
     public static boolean tryMageWard(ServerPlayer player) {
+        if (CharacterService.get(player).schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION)
+            return false;
         if (!OriginShowcaseRules.allowedClassAction(
                 CharacterOriginService.get(player), "mkm:mage")) return false;
         long now = player.level().getGameTime();
