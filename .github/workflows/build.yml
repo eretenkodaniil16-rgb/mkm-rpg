@@ -24,6 +24,7 @@ on:
       - 'integration/fabric-v4-encounters-perf-qa3'
       - 'integration/fabric-v4-encounter-origins-perf-qa4'
       - 'integration/fabric-v4-world-origins-enemy-perf-qa5'
+      - 'feature/showcase-mnae-r07-fabric-v4'
   pull_request:
     branches:
       - 'port/fabric-26.3'
@@ -60,6 +61,21 @@ jobs:
         with:
           distribution: temurin
           java-version: '25'
+      - name: Reproduce the frozen R06 -> R07 17-bone animation
+        shell: bash
+        run: |
+          git fetch --depth=1 origin refs/tags/mkm-guards-r06-approved:refs/tags/mkm-guards-r06-approved
+          test "$(git rev-parse 'mkm-guards-r06-approved^{}')" = 5cae0c0dae1daf1bc7cfe07945af1fb67ea741b8
+          mkdir -p build/r07/derived src/main/resources/assets/mkm/mnae
+          git show mkm-guards-r06-approved:assets/animation/approved/mkm_sword_guards_r06/MKM_Three_Sword_Guards_R06.blend > build/r07/R06_READONLY.blend
+          sha256sum build/r07/R06_READONLY.blend
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends blender xvfb libgl1
+          LIBGL_ALWAYS_SOFTWARE=1 xvfb-run -a blender -b --factory-startup \
+            --python tools/animation/r07/export_r07_blender.py -- \
+            --source-blend build/r07/R06_READONLY.blend --out build/r07/derived --render
+          cp build/r07/derived/r07_mid_guard_cut_v3.json src/main/resources/assets/mkm/mnae/r07_mid_guard_cut_v3.json
+          python3 -m json.tool src/main/resources/assets/mkm/mnae/r07_mid_guard_cut_v3.json > /dev/null
       - name: Build and test
         run: |
           chmod +x ./gradlew
@@ -79,6 +95,13 @@ jobs:
           path: build/reports/animation-qa/
           if-no-files-found: warn
           retention-days: 14
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: mkm-showcase-r07-derived-blender-17-bone
+          path: build/r07/derived/
+          if-no-files-found: warn
+          retention-days: 21
       - name: Verify the release JAR embeds a complete Fabric API distribution
         run: |
           python3 - <<'PY'
@@ -90,7 +113,7 @@ jobs:
 
           paths = [
               p for p in glob.glob("build/libs/*.jar")
-              if p.endswith("0.0.6-fabric.0-qa.5.jar")
+              if p.endswith("0.0.6-fabric.0-qa.6-r07.jar")
           ]
           assert len(paths) == 1, f"Expected exactly one release JAR, got {paths}"
           path = paths[0]
@@ -222,7 +245,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-one-jar
-          path: build/libs/mkm-rpg-0.0.6-fabric.0-qa.5.jar
+          path: build/libs/mkm-rpg-0.0.6-fabric.0-qa.6-r07.jar
           if-no-files-found: error
           retention-days: 14
 
