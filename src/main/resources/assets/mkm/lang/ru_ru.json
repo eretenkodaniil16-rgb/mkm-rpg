@@ -126,5 +126,12 @@
   "message.mkm.showcase.reward": "Исследование завершено: +%s опыта MKM. Дальше — ночная засада и /mkmencounter claim.",
   "key.mkm.showcase_hud": "Показать/скрыть маршрут SHOWCASE",
   "key.mkm.showcase_contrast": "Высокая контрастность MKM",
-  "key.mkm.showcase_vfx": "Уменьшить рунические частицы"
+  "key.mkm.showcase_vfx": "Уменьшить рунические частицы",
+  "message.mkm.showcase.guide1": "MKM SHOWCASE: (1) K — выбери Human/Dwarf и Warrior/Mage; найди Ильру (GM: /mkmworld place).",
+  "message.mkm.showcase.guide2": "(2) Найди башню (GM: /mkmenv watchtower 1 X Y Z), войди, нажми ПКМ по руне — 25 XP один раз.",
+  "message.mkm.showcase.guide3": "(3) Ночью на открытой местности GM: /mkmencounter start; после 3 врагов /mkmencounter claim. Для сталкера GM: /mkmenemy spawn stalker.",
+  "message.mkm.showcase.status.origin": "Выбранное происхождение: %s",
+  "message.mkm.showcase.no_site": "Башни пока нет. Оператор должен поставить её в свободном, защищённом от замены блоков месте.",
+  "message.mkm.showcase.site": "Ближайшая башня: X=%s Y=%s Z=%s; руна: X=%s Y=%s Z=%s.",
+  "message.mkm.showcase.status.reward": "Руническая награда этого игрока: %s"
 }

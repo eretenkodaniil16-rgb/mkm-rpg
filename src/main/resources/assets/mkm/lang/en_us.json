@@ -126,5 +126,12 @@
   "message.mkm.showcase.reward": "Discovery complete: +%s MKM XP. Next: night ambush, then /mkmencounter claim.",
   "key.mkm.showcase_hud": "Toggle showcase guide HUD",
   "key.mkm.showcase_contrast": "MKM high-contrast HUD",
-  "key.mkm.showcase_vfx": "Reduce ambient rune particles"
+  "key.mkm.showcase_vfx": "Reduce ambient rune particles",
+  "message.mkm.showcase.guide1": "MKM SHOWCASE: (1) K: choose Human/Dwarf and Warrior/Mage; find Ilra (GM: /mkmworld place).",
+  "message.mkm.showcase.guide2": "(2) Find tower (GM: /mkmenv watchtower 1 X Y Z), enter and right-click the rune for one-time 25 XP.",
+  "message.mkm.showcase.guide3": "(3) At night on open terrain GM: /mkmencounter start; after 3 enemies /mkmencounter claim. For stalker GM: /mkmenemy spawn stalker.",
+  "message.mkm.showcase.status.origin": "Selected origin: %s",
+  "message.mkm.showcase.no_site": "No tower placed. An operator must place it on a free, protected site.",
+  "message.mkm.showcase.site": "Nearest tower: X=%s Y=%s Z=%s; rune: X=%s Y=%s Z=%s.",
+  "message.mkm.showcase.status.reward": "This player's rune reward: %s"
 }
