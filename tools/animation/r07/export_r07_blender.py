@@ -31,17 +31,19 @@ B=Matrix(((1,0,0),(0,0,-1),(0,1,0)))
 B_INV=B.inverted()
 REST_HEIGHT_PX=24.0
 KEYS={
-    # (frame, right-wrist IK target in Blender's scene coordinates,
-    #  right-hand wrist relative twist degrees, torso relative yaw degrees)
-    1:((.520,-.350,.900),0,0),
-    5:((.560,-.420,1.010),-7,-4),
-    9:((.590,-.500,1.170),-13,-9),
-    12:((.480,-.570,1.190),1,-7),
-    16:((.270,-.600,1.100),29,10),
-    22:((.180,-.560,.950),34,13),
-    29:((.300,-.460,.900),12,6),
-    36:((.420,-.390,.900),3,2),
-    43:((.520,-.350,.900),0,0)
+    # (R06 hand-IK target, wrist twist, spine yaw, PELVIS local offset).
+    # Pelvis displacement drives true torso mass transfer, while both foot-IK
+    # targets remain fixed in world space. This creates knee flex rather than
+    # merely cranking up shoulder Euler angles. Original R06 stays untouched.
+    1:((.520,-.350,.900), 0,  0,(.000,.000,.000)),
+    5:((.560,-.420,1.010),-7, -4,(.022,.012,-.017)),
+    9:((.590,-.500,1.170),-13,-9,(-.035,.020,-.034)),
+    12:((.480,-.570,1.190),1,-7,(.018,-.025,-.033)),
+    16:((.270,-.600,1.100),29,10,(.080,-.068,-.047)),
+    22:((.180,-.560,.950),34,13,(.096,-.079,-.036)),
+    29:((.300,-.460,.900),12,6,(.055,-.045,-.019)),
+    36:((.420,-.390,.900),3,2,(.020,-.014,-.009)),
+    43:((.520,-.350,.900),0,0,(.000,.000,.000))
 }
 UVS={
     "head":(0,0),"pelvis":(16,16),"spine":(16,16),"neck":(16,16),
@@ -189,13 +191,15 @@ def main():
     baseline_wrist=targets["TARGET_RIGHT_HAND"]
     baseline_spine=originals["spine"]["rot"].copy()
     baseline_hand=originals["hand.R"]["rot"].copy()
-    for frame,(wrist_xyz,twist,yaw) in KEYS.items():
+    for frame,(wrist_xyz,twist,yaw,pelvis_offset) in KEYS.items():
         scene.frame_set(frame)
         for name,rest in originals.items():
             pb=rig.pose.bones[name]
             pb.rotation_mode="QUATERNION"
             pb.rotation_quaternion=rest["rot"]
             pb.location=rest["loc"]
+        pelvis=rig.pose.bones["pelvis"]
+        pelvis.location=originals["pelvis"]["loc"]+Vector(pelvis_offset)
         rig.pose.bones["spine"].rotation_quaternion=(
             baseline_spine @ Quaternion((0,0,1),math.radians(yaw)))
         rig.pose.bones["hand.R"].rotation_quaternion=(
@@ -258,10 +262,16 @@ def main():
     clearance_min=1e9
     toes_first=None
     max_toe_drift=0
+    first_pelvis=None
+    max_pelvis_motion_pixels=0
     for frame in range(1,SAMPLES+1):
         scene.frame_set(frame)
         bpy.context.view_layer.update()
         points={pb.name:snapshot_bone(rig,pb) for pb in rig.pose.bones}
+        if first_pelvis is None:first_pelvis=points["pelvis"]["pivot"]
+        offset=points["pelvis"]["pivot"]
+        max_pelvis_motion_pixels=max(max_pelvis_motion_pixels,
+            math.dist(first_pelvis,offset))
         grip,tip,clearance,feet_pos=audit_frame(rig)
         clearance_min=min(clearance_min,clearance)
         if toes_first is None:toes_first=feet_pos
@@ -275,12 +285,15 @@ def main():
     # Prohibit inventing a passing QA if visible geometry penetrates head.
     export["qa"]={"min_head_proxy_clearance":round(clearance_min,5),
          "max_toe_xy_drift_blender":round(max_toe_drift,5),
+         "max_pelvis_motion_model_pixels":round(max_pelvis_motion_pixels,5),
          "no_real_game_clearance_claim":True,
          "frame_count":SAMPLES,"joint_count":len(rig.pose.bones)}
     if clearance_min<0:
         raise RuntimeError(f"R07 blade intersects Blender head proxy {clearance_min:.3f}m; no runtime export")
     if max_toe_drift>.15:
         raise RuntimeError(f"R07 planted foot drift {max_toe_drift:.3f}m; no runtime export")
+    if max_pelvis_motion_pixels<.50:
+        raise RuntimeError("R07 lacks measurable mass transfer; zero-pelvis-motion regression")
     destination=opt.out/"r07_mid_guard_cut_v3.json"
     destination.write_text(json.dumps(export,indent=2)+"\n",encoding="utf-8")
     scene.frame_set(1)
