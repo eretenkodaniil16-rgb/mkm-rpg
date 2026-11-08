@@ -108,8 +108,10 @@ public final class AbilityService {
         if (!OriginShowcaseRules.allowedClassAction(
                 CharacterOriginService.get(player), "mkm:mage")) return false;
         long now = player.level().getGameTime();
+        CombatState combat = player.getAttachedOrCreate(CombatAttachments.PLAYER);
         if (!player.isAlive() || player.isSpectator() || player.isPassenger()
                 || !player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle()
+                || now < combat.heavyReadyTick()
                 || player.hasEffect(MobEffects.ABSORPTION)) return false;
 
         PlayerModifierSnapshot modifiers = stats(player);
