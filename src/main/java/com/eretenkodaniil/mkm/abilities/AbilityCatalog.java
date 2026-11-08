@@ -14,6 +14,12 @@ public final class AbilityCatalog {
             AbilityDefinition.Resource.MANA, AbilityDefinition.Effect.HEAL,
             20.0D, 0, 60, 6.0D);
 
+    /** Server-executable M5 mage-only self ward. Other barrier sample remains disabled. */
+    public static final AbilityDefinition MAGE_WARD = new AbilityDefinition(
+            "mkm:mage_ward", AbilityDefinition.Kind.ACTIVE, AbilityDefinition.TargetMode.SELF,
+            AbilityDefinition.Resource.MANA, AbilityDefinition.Effect.BARRIER,
+            25.0D, 0, 180, 4.0D);
+
     private static final Map<String, AbilityDefinition> DEFINITIONS = create();
 
     private AbilityCatalog() {}
@@ -21,6 +27,7 @@ public final class AbilityCatalog {
     private static Map<String, AbilityDefinition> create() {
         Map<String, AbilityDefinition> abilities = new LinkedHashMap<>();
         register(abilities, RENEWAL);
+        register(abilities, MAGE_WARD);
         // Design-only samples: the server deliberately rejects activation until
         // their target validation, damage/effect integration and cast contracts exist.
         register(abilities, new AbilityDefinition(
