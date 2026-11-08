@@ -91,8 +91,10 @@ public abstract class PlayerModelAnimationMixin {
             // Its rotations are additive; vanilla locomotion/head tracking remain.
             applyClip(model, state, frame.sampledClip(), frame.attackLegWeight());
             if (Minecraft.getInstance().level != null) {
-                AnimationRenderProbe.mark(Minecraft.getInstance().level.getGameTime(),
-                        frame.sampledClip().clipId());
+                long tick=Minecraft.getInstance().level.getGameTime();
+                AnimationRenderProbe.mark(tick,frame.sampledClip().clipId());
+                NativeRenderDiagnostics.mark(tick,"C3_QA5_MODEL_SETUP",
+                        frame.sampledClip().clipId(),"LEGACY_VALIDATED_PROFILE");
             }
         } else if (action.phase() == ActionTimeline.Phase.DODGING) {
             // Tuck the body into a crouched roll, then release naturally.
@@ -141,6 +143,17 @@ public abstract class PlayerModelAnimationMixin {
                 }
                 default -> { }
             }
+        }
+
+        if(frame.sampledClip()==null && Minecraft.getInstance().level!=null) {
+            boolean legacyFallback=action.phase()==ActionTimeline.Phase.DODGING
+                    || AnimationController.profileForHands(action,
+                        Minecraft.getInstance().player.getMainHandItem(),
+                        Minecraft.getInstance().player.getOffhandItem())!=null;
+            NativeRenderDiagnostics.mark(Minecraft.getInstance().level.getGameTime(),
+                    legacyFallback?"C2_FALLBACK_MODEL_SETUP":"VANILLA_UNSUPPORTED_WEAPON",
+                    legacyFallback?"mkm:c2/legacy_pose":"NONE",
+                    legacyFallback?"C3_ASSET_MISSING":"NO_AUTHORED_WEAPON_PROFILE");
         }
 
         // The jacket and sleeves are separate cubes in vanilla's player model.
