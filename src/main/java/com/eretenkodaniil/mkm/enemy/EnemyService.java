@@ -30,6 +30,10 @@ public final class EnemyService {
     private static final Map<ServerLevel, Map<UUID, EnemyRuntime>> LOADED = new IdentityHashMap<>();
     private static final long[] LATENCY_BUCKET_CEIL_US = {25L, 50L, 100L, 250L, 500L, 1000L, 2000L, 5000L};
     private static final long[] LATENCY_COUNTS = new long[LATENCY_BUCKET_CEIL_US.length + 1];
+    private static long targetQueries;
+    private static long allyQueries;
+    private static long blockLightSamples;
+    private static long executedPounces;
     private static long tickSamples;
     private static long totalTickNanos;
     private static long peakTickNanos;
@@ -71,6 +75,22 @@ public final class EnemyService {
         if (perLevel == null) return;
         perLevel.remove(entity.getUUID());
         if (perLevel.isEmpty()) LOADED.remove(level);
+    }
+
+    // Counters are server-main-thread only; never inspect world entities off-thread.
+    static void recordTargetQuery() { targetQueries++; }
+    static void recordLightSample() { blockLightSamples++; }
+    static void recordPounce() { executedPounces++; }
+
+    static boolean hasNearbyGuard(ServerLevel level, PathfinderMob mob) {
+        allyQueries++;
+        for (PathfinderMob ally : level.getEntitiesOfClass(PathfinderMob.class,
+                mob.getBoundingBox().inflate(10.0),
+                candidate -> candidate != mob && candidate.isAlive()
+                        && candidate.entityTags().contains(EnemyFactory.GUARD_TAG))) {
+            if (ally.getTarget() != null) return true;
+        }
+        return false;
     }
 
     public static void onServerTick(MinecraftServer server) {
@@ -177,6 +197,10 @@ public final class EnemyService {
         totalAllocatedBytes = 0L;
         allocationSamples = 0L;
         Arrays.fill(LATENCY_COUNTS, 0L);
+        targetQueries = 0L;
+        allyQueries = 0L;
+        blockLightSamples = 0L;
+        executedPounces = 0L;
     }
 
     private static String p95UpperBound() {
@@ -201,8 +225,9 @@ public final class EnemyService {
                 String.format(java.util.Locale.ROOT, "%.0f B/tick",
                         (double) totalAllocatedBytes / allocationSamples);
         return String.format(java.util.Locale.ROOT,
-                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1fus p95 upper=%s max=%.1fus alloc=%s (module only; NOT full MSPT)",
+                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1fus p95 upper=%s max=%.1fus alloc=%s queries(target/ally/light)=%d/%d/%d leaps=%d (module only; NOT full MSPT)",
                 active, peakTracked, tickSamples, averageUs, p95UpperBound(),
-                peakTickNanos / 1000.0, allocation);
+                peakTickNanos / 1000.0, allocation,
+                targetQueries, allyQueries, blockLightSamples, executedPounces);
     }
 }
