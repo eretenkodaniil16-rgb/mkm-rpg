@@ -28,6 +28,7 @@ public final class MkmBlocks {
         ResourceKey<Block> blockKey = ResourceKey.create(Registries.BLOCK, id);
         BlockBehaviour.Properties properties =
                 BlockBehaviour.Properties.of().setId(blockKey).strength(2.5F, 6.0F);
+        if (rune) properties = properties.lightLevel(state -> 9);
         Block block = rune ? new RuneSlateBlock(properties) : new Block(properties);
         Registry.register(BuiltInRegistries.BLOCK, blockKey, block);
         ResourceKey<Item> itemKey = ResourceKey.create(Registries.ITEM, id);
