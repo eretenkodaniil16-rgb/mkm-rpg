@@ -201,8 +201,9 @@ public final class EnemyService {
                 String.format(java.util.Locale.ROOT, "%.0f B/tick",
                         (double) totalAllocatedBytes / allocationSamples);
         return String.format(java.util.Locale.ROOT,
-                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1fus p95 upper=%s max=%.1fus alloc=%s (module only; NOT full MSPT)",
+                "MKM Enemy AI | loaded=%d peak=%d samples=%d avg=%.1fus p95 upper=%s max=%.1fus alloc=%s playerScan=%s (module only; NOT full MSPT)",
                 active, peakTracked, tickSamples, averageUs, p95UpperBound(),
-                peakTickNanos / 1000.0, allocation);
+                peakTickNanos / 1000.0, allocation,
+                EnemyRuntime.directPlayerScanEnabled() ? "direct-experimental" : "vanilla-spatial");
     }
 }
