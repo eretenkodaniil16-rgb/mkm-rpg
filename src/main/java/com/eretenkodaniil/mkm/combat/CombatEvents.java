@@ -1,6 +1,8 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.combat.mode.CombatModeRules;
+import com.eretenkodaniil.mkm.combat.mode.CombatModeService;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
@@ -34,7 +36,13 @@ public final class CombatEvents {
                 && source.getDirectEntity() == attacker) {
             PENDING_HEAVY.begin(target);
             PlayerModifierSnapshot offense = stats(attacker);
-            boolean heavy = attacker.isShiftKeyDown() && CombatService.tryHeavy(attacker);
+            CombatModeRules.Strike modeHit = CombatModeService.currentImpact(attacker);
+            // Opt-in native impact already spent stamina exactly once on RELEASE.
+            // Never run separate Shift+LMB heavy cost during a queued charge.
+            boolean heavy = (modeHit == CombatModeRules.Strike.CHARGED
+                    && CombatModeService.isSelectedImpactTarget(attacker, target))
+                    || (modeHit == CombatModeRules.Strike.NONE
+                        && attacker.isShiftKeyDown() && CombatService.tryHeavy(attacker));
             if (heavy) PENDING_HEAVY.record(target, source, target.level().getGameTime());
             float scaled = CombatRules.scaleIncomingMelee(
                     amount, offense.get(PlayerModifierId.PHYSICAL_POWER),
@@ -71,6 +79,7 @@ public final class CombatEvents {
         boolean heavy = PENDING_HEAVY.consume(entity, source, entity.level().getGameTime());
         if (blocked) {
             if (entity instanceof ServerPlayer defender) {
+                CombatModeService.onVanillaShieldBlock(defender, source, baseDamage);
                 ShieldGuardService.onBlocked(defender, baseDamage);
             }
             return;
@@ -100,6 +109,9 @@ public final class CombatEvents {
                 entity.getAttachedOrCreate(CombatAttachments.POISE), tick,
                 damageTaken, staggerPower, staggerResistance, heavy && playerMelee);
         entity.setAttached(CombatAttachments.POISE, result.state());
+        if (playerMelee && source.getEntity() instanceof ServerPlayer actualAttacker) {
+            CombatModeService.onConfirmedDamage(actualAttacker, entity, source, damageTaken, blocked);
+        }
         // C3 hit VFX only on verified positive, unblocked damage, while D3 owns provenance.
         if (playerMelee && entity instanceof Mob mob
                 && source.getEntity() instanceof ServerPlayer player) {

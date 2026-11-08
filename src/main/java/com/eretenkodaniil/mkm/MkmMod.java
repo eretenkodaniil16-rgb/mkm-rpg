@@ -12,6 +12,8 @@ import com.eretenkodaniil.mkm.character.origin.net.CharacterOriginNetworking;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
+import com.eretenkodaniil.mkm.combat.mode.CombatModeService;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
 import com.eretenkodaniil.mkm.encounter.EncounterAttachments;
@@ -69,12 +71,17 @@ public final class MkmMod implements ModInitializer {
             CharacterEvents.onPlayerLoggedIn(handler.player);
             CharacterOriginService.onLogin(handler.player);
             CombatService.onLogin(handler.player);
+            CombatModeService.onLogin(handler.player);
             AbilityService.onLogin(handler.player);
             FordQuestService.onLogin(handler.player);
         });
+        ServerPlayConnectionEvents.DISCONNECT.register((handler, server) ->
+                CombatModeService.onDisconnect(handler.player));
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
                 CombatService.onPlayerTick(player);
+                FencingSchoolService.onPlayerTick(player);
+                CombatModeService.tick(player);
                 AbilityService.onPlayerTick(player);
             }
         });

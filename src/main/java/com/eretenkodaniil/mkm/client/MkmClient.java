@@ -43,6 +43,7 @@ public final class MkmClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
+        CombatModeClient.initialize();
         ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
                 context.client().execute(() -> {
                     if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
@@ -70,6 +71,7 @@ public final class MkmClient implements ClientModInitializer {
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            CombatModeClient.onTick(client);
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();
