@@ -1,4 +1,9 @@
 name: Build (Fabric 26.3, embedded API)
+# Cancel superseded feature-branch push/PR runs; only the exact latest SHA
+# is useful for Magic Showcase integration QA.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
 on:
   push:
     branches:
