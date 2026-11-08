@@ -15,6 +15,12 @@ import net.minecraft.world.entity.LivingEntity;
  */
 final class EnemyRuntime {
     private static final double ACQUISITION_RADIUS = 16.0;
+    // Controlled A/B experiment. Remains OFF until real spark MSPT and p99 QA.
+    // Java -Dmkm.enemy.directPlayerScan=true at process start enables the candidate.
+    private static final boolean DIRECT_PLAYER_SCAN =
+            Boolean.parseBoolean(System.getProperty("mkm.enemy.directPlayerScan", "false"));
+
+    static boolean directPlayerScanEnabled() { return DIRECT_PLAYER_SCAN; }
     private final PathfinderMob mob;
     private final EnemyDefinition definition;
     private final BlockPos patrolAnchor;
@@ -155,10 +161,22 @@ final class EnemyRuntime {
     private ServerPlayer acquireNearbyPlayer(ServerLevel level) {
         ServerPlayer nearest = null;
         double best = ACQUISITION_RADIUS * ACQUISITION_RADIUS;
-        // A local spatial query once per 20 ticks, NOT a global entity scan.
-        for (ServerPlayer player : level.getEntitiesOfClass(ServerPlayer.class,
-                mob.getBoundingBox().inflate(ACQUISITION_RADIUS),
-                p -> p.isAlive() && !p.isSpectator())) {
+        // Baseline preserves the vanilla spatial-entity query. The candidate
+        // traverses the already-managed player list (1-2 players in Showcase)
+        // without allocating a query result list on every acquisition phase.
+        // Preserve vanilla AABB intersection, alive/spectator and closest-LOS
+        // semantics. The candidate is NOT suitable for arbitrary large lobbies
+        // without another profile; never run world/entity access on a worker.
+        var bounds = mob.getBoundingBox().inflate(ACQUISITION_RADIUS);
+        Iterable<ServerPlayer> candidates = DIRECT_PLAYER_SCAN
+                ? level.players()
+                : level.getEntitiesOfClass(ServerPlayer.class, bounds,
+                        p -> p.isAlive() && !p.isSpectator());
+        for (ServerPlayer player : candidates) {
+            if (DIRECT_PLAYER_SCAN && (!player.isAlive() || player.isSpectator()
+                    || player.isRemoved() || !bounds.intersects(player.getBoundingBox()))) {
+                continue;
+            }
             double distance = mob.distanceToSqr(player);
             if (distance < best && mob.hasLineOfSight(player)) {
                 nearest = player;
