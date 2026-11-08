@@ -38,8 +38,6 @@ import net.minecraft.world.phys.Vec3;
 public final class CombatModeService {
     private static final boolean QA_OPT_IN = Boolean.getBoolean("mkm.combat.experimental");
     private static final Map<ServerPlayer, Session> SESSIONS = new WeakHashMap<>();
-    private static final double MAX_CONTACT_RANGE = 3.35D;
-    private static final double MIN_FACING_DOT = 0.84D;
 
     private static final class Session {
         CombatModeRules.State state = new CombatModeRules.State();
@@ -54,7 +52,8 @@ public final class CombatModeService {
     private static Session session(ServerPlayer player) {
         Session s = SESS.computeIfAbsent(player, ignored -> new Session());
         if (s.world != null && s.world != player.level()) {
-            s.state = CombatModeRules.mode(s.state, false);
+            s.state = new CombatModeRules.State();
+            sendStatus(player, false);
             s.riposteUntil = 0L;
             s.resolving = CombatModeRules.Strike.NONE;
         }
@@ -157,7 +156,9 @@ public final class CombatModeService {
     /** Process server actions once; never invoked from a client animation event. */
     public static void tick(ServerPlayer player) {
         Session s = SESS.get(player);
-        if (s == null || !s.state.enabled()) return;
+        if (s == null) return;
+        s = session(player); // resets client ACK and sequence on dimension transitions
+        if (!s.state.enabled()) return;
         long now = player.level().getGameTime();
         var previous = s.state;
         s.state = CombatModeRules.expire(previous, now);
@@ -213,6 +214,7 @@ public final class CombatModeService {
         FencingSchool style = school(attacker).orElse(FencingSchool.NONE);
         boolean riposte = kind == CombatModeRules.Strike.QUICK
                 && style == FencingSchool.FIORE
+                && s.riposteUntil > 0L
                 && attacker.level().getGameTime() <= s.riposteUntil;
         if (riposte) s.riposteUntil = 0L;
 
@@ -248,16 +250,15 @@ public final class CombatModeService {
         Vec3 eye = player.getEyePosition();
         Vec3 facing = player.getLookAngle().normalize();
         LivingEntity nearest = null;
-        double best = MAX_CONTACT_RANGE * MAX_CONTACT_RANGE;
+        double best = CombatTargetRules.RANGE * CombatTargetRules.RANGE;
         for (Entity candidate : player.level().getEntities(player,
-                player.getBoundingBox().inflate(MAX_CONTACT_RANGE),
+                player.getBoundingBox().inflate(CombatTargetRules.RANGE),
                 entity -> entity instanceof LivingEntity living && living.isAlive())) {
-            if (!(candidate instanceof LivingEntity living)
-                    || !player.hasLineOfSight(living)) continue;
+            if (!(candidate instanceof LivingEntity living)) continue;
             Vec3 toward = living.getBoundingBox().getCenter().subtract(eye);
             double distance = toward.lengthSqr();
-            if (distance < 1e-5D || distance >= best) continue;
-            if (facing.dot(toward.normalize()) < MIN_FACING_DOT) continue;
+            if (distance >= best || !CombatTargetRules.valid(
+                    distance, facing.dot(toward.normalize()), player.hasLineOfSight(living))) continue;
             nearest = living;
             best = distance;
         }

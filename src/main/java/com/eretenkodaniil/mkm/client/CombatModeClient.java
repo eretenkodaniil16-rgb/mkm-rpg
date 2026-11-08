@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.MkmMod;
+import com.eretenkodaniil.mkm.combat.mode.CombatModeInputRules;
 import com.eretenkodaniil.mkm.combat.net.CombatModeRequest;
 import com.eretenkodaniil.mkm.combat.net.CombatModeStatus;
 import com.eretenkodaniil.mkm.combat.net.CombatStrikeIntent;
@@ -49,14 +50,15 @@ public final class CombatModeClient {
     /** Called by Minecraft.startAttack at HEAD; true ONLY when vanilla LMB is suppressed. */
     public static boolean interceptAttack(Minecraft client) {
         if (!enabled || client.player == null || client.level == null) return false;
-        if (holding) return true; // no accidental vanilla mining after starting held entity attack
-        if (client.gui.screen() != null || client.player.isSpectator()
-                || !client.player.isAlive() || client.player.isUsingItem()
-                || !(client.hitResult instanceof EntityHitResult) || !canSend()) return false;
         String id = BuiltInRegistries.ITEM.getKey(
                 client.player.getMainHandItem().getItem()).toString();
-        if (EquipmentRules.profile(id, EquipmentRules.Slot.MAIN_HAND).family()
-                != EquipmentRules.Family.SWORD) return false;
+        boolean sword = EquipmentRules.profile(id, EquipmentRules.Slot.MAIN_HAND).family()
+                == EquipmentRules.Family.SWORD;
+        if (!CombatModeInputRules.intercept(enabled, holding, client.gui.screen() != null,
+                client.player.isAlive() && !client.player.isSpectator()
+                        && !client.player.isUsingItem(),
+                sword, client.hitResult instanceof EntityHitResult, canSend())) return false;
+        if (holding) return true;
         if (serial == Integer.MAX_VALUE) {
             // Return to vanilla if connection has exhausted monotonically increasing serials.
             enabled = false;
