@@ -109,7 +109,21 @@ jobs:
                           api_distributions.append(dep_meta)
               assert len(api_distributions) == 1, "Expected exactly one embedded fabric-api distribution"
               assert api_distributions[0].get("jars"), "Bundled Fabric API has no module jars"
+              # Artifact-level acceptance: prevent packaging old QA5 roster or empty cosmetic placeholders.
+              encounter = json.loads(mod.read("data/mkm/encounter/ford_ambush.json"))
+              roster = encounter["roster"]
+              assert len(roster) == 3, f"Bad roster size: {roster}"
+              assert sum(m["entity"] == "minecraft:husk" for m in roster) == 2, roster
+              assert sum(m["entity"] == "minecraft:spider" and m["elite"] for m in roster) == 1, roster
+              for name in ("raider_insignia", "stalker_fang"):
+                  tex = mod.read(f"assets/mkm/textures/item/{name}.png")
+                  assert tex[:8] == bytes((137,80,78,71,13,10,26,10)), f"Missing PNG: {name}"
+                  assert int.from_bytes(tex[16:20], "big") == 16
+                  assert int.from_bytes(tex[20:24], "big") == 16
+                  model = json.loads(mod.read(f"assets/mkm/models/item/{name}.json"))
+                  assert model["textures"]["layer0"] == f"mkm:item/{name}"
               print(f"PASS: {os.path.basename(path)} embeds Fabric API with {len(api_distributions[0]['jars'])} nested modules")
+              print("PASS: showcase night roster 2 Husk + elite Spider and two original 16px PNG items")
           PY
       - name: Smoke-test dedicated server startup
         shell: bash
