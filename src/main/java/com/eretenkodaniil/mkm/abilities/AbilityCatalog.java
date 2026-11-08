@@ -30,7 +30,7 @@ public final class AbilityCatalog {
         register(abilities, new AbilityDefinition(
                 "mkm:arcane_barrier", AbilityDefinition.Kind.ACTIVE, AbilityDefinition.TargetMode.SELF,
                 AbilityDefinition.Resource.MANA, AbilityDefinition.Effect.BARRIER,
-                25.0D, 12, 160, 10.0D));
+                25.0D, 0, 160, 4.0D)); // QA5 ward is instant; Combat owns future channel
         register(abilities, new AbilityDefinition(
                 "mkm:repulsion_wave", AbilityDefinition.Kind.ACTIVE, AbilityDefinition.TargetMode.CONE,
                 AbilityDefinition.Resource.MANA, AbilityDefinition.Effect.CONTROL,
