@@ -44,7 +44,7 @@ public final class AbilityGrantPolicy {
         if (grants == null || !AbilityIds.valid(id)
                 || AbilityCatalog.get(id) == null) return false;
         if (AbilityCatalog.RENEWAL.id().equals(id)) return true; // existing player ability
-        if ("mkm:arcane_barrier".equals(id))
+        if ("mkm:mage_ward".equals(id))
             return OriginCatalog.MAGE.id().equals(grants.classId())
                     || grants.researched().contains(id);
         return grants.researched().contains(id);
@@ -54,6 +54,6 @@ public final class AbilityGrantPolicy {
         var def = AbilityCatalog.get(id);
         return granted(grants, id) && SpellProgression.meetsLevel(id, grants.level())
                 && def.kind() == AbilityDefinition.Kind.ACTIVE
-                && ("mkm:renewal".equals(id) || "mkm:arcane_barrier".equals(id));
+                && ("mkm:renewal".equals(id) || "mkm:mage_ward".equals(id));
     }
 }
