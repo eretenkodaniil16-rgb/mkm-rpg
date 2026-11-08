@@ -6,7 +6,7 @@ import math
 from pathlib import Path
 
 MATCH_FIELDS = (
-    'minecraft', 'java', 'hardware', 'mkm_sha', 'world_seed', 'scenario',
+    'minecraft', 'java', 'hardware', 'world_seed', 'scenario',
     'player_count', 'entity_count', 'render_distance', 'simulation_distance',
     'duration_seconds',
 )
@@ -20,11 +20,14 @@ def compare(baseline: dict, candidate: dict) -> dict:
     different = [key for key in MATCH_FIELDS if a[key] != b[key]]
     if different:
         raise ValueError('Workloads are not comparable: ' + ', '.join(different))
+    # Build identity is deliberately NOT matched: A/B normally compares different
+    # MKM commits or toggles. Requiring mkm_sha equality invalidated actual code A/B.
     if a.get('minecraft') != '26.3':
         raise ValueError('Benchmark requires Minecraft 26.3')
     am, bm = baseline['metrics'], candidate['metrics']
     for key in ('tick_p95_ms', 'tick_p99_ms'):
-        if not isinstance(am.get(key), (int, float)) or not isinstance(bm.get(key), (int, float)):
+        if (type(am.get(key)) not in (int, float)
+                or type(bm.get(key)) not in (int, float)):
             raise ValueError(f'Missing numeric metric: {key}')
         if not math.isfinite(am[key]) or not math.isfinite(bm[key]) or am[key] <= 0 or bm[key] <= 0:
             raise ValueError(f'Non-positive timing metric: {key}')
@@ -32,7 +35,9 @@ def compare(baseline: dict, candidate: dict) -> dict:
     p99_gain = (am['tick_p99_ms'] - bm['tick_p99_ms']) / am['tick_p99_ms'] * 100
     chunk_gain = None
     if 'chunks_per_second' in am and 'chunks_per_second' in bm:
-        if (math.isfinite(am['chunks_per_second']) and math.isfinite(bm['chunks_per_second'])
+        if (type(am['chunks_per_second']) in (int, float)
+                and type(bm['chunks_per_second']) in (int, float)
+                and math.isfinite(am['chunks_per_second']) and math.isfinite(bm['chunks_per_second'])
                 and am['chunks_per_second'] > 0 and bm['chunks_per_second'] >= 0):
             chunk_gain = (bm['chunks_per_second'] - am['chunks_per_second']) / am['chunks_per_second'] * 100
     improved = p95_gain >= 10.0 or (chunk_gain is not None and chunk_gain >= 20.0)
