@@ -10,12 +10,33 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.resources.ResourceManager;
 
-/** Server datapack configuration, validated on initial load and /reload. */
+/** Separate, validated server datapacks; legacy Ford encounter stays unchanged. */
 public final class EncounterDefinitions {
     private static volatile EncounterDefinition ford;
-    private EncounterDefinitions() {}
+    private static volatile EncounterDefinition showcase;
 
+    private EncounterDefinitions() {}
     public static EncounterDefinition ford() { return ford; }
+    public static EncounterDefinition showcase() { return showcase; }
+
+    private static EncounterDefinition parse(ResourceManager manager, String name, String id) {
+        var file=manager.getResource(MkmMod.id("encounter/"+name+".json"));
+        if (file.isEmpty()) {
+            MkmMod.LOGGER.error("Missing encounter datapack: mkm:encounter/{}.json",name);
+            return null;
+        }
+        try (Reader reader=file.get().openAsReader()) {
+            EncounterDefinition result=EncounterDefinition.CODEC.parse(
+                    JsonOps.INSTANCE,JsonParser.parseReader(reader)).getOrThrow();
+            if (!result.id().equals(id)) throw new IllegalArgumentException(
+                    "Datapack resource and definition ID mismatch: "+name+" / "+result.id());
+            MkmMod.LOGGER.info("Loaded encounter {} with {} mobs",result.id(),result.roster().size());
+            return result;
+        } catch (Exception error) {
+            MkmMod.LOGGER.error("Invalid encounter datapack: {}. New starts disabled for this type",name,error);
+            return null;
+        }
+    }
 
     public static void initialize() {
         ResourceManagerHelper.get(PackType.SERVER_DATA).registerReloadListener(
@@ -24,21 +45,11 @@ public final class EncounterDefinitions {
                         return MkmMod.id("encounter_definitions");
                     }
                     @Override public void onResourceManagerReload(ResourceManager manager) {
-                        // Never reuse stale config after an invalid datapack reload.
-                        ford = null;
-                        var file = manager.getResource(MkmMod.id("encounter/ford_ambush.json"));
-                        if (file.isEmpty()) {
-                            MkmMod.LOGGER.error("Missing datapack encounter: mkm:encounter/ford_ambush.json");
-                            return;
-                        }
-                        try (Reader reader = file.get().openAsReader()) {
-                            EncounterDefinition parsed = EncounterDefinition.CODEC
-                                    .parse(JsonOps.INSTANCE, JsonParser.parseReader(reader)).getOrThrow();
-                            ford = parsed;
-                            MkmMod.LOGGER.info("Loaded encounter {} with {} mobs", parsed.id(), parsed.roster().size());
-                        } catch (Exception e) {
-                            MkmMod.LOGGER.error("Invalid Ford encounter datapack; new starts disabled", e);
-                        }
+                        // Do not retain stale definitions after /reload.
+                        ford=null;
+                        showcase=null;
+                        ford=parse(manager,"ford_ambush","mkm:ford_ambush");
+                        showcase=parse(manager,"showcase_watchtower","mkm:showcase_watchtower");
                     }
                 });
     }

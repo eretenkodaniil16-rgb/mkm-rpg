@@ -19,8 +19,8 @@
       "elite": false
     },
     {
-      "entity": "minecraft:spider",
-      "role": "ranged",
+      "entity": "minecraft:husk",
+      "role": "frontline",
       "elite": false
     },
     {

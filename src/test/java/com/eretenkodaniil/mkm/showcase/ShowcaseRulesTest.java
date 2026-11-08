@@ -16,7 +16,7 @@ final class ShowcaseRulesTest {
     private EncounterLedger.Entry save(String owner,int xp) {
         return new EncounterLedger.Entry(1,owner,80,65,180,xp,EncounterLedger.RESERVED,
                 List.of(new EncounterLedger.Member(owner+"-1","minecraft:husk","frontline",false,false),
-                        new EncounterLedger.Member(owner+"-2","minecraft:husk","frontline",false,false),
+                        new EncounterLedger.Member(owner+"-2","minecraft:spider","ambusher",false,false),
                         new EncounterLedger.Member(owner+"-3","minecraft:skeleton","leader",true,false)));
     }
     @Test void studyRequiresPerceptionOrActualMageClass() {

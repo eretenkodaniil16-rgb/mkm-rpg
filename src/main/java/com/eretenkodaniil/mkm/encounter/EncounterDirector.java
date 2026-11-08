@@ -57,6 +57,7 @@ public final class EncounterDirector {
 
     /** Player-owned narrative encounter, separate from the old GM-only pilot ID. */
     public static boolean startStoryAt(ServerPlayer player, BlockPos anchor, String approach) {
+        if (!java.util.List.of("defend","study").contains(approach)) return false;
         return startAt(player, anchor, "mkm:ford_ambush/" + player.getUUID()
                 + "_" + approach, true,
                 approach.equals("study") ? 25 : 0);
@@ -68,7 +69,8 @@ public final class EncounterDirector {
                 || !player.isAlive() || player.isSpectator()) return false;
         if (story && (player.distanceToSqr(anchor.getX() + .5,anchor.getY(),anchor.getZ() + .5)
                 > 64.0 * 64.0 || !level.hasChunkAt(anchor))) return false;
-        EncounterDefinition config = EncounterDefinitions.ford();
+        EncounterDefinition config = story
+                ? EncounterDefinitions.showcase() : EncounterDefinitions.ford();
         if (config == null) {
             inform(player, "JSON не загружен или отклонён сервером. Посмотрите лог /reload.");
             return false;

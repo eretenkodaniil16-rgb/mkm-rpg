@@ -14,7 +14,7 @@ final class EncounterDefinitionTest {
              "time":"night","danger":2,"reward_xp":100,
              "roster":[
                 {"entity":"minecraft:husk","role":"frontline","elite":false},
-                {"entity":"minecraft:spider","role":"ranged","elite":false},
+                {"entity":"minecraft:husk","role":"frontline","elite":false},
                 {"entity":"minecraft:skeleton","role":"leader","elite":true}
              ]}
             """;
@@ -43,6 +43,6 @@ final class EncounterDefinitionTest {
                 good.timeWindow(),good.dangerTier(),100,
                 List.of(new EncounterDefinition.Spawn("minecraft:wither","leader",true),
                         new EncounterDefinition.Spawn("minecraft:husk","frontline",false),
-                        new EncounterDefinition.Spawn("minecraft:spider","ranged",false))));
+                        new EncounterDefinition.Spawn("minecraft:husk","frontline",false))));
     }
 }

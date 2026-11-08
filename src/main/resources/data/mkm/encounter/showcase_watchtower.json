@@ -1,0 +1,32 @@
+{
+  "id": "mkm:showcase_watchtower",
+  "title": "Стражи разрушенной башни",
+  "category": "hostile",
+  "dimension": "minecraft:overworld",
+  "allowed_biomes": [
+    "minecraft:plains",
+    "minecraft:forest",
+    "minecraft:river",
+    "minecraft:dappled_forest"
+  ],
+  "time": "night",
+  "danger": 2,
+  "reward_xp": 100,
+  "roster": [
+    {
+      "entity": "minecraft:husk",
+      "role": "frontline",
+      "elite": false
+    },
+    {
+      "entity": "minecraft:spider",
+      "role": "ambusher",
+      "elite": false
+    },
+    {
+      "entity": "minecraft:skeleton",
+      "role": "leader",
+      "elite": true
+    }
+  ]
+}

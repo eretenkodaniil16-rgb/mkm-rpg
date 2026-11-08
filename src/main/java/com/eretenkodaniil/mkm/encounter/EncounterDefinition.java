@@ -32,7 +32,7 @@ public record EncounterDefinition(
     public EncounterDefinition {
         allowedBiomes = List.copyOf(allowedBiomes);
         roster = List.copyOf(roster);
-        if (!"mkm:ford_ambush".equals(id) || title.isBlank()
+        if ((!id.equals("mkm:ford_ambush") && !id.equals("mkm:showcase_watchtower")) || title.isBlank()
                 || !"hostile".equals(category) || !"minecraft:overworld".equals(dimension)
                 || allowedBiomes.isEmpty() || allowedBiomes.size() > 16
                 || !List.of("any", "day", "night").contains(timeWindow)
@@ -44,10 +44,18 @@ public record EncounterDefinition(
                     !s.entityId().equals("minecraft:skeleton") || !s.role().equals("leader"))
                 || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:husk"))
                 || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:skeleton"))
-                || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:spider"))
                 || roster.stream().anyMatch(s -> !List.of("minecraft:husk", "minecraft:spider", "minecraft:skeleton").contains(s.entityId())
-                    || !List.of("frontline", "ranged", "leader").contains(s.role()))
-                || allowedBiomes.stream().anyMatch(s -> !s.startsWith("minecraft:") || s.length() > 80)) {
+                    || !List.of("frontline", "ranged", "leader", "ambusher").contains(s.role()))
+                || allowedBiomes.stream().anyMatch(s -> !s.startsWith("minecraft:") || s.length() > 80)
+                || (id.equals("mkm:ford_ambush")
+                    && (roster.stream().filter(s -> s.entityId().equals("minecraft:husk")).count() != 2
+                        || roster.stream().anyMatch(s -> s.entityId().equals("minecraft:spider"))))
+                || (id.equals("mkm:showcase_watchtower")
+                    && (roster.stream().filter(s -> s.entityId().equals("minecraft:husk")).count() != 1
+                        || roster.stream().filter(s -> s.entityId().equals("minecraft:spider")).count() != 1
+                        || roster.stream().filter(s -> s.entityId().equals("minecraft:skeleton")).count() != 1
+                        || roster.stream().anyMatch(s -> s.entityId().equals("minecraft:spider")
+                            && !s.role().equals("ambusher"))))) {
             throw new IllegalArgumentException("Invalid or oversized Ford ambush encounter configuration");
         }
     }
