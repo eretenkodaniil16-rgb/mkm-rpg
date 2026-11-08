@@ -22,7 +22,7 @@ A GitHub Actions headless server/client boot is NOT game visual acceptance.
 | `AbilityGrantPolicy` synthetic class IDs | Replaced: read real owner-synced/saved `CharacterOriginData`, `OriginCatalog` Mage or Warrior; rare tome proven by actual held registered item, not client intent. |
 | `PlayerModifierSnapshot` from equipment alone | Extended existing `EquipmentSnapshots.snapshot` with *bounded extra MAX_MANA delta*; existing equipment + origin + level/INT summed before **one** `PlayerModifierCalculator` clamp. Other Combat consumers unchanged. |
 | `ManaLedger` v1 | Existing QA5 codec/attachment ID and owner-only sync unchanged. Cast uses same ledger, costs/deadlines. No extra gameplay save ledger. |
-| `AbilityCatalog`, `AbilityRules` | Preserved; shared new `AbilityCastPlan` calls existing regeneration/spend for both real effects. Only `arcane_barrier` descriptor changed from non-executable castTicks=12 prototype to *actual instant* castTicks=0. |
+| `AbilityCatalog`, `AbilityRules` | Preserved; shared new `AbilityCastPlan` calls existing regeneration/spend for both real effects. Added the Character M5 canonical `mkm:mage_ward` executable instant descriptor (castTicks=0); `mkm:arcane_barrier` remains a separate **disabled** 12-tick future channel prototype. |
 | M4 C2S `cast_ability` v2 | Ported monotone positive request ID and strict length/version checks. Client + server must both use Magic-v4 JAR, not mix with old QA5 v1. |
 | M3 S2C `ability_visual_event` v2 | Ported dimension-scoped owner ACK and MNAE callback; now supports two semantic action IDs. **No client-side duplicate particle burst**. |
 | M4 class/AI schema | Player class v4 bridged; no host AI casting enabled in this slice. No duplicate damage executor or AI resource ledger. |
@@ -33,7 +33,7 @@ A GitHub Actions headless server/client boot is NOT game visual acceptance.
 | Spell | Class / rare source | Effect | Cost at 1.0 cost multiplier | Cooldown | Visible server-initiated VFX |
 | --- | --- | --- | ---: | ---: | --- |
 | **Renewal**, Restoration circle I, **H** | Existing baseline ability, even for v4 legacy characters with no chosen origin | Native `LivingEntity.heal` +6 HP adjusted by the existing healing modifiers; only if injured | 20 MP | 60 ticks | Green `HAPPY_VILLAGER` + warm `END_ROD`; 14-tick semantic `mkm:renewal_cast` |
-| **Arcane Ward**, Abjuration circle I, **V** | Saved `mkm:mage`, or a selected non-mage physically holding `mkm:arcane_tome` | Vanilla `MobEffects.ABSORPTION` amplifier 0 (4 extra absorption HP) for **160 ticks**; refuses refresh while any absorption is active | 25 MP Mage; **37.5 MP** off-class with tome | 160 ticks | Violet `ENCHANT` + cold `END_ROD`; 20-tick semantic `mkm:arcane_ward_cast` |
+| **Arcane Ward**, Abjuration circle I, **V** | Saved `mkm:mage`, or a selected non-mage physically holding `mkm:arcane_tome` | Vanilla `MobEffects.ABSORPTION` amplifier 0 (4 extra absorption HP) for **100 ticks** (future Character M5 mentor: **180**); refuses refresh while any absorption is active | 25 MP Mage; **37.5 MP** off-class with tome | 180 ticks | Violet `ENCHANT` + cold `END_ROD`; 20-tick semantic `mkm:arcane_ward_cast` |
 
 The tome is a registered non-stackable MKM item in the creative tab.
 **No survival crafting, drop table or shop access** is added by Magic. Only
@@ -81,6 +81,20 @@ schools remain metadata. The player's GDD says **unique schools** but
 does not specify a final taxonomy; treat these names as **provisional**
 rather than asserting that nine lore schools were approved. Real:
 **Restoration and Abjuration** only. All others are design-only.
+
+
+**Conflict with Character M5 PR #87:** Character already provides
+`mkm:mage_ward` and maps `V` through `OriginClassActionRequest`
+to its own short `AbilityService.tryMageWard`. **Integration must
+retain exactly one server executor:** migrate Mage V to Magic's
+versioned cast intent `mkm:mage_ward`, remove Character's duplicate
+`tryMageWard` while keeping its `OriginProgressService.mastered`
+longer 180-tick variant; Warrior V must continue going to Combat's
+brace, not Magic. The class action and tome access must be reconciled
+with UX PR #88 action palette before publishing. This draft on QA5
+does NOT include Character M5 mentoring or Warrior brace. Since
+`V` is also used by Character's branch, do not merge both
+`MkmClient` files wholesale; choose one rebindable owner for input.
 
 ## Observable server, network and animation contract
 
@@ -132,8 +146,8 @@ inventing a second damage source but is still a **real defensive spell**.
    cooldown applies. Press H while full HP/busy/cooldown/low mana:
    no new APPLIED, visual burst or debit.
 4. Press **V** (Ward). Confirm 4 native absorption HP (two golden hearts),
-   protection against actual incoming damage for 8 s, **25 MP**
-   cost (at multiplier 1), 8 s cooldown and violet effect visible
+   protection against actual incoming damage for 5 s, **25 MP**
+   cost (at multiplier 1), 9 s cooldown and violet effect visible
    to both players. Repeated V while active/cooldown does not grant
    more hearts or spend again.
 5. Repeat as Warrior: Ward denied without book; with an actual
