@@ -22,6 +22,13 @@ public final class AbilityGrantPolicy {
     }
 
     public static Grants fromSaved(CharacterData character, CharacterOriginData origin) {
+        return fromSaved(character, origin, Set.of());
+    }
+
+    /** Only the server may supply validated held-item/research license IDs. */
+    public static Grants fromSaved(CharacterData character, CharacterOriginData origin,
+            Set<String> serverVerifiedLicenses) {
+        if (serverVerifiedLicenses == null) return null;
         if (character == null || character.schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION)
             return null;
         // Preserve QA5 Renewal for legacy/unselected v4 characters.
@@ -30,7 +37,7 @@ public final class AbilityGrantPolicy {
         if (origin.schemaVersion() != CharacterOriginData.SCHEMA_VERSION
                 || OriginCatalog.clazz(origin.classId()) == null
                 || OriginCatalog.race(origin.raceId()) == null) return null;
-        return new Grants(origin.classId(), character.level(), Set.of());
+        return new Grants(origin.classId(), character.level(), serverVerifiedLicenses);
     }
 
     public static boolean granted(Grants grants, String id) {
