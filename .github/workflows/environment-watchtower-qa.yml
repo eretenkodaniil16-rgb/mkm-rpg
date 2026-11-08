@@ -5,7 +5,7 @@ on:
       - 'feature/environment-*'
   pull_request:
     branches:
-      - 'integration/world-e2-1-fabric-character-v4-qa'
+      - 'integration/fabric-v4-world-origins-enemy-perf-qa5'
 
 jobs:
   static-asset-check:
@@ -16,7 +16,9 @@ jobs:
         with:
           python-version: '3.13'
       - name: Verify NBT, texture CRC, model/atlas references, loot and no worldgen
-        run: python3 tools/environment/verify_watchtower.py
+        run: |
+          python3 tools/environment/verify_watchtower.py
+          python3 tools/environment/verify_showcase_assets.py
 
   fabric-compile-test:
     runs-on: ubuntu-24.04
