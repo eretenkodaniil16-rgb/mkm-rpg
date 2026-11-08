@@ -7,7 +7,7 @@ from showcase_ab import evaluate_manifest
 
 
 class ShowcaseComparatorTest(unittest.TestCase):
-    def run(self, arm, phase, trial, p95=None, p99=None):
+    def fixture_run(self, arm, phase, trial, p95=None, p99=None):
         base = arm == "baseline"
         return {
             "arm": arm, "phase": phase, "trial": trial,
@@ -46,7 +46,7 @@ class ShowcaseComparatorTest(unittest.TestCase):
 
     def manifest(self):
         return {"runs": [
-            self.run(arm, phase, trial)
+            self.fixture_run(arm, phase, trial)
             for phase in ("cold", "warm")
             for trial in ("A", "B")
             for arm in ("baseline", "candidate")
