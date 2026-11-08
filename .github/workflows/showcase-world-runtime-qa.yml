@@ -1,0 +1,31 @@
+name: Showcase World — real dedicated-server NBT placement
+on:
+  push:
+    branches:
+      - 'feature/world-showcase01-ilra-tower-issue78'
+jobs:
+  guarded-world-placement:
+    timeout-minutes: 12
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Build and unit-test complete QA5 World Showcase
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test build --no-daemon
+      - name: Validate original PNG, NBT palettes, loot and no-worldgen policy
+        run: python3 tools/environment/verify_watchtower.py
+      - name: Place three authored watchtowers on a REAL isolated Fabric server through RCON
+        run: CI=true python3 tools/environment/smoke_watchtower_server.py
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: showcase01-real-world-nbt-placement-log
+          path: environment-server-smoke.log
+          if-no-files-found: warn
+          retention-days: 14
