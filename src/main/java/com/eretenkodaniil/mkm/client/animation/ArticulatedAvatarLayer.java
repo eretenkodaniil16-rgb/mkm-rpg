@@ -59,7 +59,7 @@ public final class ArticulatedAvatarLayer
         LocalCombatAnimation.Frame combat=LocalCombatAnimation.frame(state);
         if(!ArticulatedMode.active(state,combat)||rigRoot==null)return;
         ArticulatedClipV3 clip=ArticulatedMode.clip();
-        double phase=combat.sampledClip().localTime();
+        double phase=ArticulatedMode.time(combat);
         var pose=clip.sample(phase);
         boolean left=state.mainArm==HumanoidArm.LEFT;
         for(var e:joints.entrySet()){
@@ -81,6 +81,9 @@ public final class ArticulatedAvatarLayer
         collector.submitModelPart(rigRoot,matrix,
                 RenderTypes.entityTranslucent(state.skin.body().texturePath()),
                 light,OverlayTexture.NO_OVERLAY,null);
+        if(net.minecraft.client.Minecraft.getInstance().level!=null)
+            MnaEVisibleProbe.mark(net.minecraft.client.Minecraft.getInstance().level.getGameTime(),
+                    "MNAE17_LAYER",clip.id());
     }
 
     private static String swap(String id){

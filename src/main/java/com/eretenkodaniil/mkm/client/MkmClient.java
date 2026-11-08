@@ -8,6 +8,16 @@ import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionResult;
 import com.eretenkodaniil.mkm.client.gui.CharacterOriginScreen;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.client.animation.HitFeedbackParticles;
+import com.eretenkodaniil.mkm.client.animation.ArticulatedMode;
+import com.eretenkodaniil.mkm.client.animation.NativeAnimationToggle;
+import com.eretenkodaniil.mkm.client.animation.ArticulatedAvatarLayer;
+import com.eretenkodaniil.mkm.client.animation.MnaEVisibleProbe;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.minecraft.client.renderer.entity.player.AvatarRenderer;
+import net.minecraft.client.renderer.entity.RenderLayerParent;
+import net.minecraft.client.renderer.entity.state.AvatarRenderState;
+import net.minecraft.client.model.player.PlayerModel;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
 import com.eretenkodaniil.mkm.combat.net.ComboRequest;
@@ -38,6 +48,11 @@ public final class MkmClient implements ClientModInitializer {
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
 
+    private static final KeyMapping ANIMATION_AB = new KeyMapping(
+            "key.mkm.animation_ab",InputConstants.KEY_F8,CATEGORY);
+    private static final KeyMapping ARTICULATED_AB = new KeyMapping(
+            "key.mkm.articulated_ab",InputConstants.KEY_F9,CATEGORY);
+
     static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
 
@@ -62,6 +77,22 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(DODGE);
         KeyMappingHelper.registerKeyMapping(COMBO);
         KeyMappingHelper.registerKeyMapping(JOURNAL);
+        KeyMappingHelper.registerKeyMapping(ANIMATION_AB);
+        KeyMappingHelper.registerKeyMapping(ARTICULATED_AB);
+        LivingEntityRenderLayerRegistrationCallback.EVENT.register(
+                (entityType,renderer,helper,context)-> {
+                    if(renderer instanceof AvatarRenderer<?>){
+                        @SuppressWarnings("unchecked")
+                        RenderLayerParent<AvatarRenderState,PlayerModel> parent=
+                                (RenderLayerParent<AvatarRenderState,PlayerModel>)(Object)renderer;
+                        helper.register(new ArticulatedAvatarLayer(parent));
+                    }
+                });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler,client)->{
+            NativeAnimationToggle.reset();
+            ArticulatedMode.reset();
+            MnaEVisibleProbe.reset();
+        });
         FordClientNetworking.initialize();
         KeyMappingHelper.registerKeyMapping(RENEWAL);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
@@ -70,6 +101,12 @@ public final class MkmClient implements ClientModInitializer {
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while(ANIMATION_AB.consumeClick()){
+                if(client.player!=null&&client.gui.screen()==null)NativeAnimationToggle.flip();
+            }
+            while(ARTICULATED_AB.consumeClick()){
+                if(client.player!=null&&client.gui.screen()==null)ArticulatedMode.toggle();
+            }
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();
