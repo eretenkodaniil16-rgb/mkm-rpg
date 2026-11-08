@@ -6,6 +6,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
 import net.minecraft.tags.ItemTags;
 import net.minecraft.world.entity.EquipmentSlot;
+import net.minecraft.world.entity.HumanoidArm;
 
 /**
  * QA-v4-only opt-in client presentation. No server packets, gameplay handlers,
@@ -47,7 +48,8 @@ public final class ArticulatedMode {
         Minecraft client=Minecraft.getInstance();
         if(client.player==null||client.level==null||state==null
                 ||frame==null||frame.sampledClip()==null
-                ||state.id!=client.player.getId()||client.player.isSpectator())return false;
+                ||state.id!=client.player.getId()||client.player.isSpectator()
+                ||state.mainArm!=HumanoidArm.RIGHT)return false;
         ActionTimeline timeline=frame.timeline();
         if(timeline==null||timeline.idle()
                 ||timeline.kind()!=ActionTimeline.Kind.LIGHT_COMBO
@@ -94,6 +96,8 @@ public final class ArticulatedMode {
         Minecraft client=Minecraft.getInstance();
         if(client.player==null)return "R07 waiting for player";
         if(client.options.getCameraType().isFirstPerson())return "R07 F5 required: C3 fallback";
+        if(client.player.getMainArm()!=HumanoidArm.RIGHT)
+            return "R07 LEFT MAIN ARM NOT CALIBRATED: C3 fallback";
         if(!client.player.getMainHandItem().is(ItemTags.SWORDS))
             return "R07 mainhand sword required: C3 fallback";
         if(!client.player.getOffhandItem().isEmpty())return "R07 empty offhand required: C3 fallback";
