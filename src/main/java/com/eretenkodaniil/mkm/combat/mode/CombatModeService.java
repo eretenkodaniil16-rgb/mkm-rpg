@@ -1,0 +1,266 @@
+package com.eretenkodaniil.mkm.combat.mode;
+
+import com.eretenkodaniil.mkm.character.CharacterAttachments;
+import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
+import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
+import com.eretenkodaniil.mkm.combat.ActionTimeline;
+import com.eretenkodaniil.mkm.combat.CombatAttachments;
+import com.eretenkodaniil.mkm.combat.CombatRules;
+import com.eretenkodaniil.mkm.combat.CombatState;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchool;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolRules;
+import com.eretenkodaniil.mkm.combat.fencing.FencingSchoolService;
+import com.eretenkodaniil.mkm.combat.net.CombatModeStatus;
+import com.eretenkodaniil.mkm.equipment.EquipmentRules;
+import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
+import java.util.Map;
+import java.util.Optional;
+import java.util.WeakHashMap;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.effect.MobEffectInstance;
+import net.minecraft.world.effect.MobEffects;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.item.component.SwingAnimation;
+import net.minecraft.world.phys.Vec3;
+
+/**
+ * Opt-in single-server-authority sword combat-mode vertical slice for QA5/v4.
+ * No client-provided entity id, damage, target, duration, position or hit tick.
+ * A sword attack goes through player.attack(target) EXACTLY once on contact.
+ */
+public final class CombatModeService {
+    private static final boolean QA_OPT_IN = Boolean.getBoolean("mkm.combat.experimental");
+    private static final Map<ServerPlayer, Session> SESSIONS = new WeakHashMap<>();
+    private static final double MAX_CONTACT_RANGE = 3.35D;
+    private static final double MIN_FACING_DOT = 0.84D;
+
+    private static final class Session {
+        CombatModeRules.State state = new CombatModeRules.State();
+        Object world;
+        CombatModeRules.Strike resolving = CombatModeRules.Strike.NONE;
+        boolean hitConfirmed;
+        long riposteUntil;
+    }
+
+    private CombatModeService() {}
+
+    private static Session session(ServerPlayer player) {
+        Session s = SESS.computeIfAbsent(player, ignored -> new Session());
+        if (s.world != null && s.world != player.level()) {
+            s.state = CombatModeRules.mode(s.state, false);
+            s.riposteUntil = 0L;
+            s.resolving = CombatModeRules.Strike.NONE;
+        }
+        s.world = player.level();
+        return s;
+    }
+
+    public static void onLogin(ServerPlayer player) {
+        SESS.remove(player); // force explicit opt-in per connection
+    }
+
+    public static void onDisconnect(ServerPlayer player) {
+        SESS.remove(player);
+    }
+
+    public static boolean busy(ServerPlayer player) {
+        Session s = SESS.get(player);
+        return s != null && s.state.busy();
+    }
+
+    public static void toggle(ServerPlayer player, boolean enabled) {
+        Session s = session(player);
+        boolean admitted = enabled && QA_OPT_IN && player.isAlive()
+                && !player.isSpectator();
+        s.state = CombatModeRules.mode(s.state, admitted);
+        sendStatus(player, admitted);
+        player.sendOverlayMessage(Component.literal(admitted
+                ? "MKM COMBAT MODE ON | F6 exits | sword + LMB hold/release"
+                : (enabled ? "MKM combat QA disabled by server; vanilla LMB active"
+                        : "MKM combat mode OFF | vanilla LMB active")));
+    }
+
+    private static void sendStatus(ServerPlayer player, boolean enabled) {
+        if (ServerPlayNetworking.canSend(player, CombatModeStatus.TYPE)) {
+            ServerPlayNetworking.send(player, new CombatModeStatus(enabled));
+        }
+    }
+
+    private static boolean eligible(ServerPlayer player, String id) {
+        return QA_OPT_IN && player.isAlive() && !player.isSpectator()
+                && !player.isPassenger() && !player.isUsingItem()
+                && player.getAttachedOrCreate(CombatAttachments.TIMELINE).idle()
+                && EquipmentRules.profile(id, EquipmentRules.Slot.MAIN_HAND).family()
+                        == EquipmentRules.Family.SWORD;
+    }
+
+    private static String mainhand(ServerPlayer player) {
+        return BuiltInRegistries.ITEM.getKey(player.getMainHandItem().getItem()).toString();
+    }
+
+    /** 0 press / 1 release / 2 cancel; sequence incremented only by client. */
+    public static void intent(ServerPlayer player, byte phase, int serial) {
+        if (phase < 0 || phase > 2 || serial < 0) return;
+        Session s = session(player);
+        var old = s.state;
+        long now = player.level().getGameTime();
+        String id = mainhand(player);
+        boolean allowed = eligible(player, id);
+        if (phase == 2) {
+            if (old.phase() == CombatModeRules.Phase.HELD
+                    && old.latestSequence() == serial) s.state = CombatModeRules.cancel(old);
+            return;
+        }
+        if (phase == 0) {
+            s.state = CombatModeRules.press(old, serial, now, id, allowed);
+            if (s.state != old) player.sendOverlayMessage(Component.literal("MKM | HOLD sword strike…"));
+            return;
+        }
+        var next = CombatModeRules.release(old, serial, now, allowed);
+        if (next == old) return;
+        // One debit, server-only. Failed spend has NO strike.
+        if (next.phase() == CombatModeRules.Phase.QUEUED) {
+            PlayerModifierSnapshot stats = EquipmentSnapshots.snapshot(player,
+                    player.getAttachedOrCreate(CharacterAttachments.CHARACTER));
+            float cost = (float) ((next.strike() == CombatModeRules.Strike.CHARGED ? 22D : 8D)
+                    * stats.get(PlayerModifierId.STAMINA_COST));
+            long regenDelay = Math.max(1L, Math.round(20D
+                    * stats.get(PlayerModifierId.STAMINA_REGEN_DELAY)));
+            float max = (float) stats.get(PlayerModifierId.MAX_STAMINA);
+            CombatState fresh = CombatRules.regenerate(
+                    player.getAttachedOrCreate(CombatAttachments.PLAYER), now, max,
+                    (float) stats.get(PlayerModifierId.STAMINA_REGENERATION));
+            CombatState paid = CombatRules.combo(fresh, now, cost, regenDelay);
+            if (paid == null) {
+                s.state = CombatModeRules.cancel(next);
+                player.sendOverlayMessage(Component.literal("MKM | NOT ENOUGH STAMINA"));
+                return;
+            }
+            player.setAttached(CombatAttachments.PLAYER, paid);
+            s.state = next;
+            player.sendOverlayMessage(Component.literal(next.strike()
+                    == CombatModeRules.Strike.CHARGED
+                    ? "MKM CHARGED | committed: 7t windup"
+                    : "MKM QUICK | committed: 4t windup"));
+        } else {
+            s.state = next;
+        }
+    }
+
+    /** Process server actions once; never invoked from a client animation event. */
+    public static void tick(ServerPlayer player) {
+        Session s = SESS.get(player);
+        if (s == null || !s.state.enabled()) return;
+        long now = player.level().getGameTime();
+        var previous = s.state;
+        s.state = CombatModeRules.expire(previous, now);
+        if (s.state != previous) {
+            player.sendOverlayMessage(Component.literal("MKM | charge expired; no attack"));
+        }
+        String id = mainhand(player);
+        if (s.state.busy() && (!eligible(player, id)
+                || !s.state.itemId().equals(id) || s.world != player.level())) {
+            s.state = CombatModeRules.cancel(s.state);
+            return;
+        }
+        if (!CombatModeRules.readyToImpact(s.state, now, id, eligible(player, id))) return;
+        CombatModeRules.Strike kind = s.state.strike();
+        s.state = CombatModeRules.cancel(s.state); // consume before attack
+        s.resolving = kind;
+        s.hitConfirmed = false;
+        try {
+            LivingEntity victim = findTarget(player);
+            player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, true);
+            if (victim != null) {
+                // Only authoritative native hit. No second DamageSource or MNAE attack.
+                player.attack(victim);
+            }
+            if (!s.hitConfirmed) player.sendOverlayMessage(Component.literal(
+                    "MKM " + kind + " | missed/blocked/no health damage"));
+        } finally {
+            s.resolving = CombatModeRules.Strike.NONE;
+        }
+    }
+
+    public static CombatModeRules.Strike currentImpact(ServerPlayer attacker) {
+        Session s = SESS.get(attacker);
+        return s == null ? CombatModeRules.Strike.NONE : s.resolving;
+    }
+
+    private static Optional<FencingSchool> school(ServerPlayer player) {
+        String id = mainhand(player);
+        return FencingSchoolRules.effectiveSchool(
+                FencingSchoolService.state(player),
+                EquipmentRules.profile(id, EquipmentRules.Slot.MAIN_HAND).family(),
+                player.level().getGameTime());
+    }
+
+    /** Called once by Fabric's AFTER_DAMAGE callback, not by a cosmetic packet. */
+    public static void onConfirmedDamage(ServerPlayer attacker, LivingEntity victim,
+                                         float healthDamage, boolean blocked) {
+        Session s = SESS.get(attacker);
+        if (s == null || s.resolving == CombatModeRules.Strike.NONE || s.hitConfirmed
+                || blocked || !Float.isFinite(healthDamage) || healthDamage <= 0F) return;
+        s.hitConfirmed = true; // one receipt, no duplicated status effect
+        CombatModeRules.Strike kind = s.resolving;
+        FencingSchool style = school(attacker).orElse(FencingSchool.NONE);
+        boolean riposte = kind == CombatModeRules.Strike.QUICK
+                && style == FencingSchool.FIORE
+                && attacker.level().getGameTime() <= s.riposteUntil;
+        if (riposte) s.riposteUntil = 0L;
+
+        // Real, visible on victim, no additional HP mutation or attack.
+        if (kind == CombatModeRules.Strike.CHARGED) {
+            victim.knockback(style == FencingSchool.LIECHTENAUER ? 0.95D : 0.60D,
+                    attacker.getX() - victim.getX(), attacker.getZ() - victim.getZ());
+            victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 32, 1));
+        } else if (riposte) {
+            victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 50, 0));
+            victim.knockback(0.30D, attacker.getX() - victim.getX(),
+                    attacker.getZ() - victim.getZ());
+        } else if (style == FencingSchool.DESTREZA) {
+            victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 20, 0));
+        }
+        attacker.sendOverlayMessage(Component.literal(riposte ? "FIORE RIPOSTE!"
+                : (kind == CombatModeRules.Strike.CHARGED ? "CHARGED IMPACT!"
+                        : "QUICK HIT!") + " " + Math.round(healthDamage)));
+    }
+
+    /** Called only AFTER vanilla reports a genuine blocked shield hit. */
+    public static void onVanillaShieldBlock(ServerPlayer defender, DamageSource source,
+                                            float blockedDamage) {
+        Session s = SESS.get(defender);
+        if (s == null || !s.state.enabled() || !Float.isFinite(blockedDamage)
+                || blockedDamage <= 0F || !defender.getUseItem().is(Items.SHIELD)
+                || school(defender).orElse(FencingSchool.NONE) != FencingSchool.FIORE) return;
+        s.riposteUntil = defender.level().getGameTime() + 40L;
+        defender.sendOverlayMessage(Component.literal("FIORE BLOCK | RIPOSTE READY 40t"));
+    }
+
+    private static LivingEntity findTarget(ServerPlayer player) {
+        Vec3 eye = player.getEyePosition();
+        Vec3 facing = player.getLookAngle().normalize();
+        LivingEntity nearest = null;
+        double best = MAX_CONTACT_RANGE * MAX_CONTACT_RANGE;
+        for (Entity candidate : player.level().getEntities(player,
+                player.getBoundingBox().inflate(MAX_CONTACT_RANGE),
+                entity -> entity instanceof LivingEntity living && living.isAlive())) {
+            if (!(candidate instanceof LivingEntity living)
+                    || !player.hasLineOfSight(living)) continue;
+            Vec3 toward = living.getBoundingBox().getCenter().subtract(eye);
+            double distance = toward.lengthSqr();
+            if (distance < 1e-5D || distance >= best) continue;
+            if (facing.dot(toward.normalize()) < MIN_FACING_DOT) continue;
+            nearest = living;
+            best = distance;
+        }
+        return nearest;
+    }
+}
