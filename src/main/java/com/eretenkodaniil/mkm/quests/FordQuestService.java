@@ -1,6 +1,12 @@
 package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.character.CharacterData;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
+import com.eretenkodaniil.mkm.character.origin.OriginShowcaseRules;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressService;
+import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
+import net.minecraft.tags.ItemTags;
 import com.eretenkodaniil.mkm.character.QuestRewardRecovery;
 import com.eretenkodaniil.mkm.quests.net.FordQuestNetworking;
 import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
@@ -94,6 +100,9 @@ public final class FordQuestService {
             case FordChoiceRequest.LEAVE -> { leave(player); return; }
             case FordChoiceRequest.CLAIM -> { if (request.expectedStage() == 2) claim(player); else return; }
             case FordChoiceRequest.LOCATE -> { if (request.expectedStage() == 1) recover(player); else return; }
+            case FordChoiceRequest.HUMAN_PARLEY -> discoverByOrigin(player, OriginShowcaseRules.Clue.HUMAN_PARLEY);
+            case FordChoiceRequest.DWARF_RUNES -> discoverByOrigin(player, OriginShowcaseRules.Clue.DWARF_RUNES);
+            case FordChoiceRequest.MENTOR_TRAIN -> trainAtWarden(player);
             default -> { return; }
         }
         showDialogue(player, npc);
@@ -220,6 +229,64 @@ public final class FordQuestService {
         };
         message(player, "[Ильра] " + farewell);
         NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.WAIT);
+    }
+
+    /**
+     * Authenticated dialogue session is consumed in handleChoice before this method.
+     * Both routes set the EXISTING quest's tracks flag. Reward XP remains entirely
+     * controlled by FordQuestService.claim -> CharacterService.grantExperienceOnce.
+     */
+    private static void discoverByOrigin(ServerPlayer player, OriginShowcaseRules.Clue clue) {
+        if (!requireWarden(player)) return;
+        if (CharacterService.get(player).schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION) {
+            message(player, "MKM: Неподдерживаемая версия записи персонажа; улика не изменена.");
+            return;
+        }
+        FordQuestState previous = get(player);
+        var origin = CharacterOriginService.get(player);
+        if (!OriginShowcaseRules.canDiscover(origin, previous, clue)) {
+            message(player, "[Ильра] Это знание не принадлежит твоему происхождению или уже найдено.");
+            return;
+        }
+        if (clue == OriginShowcaseRules.Clue.DWARF_RUNES
+                && !player.getMainHandItem().is(ItemTags.PICKAXES)) {
+            message(player, "[Ильра] Дворфийские руны на камне читаются киркой в основной руке.");
+            return;
+        }
+        // World already owns the persistent tracks clue, so no separate character XP
+        // receipt, no synthetic quest completion and no duplicated rewards.
+        update(player, previous.withTracks());
+        NpcVisualSignals.emit(nearbyWarden(player), NpcVisualSignals.Cue.REACT);
+        if (clue == OriginShowcaseRules.Clue.HUMAN_PARLEY) {
+            message(player, "[Ильра] Ты сумел разговорить караванщиков. Это иссушённый мертвец, "
+                    + "неуязвимый к солнцу. Теперь у тебя улика для награды (+25 MKM XP).");
+        } else {
+            message(player, "[Ильра] Древние метки на камне выдают путь хуска; "
+                    + "следы разгаданы без проверки PER. При награде +25 MKM XP.");
+            // An active encounter is the only authority for precise coordinates.
+            ActiveEncounter reserved = findReservedEncounter(player);
+            if (reserved != null) {
+                var home = reserved.entry();
+                message(player, "[Руны] Следы уходят к X=" + home.x() + " Y=" + home.y()
+                        + " Z=" + home.z() + " (координаты подтверждены реестром встречи).");
+            }
+        }
+    }
+
+    /** The one persistent M5 mentorship unlock is obtained through an NPC dialogue,
+     * never by a standalone unvalidated C2S point-spend packet. */
+    private static void trainAtWarden(ServerPlayer player) {
+        if (!requireWarden(player)) return;
+        var status = OriginProgressService.learnAtWarden(player);
+        switch (status) {
+            case GRANTED -> message(player, "[Ильра] Ты освоил наставничество брода: "
+                    + "твой классовый приём усилен. Награда и XP не начисляются повторно.");
+            case ALREADY_UNLOCKED -> message(player, "[Ильра] Твой урок уже усвоен.");
+            case NOT_READY -> message(player, "[Ильра] Сначала найди улику, заверши задание "
+                    + "и достигни 2 уровня MKM.");
+            case UNSUPPORTED -> message(player, "[Ильра] Выбери расу и класс, "
+                    + "либо восстанови несовместимое сохранение.");
+        }
     }
 
     public static void inspect(ServerPlayer player) {

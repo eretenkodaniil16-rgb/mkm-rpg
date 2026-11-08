@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.combat;
 
 import com.eretenkodaniil.mkm.MkmMod;
+import com.mojang.serialization.Codec;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentRegistry;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentSyncPredicate;
 import net.fabricmc.fabric.api.attachment.v1.AttachmentType;
@@ -68,11 +69,17 @@ public final class CombatAttachments {
     public static final AttachmentType<PoiseState> POISE = AttachmentRegistry.createDefaulted(
             MkmMod.id("poise"), PoiseState::new);
 
+    /** Server-only persisted cooldown across relog; resets on death, no client authority. */
+    public static final AttachmentType<Long> BRACE_READY_TICK = AttachmentRegistry.create(
+            MkmMod.id("warrior_brace_ready"), builder -> builder
+                    .initializer(() -> 0L).persistent(Codec.LONG));
+
     private CombatAttachments() {}
 
     public static void initialize() {
         PLAYER.identifier();
         TIMELINE.identifier();
         POISE.identifier();
+        BRACE_READY_TICK.identifier();
     }
 }

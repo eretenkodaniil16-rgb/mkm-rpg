@@ -2,6 +2,11 @@ package com.eretenkodaniil.mkm.client.gui;
 
 import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
 import com.eretenkodaniil.mkm.quests.net.FordDialogueView;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressData;
+import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
+import net.minecraft.tags.ItemTags;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
@@ -26,6 +31,12 @@ public final class FordDialogueScreen extends Screen {
     @Override protected void init() {
         super.init();
         int x = panelLeft() + 16, y = panelTop() + 80, w = panelWidth() - 32;
+        var profile = minecraft == null || minecraft.player == null ? null
+                : minecraft.player.getAttached(CharacterOriginAttachments.PROFILE);
+        boolean human = profile != null && profile.schemaVersion() == 1
+                && profile.raceId().equals(OriginCatalog.HUMAN.id());
+        boolean dwarf = profile != null && profile.schemaVersion() == 1
+                && profile.raceId().equals(OriginCatalog.DWARF.id());
         if (view.stage() == 0) {
             Button inspect = addChoice(view.tracks() ? "Следы уже изучены"
                     : (view.perception() >= 12 ? "Исследовать следы (PER 12)"
@@ -34,6 +45,13 @@ public final class FordDialogueScreen extends Screen {
             inspect.active = !view.tracks() && view.perception() >= 12;
             addChoice("Я помогу каравану", FordChoiceRequest.ACCEPT, x, y + 24, w);
             addChoice("Сейчас не могу", FordChoiceRequest.LEAVE, x, y + 48, w);
+            if (human && !view.tracks()) addChoice("Человек: расспросить караванщиков",
+                    FordChoiceRequest.HUMAN_PARLEY, x, y + 72, w);
+            if (dwarf && !view.tracks()) {
+                Button runes = addChoice("Дворф: прочесть руны на камне (кирка)",
+                        FordChoiceRequest.DWARF_RUNES, x, y + 72, w);
+                runes.active = minecraft.player.getMainHandItem().is(ItemTags.PICKAXES);
+            }
         } else if (view.stage() == 1) {
             Button inspect = addChoice(view.tracks() ? "Следы уже изучены"
                     : (view.perception() >= 12 ? "Исследовать следы (PER 12)"
@@ -42,8 +60,22 @@ public final class FordDialogueScreen extends Screen {
             inspect.active = !view.tracks() && view.perception() >= 12;
             addChoice("Где искать противника?", FordChoiceRequest.LOCATE, x, y + 24, w);
             addChoice("Я вернусь после боя", FordChoiceRequest.LEAVE, x, y + 48, w);
+            if (human && !view.tracks()) addChoice("Человек: узнать тайны каравана",
+                    FordChoiceRequest.HUMAN_PARLEY, x, y + 72, w);
+            if (dwarf && !view.tracks()) {
+                Button runes = addChoice("Дворф: отыскать рунический след (кирка)",
+                        FordChoiceRequest.DWARF_RUNES, x, y + 72, w);
+                runes.active = minecraft.player.getMainHandItem().is(ItemTags.PICKAXES);
+            }
         } else if (view.stage() == 2) {
             addChoice("Получить награду", FordChoiceRequest.CLAIM, x, y, w);
+        } else if (view.stage() == 3 && profile != null && profile.selected()) {
+            var mastery = minecraft.player.getAttached(OriginProgressAttachments.PROGRESS);
+            boolean learned = mastery != null && mastery.has(OriginProgressData.FORD_MENTORSHIP);
+            Button mentor = addChoice(learned ? "Наставничество Ильры уже освоено"
+                    : "Наставничество Ильры: усилить приём (ур. 2 + улика)",
+                    FordChoiceRequest.MENTOR_TRAIN, x, y, w);
+            mentor.active = !learned;
         }
         addRenderableWidget(Button.builder(Component.literal("Закрыть"), button -> onClose())
                 .size(Math.min(100,w), 20).pos(x, panelTop() + 179).build());

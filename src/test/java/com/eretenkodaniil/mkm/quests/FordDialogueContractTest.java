@@ -19,6 +19,17 @@ final class FordDialogueContractTest {
         assertTrue(FordDialogueRules.permitted((byte)2,(byte)4));
         assertFalse(FordDialogueRules.permitted((byte)2,(byte)1));
         assertFalse(FordDialogueRules.permitted((byte)3,(byte)4));
+        // Human/Dwarf paths are NPC-session-gated to stages 0/1;
+        // trainer only appears after a completed reward, never from stage 0/1.
+        for (byte stage : new byte[]{0,1}) {
+            assertTrue(FordDialogueRules.permitted(stage,(byte)6));
+            assertTrue(FordDialogueRules.permitted(stage,(byte)7));
+            assertFalse(FordDialogueRules.permitted(stage,(byte)8));
+        }
+        assertTrue(FordDialogueRules.permitted((byte)3,(byte)8));
+        assertFalse(FordDialogueRules.permitted((byte)2,(byte)6));
+        assertFalse(FordDialogueRules.permitted((byte)2,(byte)7));
+        assertFalse(FordDialogueRules.permitted((byte)3,(byte)6));
         for (int choice=-128;choice<=127;choice++) {
             assertFalse(FordDialogueRules.permitted((byte)4,(byte)choice));
         }

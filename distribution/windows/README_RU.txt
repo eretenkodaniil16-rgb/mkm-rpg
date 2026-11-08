@@ -1,4 +1,4 @@
-ВНИМАНИЕ: ЭКСПЕРИМЕНТАЛЬНАЯ QA-СБОРКА. Encounter Director M1 (ручная засада) + Human/Dwarf × Warrior/Mage + Raider/Stalker Enemy V1 + Performance M0.
+ВНИМАНИЕ: ЭКСПЕРИМЕНТАЛЬНАЯ QA-СБОРКА. Showcase Character M5: переговоры человека, руны дворфа, защита воина V, оберег мага V, урок Ильры + QA5 Encounter/Enemy/Performance.
 НЕ содержит PR58/60/63/65. НЕ ПУБЛИЧНЫЙ РЕЛИЗ.
 Закройте Minecraft/сервер и создайте резервную копию ВСЕГО мира, включая playerdata и data.
 CharacterData переходит с v3 на v4. Нельзя открывать обновлённый мир старым JAR.
@@ -8,7 +8,7 @@ MKM RPG — автоматическая установка для Windows
 ================================================
 Minecraft Java Edition: 26.3
 Fabric Loader: 0.20.1
-MKM: 0.0.6-fabric.0-qa.5 (Fabric API встроен в JAR)
+MKM: 0.0.7-fabric.1 (Fabric API встроен в JAR)
 
 1. Установите официальный Minecraft Launcher и один раз запустите Minecraft 26.3.
 2. Полностью закройте Minecraft и лаунчер.

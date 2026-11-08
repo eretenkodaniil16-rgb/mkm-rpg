@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.client.gui;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginData;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginRules;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressData;
 import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
 import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionRequest;
 import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionResult;
@@ -189,8 +191,17 @@ public final class CharacterOriginScreen extends Screen {
                             ? "screen.mkm.origin.unknown"
                             : OriginCatalog.clazz(state.classId()).titleKey())),
                     width / 2, layout.labelY(), LIGHT);
-            graphics.centeredText(font, Component.translatable("screen.mkm.origin.permanent"),
+            graphics.centeredText(font, Component.translatable(
+                            state.classId().equals(OriginCatalog.WARRIOR.id())
+                                    ? "screen.mkm.origin.warrior_action"
+                                    : "screen.mkm.origin.mage_action"),
                     width / 2, layout.firstDescriptionY(), MUTED);
+            var training = minecraft.player.getAttached(OriginProgressAttachments.PROGRESS);
+            graphics.centeredText(font, Component.translatable(
+                            training != null && training.has(OriginProgressData.FORD_MENTORSHIP)
+                                    ? "screen.mkm.origin.training_done"
+                                    : "screen.mkm.origin.training_hint"),
+                    width / 2, layout.secondDescriptionY(), MUTED);
         } else {
             graphics.centeredText(font,
                     Component.translatable("screen.mkm.origin.bonuses"),

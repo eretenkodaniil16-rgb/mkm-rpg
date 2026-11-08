@@ -107,5 +107,10 @@
   "screen.mkm.origin.warrior_short": "Melee and stamina cost",
   "screen.mkm.origin.mage_short": "Mana and healing",
   "item.mkm.raider_insignia": "Raider's Insignia",
-  "item.mkm.stalker_fang": "Stalker's Fang"
+  "item.mkm.stalker_fang": "Stalker's Fang",
+  "key.mkm.origin.class_action": "Class action (warrior: shield / mage: ward)",
+  "screen.mkm.origin.warrior_action": "V: shield brace · costs stamina",
+  "screen.mkm.origin.mage_action": "V: arcane ward · costs mana, extra hearts",
+  "screen.mkm.origin.training_done": "Ilra's lesson mastered — ability improved",
+  "screen.mkm.origin.training_hint": "Upgrade: clue + completed quest + level 2"
 }

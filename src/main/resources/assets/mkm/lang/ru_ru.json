@@ -107,5 +107,10 @@
   "screen.mkm.origin.warrior_short": "Урон и экономия стамины",
   "screen.mkm.origin.mage_short": "Мана и лечение",
   "item.mkm.raider_insignia": "Знак налётчика",
-  "item.mkm.stalker_fang": "Клык охотника"
+  "item.mkm.stalker_fang": "Клык охотника",
+  "key.mkm.origin.class_action": "Классовый приём (воин: щит / маг: оберег)",
+  "screen.mkm.origin.warrior_action": "V: защитная стойка · щит и стамина",
+  "screen.mkm.origin.mage_action": "V: оберег · мана и дополнительные сердца",
+  "screen.mkm.origin.training_done": "Урок Ильры усвоен — приём усилен",
+  "screen.mkm.origin.training_hint": "Улучшение: улика + завершённый квест + 2-й уровень"
 }
