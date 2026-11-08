@@ -21,13 +21,13 @@ class MagicV4IntegrationTest {
         var c = new CharacterData();
         assertEquals(4, c.schemaVersion());
         assertTrue(AbilityGrantPolicy.executable(
-                AbilityGrantPolicy.fromSaved(c, origin("mkm:mage")), "mkm:arcane_barrier"));
+                AbilityGrantPolicy.fromSaved(c, origin("mkm:mage")), "mkm:mage_ward"));
         assertFalse(AbilityGrantPolicy.executable(
-                AbilityGrantPolicy.fromSaved(c, origin("mkm:warrior")), "mkm:arcane_barrier"));
+                AbilityGrantPolicy.fromSaved(c, origin("mkm:warrior")), "mkm:mage_ward"));
         assertTrue(AbilityGrantPolicy.executable(
                 AbilityGrantPolicy.fromSaved(c, new CharacterOriginData()), "mkm:renewal"));
         assertFalse(AbilityGrantPolicy.executable(
-                AbilityGrantPolicy.fromSaved(c, new CharacterOriginData()), "mkm:arcane_barrier"));
+                AbilityGrantPolicy.fromSaved(c, new CharacterOriginData()), "mkm:mage_ward"));
         assertFalse(AbilityGrantPolicy.executable(
                 AbilityGrantPolicy.fromSaved(c, origin("mkm:mage")), "mkm:arcane_bolt"));
         assertFalse(AbilityGrantPolicy.executable(
@@ -59,11 +59,11 @@ class MagicV4IntegrationTest {
 
     @Test void rareTomeProvidesLimitedOffClassLicenseNotFreeMagePrivilege() {
         var warrior = new AbilityGrantPolicy.Grants(
-                "mkm:warrior", 20, Set.of("mkm:arcane_barrier"));
+                "mkm:warrior", 20, Set.of("mkm:mage_ward"));
         var noBook = new AbilityGrantPolicy.Grants(
                 "mkm:warrior", 20, Set.of());
-        assertTrue(AbilityGrantPolicy.executable(warrior, "mkm:arcane_barrier"));
-        assertFalse(AbilityGrantPolicy.executable(noBook, "mkm:arcane_barrier"));
+        assertTrue(AbilityGrantPolicy.executable(warrior, "mkm:mage_ward"));
+        assertFalse(AbilityGrantPolicy.executable(noBook, "mkm:mage_ward"));
         assertEquals(1.5D, SpellLicenseService.offClassManaMultiplier(
                 "mkm:warrior", true), 1e-9);
         assertEquals(1D, SpellLicenseService.offClassManaMultiplier(
@@ -71,7 +71,7 @@ class MagicV4IntegrationTest {
         assertEquals(1D, SpellLicenseService.offClassManaMultiplier(
                 "mkm:warrior", false), 1e-9);
         assertTrue(AbilityGrantPolicy.executable(new AbilityGrantPolicy.Grants(
-                "mkm:mage",1,Set.of()), "mkm:arcane_barrier"));
+                "mkm:mage",1,Set.of()), "mkm:mage_ward"));
     }
 
     @Test void grantLevelAndResearchMetadataCannotCreateUnapprovedDamage() {
@@ -82,8 +82,11 @@ class MagicV4IntegrationTest {
         assertEquals(SpellSchool.RESTORATION,
                 SpellProgression.get("mkm:renewal").school());
         assertEquals(SpellSchool.ABJURATION,
-                SpellProgression.get("mkm:arcane_barrier").school());
-        assertTrue(SpellProgression.meetsLevel("mkm:arcane_barrier",1));
+                SpellProgression.get("mkm:mage_ward").school());
+        assertFalse(AbilityGrantPolicy.executable(
+                AbilityGrantPolicy.fromSaved(new CharacterData(), origin("mkm:mage")),
+                "mkm:arcane_barrier"));
+        assertTrue(SpellProgression.meetsLevel("mkm:mage_ward",1));
         assertEquals(10, SpellProgression.maximumTierAtLevel(100));
         assertThrows(IllegalArgumentException.class,()->ManaCapacityPolicy.levelBonus(101));
     }
