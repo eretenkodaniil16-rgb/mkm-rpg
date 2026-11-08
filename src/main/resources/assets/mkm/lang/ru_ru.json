@@ -107,5 +107,12 @@
   "screen.mkm.origin.warrior_short": "Урон и экономия стамины",
   "screen.mkm.origin.mage_short": "Мана и лечение",
   "item.mkm.raider_insignia": "Знак налётчика",
-  "item.mkm.stalker_fang": "Клык охотника"
+  "item.mkm.stalker_fang": "Клык охотника",
+  "key.mkm.cast_arcane_ward": "Арканный оберег (маг)",
+  "message.mkm.arcane_ward.cast": "Арканный оберег: поглощение урона",
+  "item.mkm.arcane_tome": "Редкий магический фолиант",
+  "hud.mkm.renewal.short": "Лечение",
+  "hud.mkm.ward.short": "Оберег",
+  "hud.mkm.ward.locked": "НУЖЕН МАГ ИЛИ ФОЛИАНТ",
+  "hud.mkm.ward.active": "ЗАЩИТА ДЕЙСТВУЕТ"
 }

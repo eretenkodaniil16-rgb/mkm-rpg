@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.client;
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
 import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
+import com.eretenkodaniil.mkm.abilities.net.AbilityVisualPacket;
+import com.eretenkodaniil.mkm.client.abilities.AbilityVisualInbox;
 import com.eretenkodaniil.mkm.character.net.AllocationResult;
 import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionResult;
 import com.eretenkodaniil.mkm.client.gui.CharacterOriginScreen;
@@ -19,6 +21,7 @@ import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
+import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.VanillaHudElements;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
@@ -40,9 +43,23 @@ public final class MkmClient implements ClientModInitializer {
 
     static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
+    static final KeyMapping ARCANE_WARD = new KeyMapping(
+            "key.mkm.cast_arcane_ward", InputConstants.KEY_V, CATEGORY);
+    private static int castRequestSequence;
 
     @Override
     public void onInitializeClient() {
+        ClientPlayNetworking.registerGlobalReceiver(AbilityVisualPacket.TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> AbilityVisualInbox.onServerEvent(context.client(), packet.event())));
+        ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {
+            AbilityVisualInbox.reset();
+            castRequestSequence = 0;
+        });
+        ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
+            AbilityVisualInbox.reset();
+            castRequestSequence = 0;
+        });
         ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
                 context.client().execute(() -> {
                     if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
@@ -64,12 +81,14 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(JOURNAL);
         FordClientNetworking.initialize();
         KeyMappingHelper.registerKeyMapping(RENEWAL);
+        KeyMappingHelper.registerKeyMapping(ARCANE_WARD);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            AbilityVisualInbox.onClientTick(client);
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();
@@ -84,7 +103,16 @@ public final class MkmClient implements ClientModInitializer {
             while (RENEWAL.consumeClick()) {
                 if (client.player == null || client.gui.screen() != null
                         || !ClientPlayNetworking.canSend(CastAbilityRequest.TYPE)) continue;
-                ClientPlayNetworking.send(new CastAbilityRequest(AbilityCatalog.RENEWAL.id()));
+                if (castRequestSequence == Integer.MAX_VALUE) continue;
+                ClientPlayNetworking.send(new CastAbilityRequest(
+                        AbilityCatalog.RENEWAL.id(), ++castRequestSequence));
+            }
+            while (ARCANE_WARD.consumeClick()) {
+                if (client.player == null || client.gui.screen() != null
+                        || !ClientPlayNetworking.canSend(CastAbilityRequest.TYPE)
+                        || castRequestSequence == Integer.MAX_VALUE) continue;
+                ClientPlayNetworking.send(new CastAbilityRequest(
+                        "mkm:arcane_barrier", ++castRequestSequence));
             }
             while (COMBO.consumeClick()) {
                 if (client.player == null || client.gui.screen() != null

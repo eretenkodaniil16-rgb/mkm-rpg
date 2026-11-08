@@ -13,7 +13,10 @@ public final class MkmCreativeTabs {
             FabricCreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.mkm.main"))
                     .icon(() -> MkmItems.CODEX.getDefaultInstance())
-                    .displayItems((params, output) -> output.accept(MkmItems.CODEX))
+                    .displayItems((params, output) -> {
+                        output.accept(MkmItems.CODEX);
+                        output.accept(MkmItems.ARCANE_TOME);
+                    })
                     .build());
 
     private MkmCreativeTabs() {}
