@@ -44,6 +44,7 @@ public final class CombatModeService {
         Object world;
         CombatModeRules.Strike resolving = CombatModeRules.Strike.NONE;
         boolean hitConfirmed;
+        int expectedTargetId = -1;
         long riposteUntil;
     }
 
@@ -178,6 +179,7 @@ public final class CombatModeService {
         s.hitConfirmed = false;
         try {
             LivingEntity victim = findTarget(player);
+            s.expectedTargetId = victim == null ? -1 : victim.getId();
             player.swing(InteractionHand.MAIN_HAND, SwingAnimation.DEFAULT, true);
             if (victim != null) {
                 // Only authoritative native hit. No second DamageSource or MNAE attack.
@@ -187,12 +189,20 @@ public final class CombatModeService {
                     "MKM " + kind + " | missed/blocked/no health damage"));
         } finally {
             s.resolving = CombatModeRules.Strike.NONE;
+            s.expectedTargetId = -1;
         }
     }
 
     public static CombatModeRules.Strike currentImpact(ServerPlayer attacker) {
         Session s = SESSIONS.get(attacker);
         return s == null ? CombatModeRules.Strike.NONE : s.resolving;
+    }
+
+    /** Prevent vanilla sword sweep secondaries inheriting charged target multiplier. */
+    public static boolean isSelectedImpactTarget(ServerPlayer attacker, LivingEntity defender) {
+        Session s = SESSIONS.get(attacker);
+        return s != null && s.resolving != CombatModeRules.Strike.NONE
+                && s.expectedTargetId == defender.getId();
     }
 
     private static Optional<FencingSchool> school(ServerPlayer player) {
@@ -208,6 +218,7 @@ public final class CombatModeService {
                                          DamageSource actualSource, float healthDamage, boolean blocked) {
         Session s = SESSIONS.get(attacker);
         if (s == null || s.resolving == CombatModeRules.Strike.NONE || s.hitConfirmed
+                || s.expectedTargetId != victim.getId()
                 || blocked || !Float.isFinite(healthDamage) || healthDamage <= 0F) return;
         s.hitConfirmed = true; // one receipt, no duplicated status effect
         CombatModeRules.Strike kind = s.resolving;
