@@ -126,10 +126,17 @@ public final class ArticulatedClipV3 {
             throw new IllegalArgumentException("MNAE 17-bone v3 schema mismatch");
         JsonObject reference=src.getAsJsonObject("source");
         if(!"mkm-guards-r06-approved".equals(reference.get("approved_tag").getAsString())
-                || !"MKM_GUARD_MID_02".equals(reference.get("selected_guard").getAsString()))
-            throw new IllegalArgumentException("Wrong approved authoring origin");
+                ||!"5cae0c0dae1daf1bc7cfe07945af1fb67ea741b8".equals(
+                        reference.get("approved_sha").getAsString())
+                ||!"024d2f85e0bef85ec3bb493d0011ceaf7c147c41131048635db76d7305c05581".equals(
+                        reference.get("approved_blend_sha256").getAsString())
+                ||!"MKM_GUARD_MID_02".equals(reference.get("selected_guard").getAsString())
+                ||reference.get("source_frame").getAsInt()!=20)
+            throw new IllegalArgumentException("Wrong immutable R06 source or guard origin");
         JsonObject coords=src.getAsJsonObject("coordinate_space");
         if(!"model_pixels".equals(coords.get("units").getAsString())
+                ||!"negative_y".equals(coords.get("up_axis").getAsString())
+                ||!"negative_z".equals(coords.get("forward_axis").getAsString())
                 ||!"xyzw".equals(coords.get("quaternion_order").getAsString()))
             throw new IllegalArgumentException("Different units or rotation order");
         List<Bone> bones=new ArrayList<>();
