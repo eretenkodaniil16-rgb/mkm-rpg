@@ -116,5 +116,9 @@ class MagicV4IntegrationTest {
         var current = new CharacterData();
         var future = new CharacterOriginData(999,1,"mkm:human","mkm:mage");
         assertNull(AbilityGrantPolicy.fromSaved(current,future));
+        // A future schema can also have an unselected class. It must NOT
+        // silently become a v1 legacy profile and revive old cast access.
+        var unselectedFuture = new CharacterOriginData(999,0,"","");
+        assertNull(AbilityGrantPolicy.fromSaved(current,unselectedFuture));
     }
 }
