@@ -109,5 +109,6 @@
   "item.mkm.raider_insignia": "Знак налётчика",
   "item.mkm.stalker_fang": "Клык охотника",
   "key.mkm.cast_arcane_ward": "Арканный оберег (маг)",
-  "message.mkm.arcane_ward.cast": "Арканный оберег: поглощение урона"
+  "message.mkm.arcane_ward.cast": "Арканный оберег: поглощение урона",
+  "item.mkm.arcane_tome": "Редкий магический фолиант"
 }
