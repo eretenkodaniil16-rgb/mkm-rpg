@@ -11,7 +11,7 @@ final class EncounterLedgerTest {
     private static EncounterLedger.Entry saved(String owner) {
         return new EncounterLedger.Entry(1, owner, 0, 64, 0, 100, EncounterLedger.RESERVED, List.of(
                 new EncounterLedger.Member("mob-h1", "minecraft:husk", "frontline", false, false),
-                new EncounterLedger.Member("mob-h2", "minecraft:husk", "frontline", false, false),
+                new EncounterLedger.Member("mob-h2", "minecraft:spider", "ranged", false, false),
                 new EncounterLedger.Member("mob-s1", "minecraft:skeleton", "leader", true, false)));
     }
 

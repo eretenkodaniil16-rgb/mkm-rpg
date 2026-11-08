@@ -2,6 +2,13 @@ package com.eretenkodaniil.mkm.encounter;
 
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.enemy.EnemyCatalog;
+import com.eretenkodaniil.mkm.enemy.EnemyDefinition;
+import com.eretenkodaniil.mkm.enemy.EnemyLevelRules;
+import net.minecraft.world.entity.PathfinderMob;
+import net.minecraft.world.entity.ai.attributes.AttributeInstance;
+import net.minecraft.world.entity.ai.attributes.Attributes;
+import net.minecraft.world.entity.monster.spider.Spider;
 import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
 import java.util.ArrayList;
 import java.util.List;
@@ -114,9 +121,12 @@ public final class EncounterDirector {
             mob.addTag("mkm.encounter.role." + spec.role());
             if (spec.elite()) mob.addTag(ELITE_TAG);
             mob.setPersistenceRequired();
+            if (mob instanceof PathfinderMob prototype) applyPrototype(
+                    prototype, spec, config.dangerTier());
             mob.setCustomName(Component.literal(spec.elite()
                     ? "Костяной дозорный — командир" : spec.entityId().endsWith("husk")
-                            ? "Иссушённый налётчик" : "Дозорный-лучник"));
+                            ? "Налётчик с тракта" : spec.entityId().endsWith("spider")
+                            ? "Паук-охотник из развалин" : "Дозорный-лучник"));
             mob.setCustomNameVisible(spec.elite());
             prepared.add(mob);
             roster.add(new EncounterLedger.Member(uuid.toString(),
@@ -147,8 +157,8 @@ public final class EncounterDirector {
         level.setAttached(EncounterAttachments.ENCOUNTERS,
                 current.replace(eventKey, latest, latest.start()));
         inform(player, story
-                ? "Стражи башни пробудились. Победите двоих иссушённых и командира-лучника."
-                : "Ночная засада началась: 2 хуска и командир-скелет. "
+                ? "Засада пробудилась: налётчик, паук-охотник и командир-лучник."
+                : "Ночная засада: налётчик, паук-охотник и командир-скелет. "
                   + "Победите троих и вернитесь к месту начала за наградой.");
         return true;
     }
@@ -157,6 +167,9 @@ public final class EncounterDirector {
         switch (spec.entityId()) {
             case "minecraft:husk" -> {
                 return new Husk(EntityTypes.HUSK, level);
+            }
+            case "minecraft:spider" -> {
+                return new Spider(EntityTypes.SPIDER, level);
             }
             case "minecraft:skeleton" -> {
                 Skeleton skeleton = new Skeleton(EntityTypes.SKELETON, level);
@@ -175,6 +188,28 @@ public final class EncounterDirector {
                 return null; // explicit entity-family allowlist; AI mods cannot inject classes via JSON
             }
         }
+    }
+
+    /**
+     * Reuse actual Enemy V1 families and capped level rules. World only
+     * initializes the authored group's ecology; EnemyService owns AI runtime.
+     * Set base attributes exactly once before initial entity insertion.
+     */
+    private static void applyPrototype(PathfinderMob mob, EncounterDefinition.Spawn spec, int tier) {
+        EnemyDefinition enemy = spec.entityId().equals("minecraft:husk")
+                ? EnemyCatalog.ROAD_RAIDER : spec.entityId().equals("minecraft:spider")
+                ? EnemyCatalog.CAVE_STALKER : null;
+        if (enemy == null) return;
+        EnemyLevelRules.Stats stats=EnemyLevelRules.forLevel(enemy,tier);
+        mob.addTag(enemy.persistentTag());
+        mob.addTag(EnemyLevelRules.levelTag(stats.level()));
+        AttributeInstance hp=mob.getAttribute(Attributes.MAX_HEALTH);
+        AttributeInstance attack=mob.getAttribute(Attributes.ATTACK_DAMAGE);
+        AttributeInstance movement=mob.getAttribute(Attributes.MOVEMENT_SPEED);
+        if (hp!=null) hp.setBaseValue(stats.health());
+        if (attack!=null) attack.setBaseValue(stats.attack());
+        if (movement!=null) movement.setBaseValue(stats.speed());
+        mob.setHealth((float)stats.health());
     }
 
     /** AFTER_DEATH only. World roster membership, entity type and owner tag must agree. */
@@ -196,7 +231,8 @@ public final class EncounterDirector {
         if (event == null) return;
         boolean authorized = event.members().stream().anyMatch(member -> member.uuid().equals(deadId)
                 && member.entityId().equals(victim.getType() == EntityTypes.HUSK
-                        ? "minecraft:husk" : victim.getType() == EntityTypes.SKELETON
+                        ? "minecraft:husk" : victim.getType() == EntityTypes.SPIDER
+                        ? "minecraft:spider" : victim.getType() == EntityTypes.SKELETON
                         ? "minecraft:skeleton" : "unknown")
                 && victim.entityTags().contains(OWNER_TAG + event.ownerId()));
         if (!authorized) return;

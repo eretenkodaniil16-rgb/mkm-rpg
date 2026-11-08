@@ -44,7 +44,8 @@ public record EncounterDefinition(
                     !s.entityId().equals("minecraft:skeleton") || !s.role().equals("leader"))
                 || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:husk"))
                 || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:skeleton"))
-                || roster.stream().anyMatch(s -> !List.of("minecraft:husk", "minecraft:skeleton").contains(s.entityId())
+                || roster.stream().noneMatch(s -> s.entityId().equals("minecraft:spider"))
+                || roster.stream().anyMatch(s -> !List.of("minecraft:husk", "minecraft:spider", "minecraft:skeleton").contains(s.entityId())
                     || !List.of("frontline", "ranged", "leader").contains(s.role()))
                 || allowedBiomes.stream().anyMatch(s -> !s.startsWith("minecraft:") || s.length() > 80)) {
             throw new IllegalArgumentException("Invalid or oversized Ford ambush encounter configuration");
