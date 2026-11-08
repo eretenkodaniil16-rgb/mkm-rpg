@@ -46,6 +46,8 @@ public final class CombatModeService {
 
     private static final class Session {
         CombatModeRules.State state = new CombatModeRules.State();
+        CombatPacketBudget.State budget = new CombatPacketBudget.State();
+        long nextToggleTick;
         Object world;
         CombatModeRules.Strike resolving = CombatModeRules.Strike.NONE;
         boolean hitConfirmed;
@@ -76,6 +78,13 @@ public final class CombatModeService {
         SESSIONS.remove(player);
     }
 
+    private static boolean acceptPacket(Session s, long now) {
+        var next = CombatPacketBudget.accept(s.budget, now);
+        if (!CombatPacketBudget.accepted(s.budget, next)) return false;
+        s.budget = next;
+        return true;
+    }
+
     public static boolean busy(ServerPlayer player) {
         Session s = SESSIONS.get(player);
         return s != null && s.state.busy();
@@ -83,6 +92,9 @@ public final class CombatModeService {
 
     public static void toggle(ServerPlayer player, boolean enabled) {
         Session s = session(player);
+        long now = player.level().getGameTime();
+        if (!acceptPacket(s, now) || now < s.nextToggleTick) return;
+        s.nextToggleTick = now + 5L; // key-repeat/flood guard, not a combat cooldown
         boolean admitted = enabled && QA_OPT_IN && player.isAlive()
                 && !player.isSpectator();
         s.state = CombatModeRules.mode(s.state, admitted);
@@ -115,8 +127,9 @@ public final class CombatModeService {
     public static void intent(ServerPlayer player, byte phase, int serial) {
         if (phase < 0 || phase > 2 || serial < 0) return;
         Session s = session(player);
-        var old = s.state;
         long now = player.level().getGameTime();
+        if (!acceptPacket(s, now)) return;
+        var old = s.state;
         String id = mainhand(player);
         boolean allowed = eligible(player, id);
         if (phase == 2) {
