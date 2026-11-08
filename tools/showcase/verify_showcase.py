@@ -109,8 +109,8 @@ def verify():
     assert (DATA / "encounter/ford_ambush.json").is_file()
     definition = json.loads((DATA / "encounter/ford_ambush.json").read_text("utf-8"))
     assert definition["reward_xp"] == 100 and len(definition["roster"]) == 3
-    assert "mkm:chests/watchtower" in read(
-        "src/main/resources/data/mkm/loot_table/chests/watchtower.json")
+    loot = json.loads(read("src/main/resources/data/mkm/loot_table/chests/watchtower.json"))
+    assert loot["type"] == "minecraft:chest" and loot["pools"]
 
     version = "0.0.7-fabric.0-rc.1"
     assert "mod_version=" + version in read("gradle.properties")
