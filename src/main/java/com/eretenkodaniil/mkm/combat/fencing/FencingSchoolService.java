@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.combat.fencing;
 
 import com.eretenkodaniil.mkm.combat.ActionTimeline;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
+import com.eretenkodaniil.mkm.combat.mode.CombatModeService;
 import com.eretenkodaniil.mkm.equipment.EquipmentRules;
 import java.util.Optional;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -21,7 +22,8 @@ public final class FencingSchoolService {
     public static FencingSchoolRules.Result select(ServerPlayer player, FencingSchool school) {
         ActionTimeline timeline = player.getAttachedOrCreate(CombatAttachments.TIMELINE);
         boolean ready = player.isAlive() && !player.isSpectator()
-                && !player.isPassenger() && !player.isUsingItem() && timeline.idle();
+                && !player.isPassenger() && !player.isUsingItem() && timeline.idle()
+                && !CombatModeService.busy(player); // no school swap mid-hold/queued impact
         long tick = player.level().getGameTime();
         String heldId = BuiltInRegistries.ITEM.getKey(
                 player.getMainHandItem().getItem()).toString();
