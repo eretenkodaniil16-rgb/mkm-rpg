@@ -5,6 +5,9 @@ import org.junit.jupiter.api.Test;
 
 final class EnemyShowcaseRulesTest {
     @Test void torchSuppressesLungeAndDarknessAllowsIt() {
+        assertTrue(EnemyShowcaseRules.shadowEnough(0, 9));
+        assertFalse(EnemyShowcaseRules.shadowEnough(0, 10));
+        assertFalse(EnemyShowcaseRules.shadowEnough(10, 0));
         assertTrue(EnemyShowcaseRules.pouncePossible(true, 0, 25, false));
         assertTrue(EnemyShowcaseRules.pouncePossible(true, 9, 64, false));
         assertFalse(EnemyShowcaseRules.pouncePossible(true, 10, 25, false));

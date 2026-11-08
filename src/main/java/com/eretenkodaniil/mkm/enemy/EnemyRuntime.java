@@ -191,9 +191,13 @@ final class EnemyRuntime {
         }
         // Native block-light value; the Stalker does not track any scent or sound.
         // Bright torch-lit locations suppress the ambush leap and encourage circling.
-        int blockLight = level.getBrightness(LightLayer.BLOCK, mob.blockPosition());
+        int spiderLight = level.getBrightness(LightLayer.BLOCK, mob.blockPosition());
+        int targetLight = level.getBrightness(LightLayer.BLOCK, target.blockPosition());
         EnemyService.recordLightSample();
-        boolean shadow = EnemyShowcaseRules.shadowEnough(blockLight);
+        EnemyService.recordLightSample();
+        int blockLight = Math.max(spiderLight, targetLight);
+        // A player torch defeats the ambush even when the Spider's feet stay dark.
+        boolean shadow = EnemyShowcaseRules.shadowEnough(spiderLight, targetLight);
         if (!shadow && !pounceWindingUp && distance >= 9.0
                 && EnemyTactics.shouldRepath(now, mob.getId(), 30)) {
             orbit(target, 4.5, 0.95);

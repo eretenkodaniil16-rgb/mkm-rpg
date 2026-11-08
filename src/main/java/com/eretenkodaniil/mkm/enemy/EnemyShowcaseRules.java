@@ -4,6 +4,9 @@ package com.eretenkodaniil.mkm.enemy;
 public final class EnemyShowcaseRules {
     private EnemyShowcaseRules() {}
     public static boolean shadowEnough(int blockLight) { return blockLight < 10; }
+    public static boolean shadowEnough(int stalkerLight, int targetLight) {
+        return shadowEnough(Math.max(stalkerLight, targetLight));
+    }
 
     public static boolean pouncePossible(boolean visible, int blockLight,
             double distanceSquared, boolean coolingDown) {
