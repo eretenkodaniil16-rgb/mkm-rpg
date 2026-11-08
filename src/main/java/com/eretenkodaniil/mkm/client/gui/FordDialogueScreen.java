@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.client.gui;
 import com.eretenkodaniil.mkm.quests.net.FordChoiceRequest;
 import com.eretenkodaniil.mkm.quests.net.FordDialogueView;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressData;
 import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
 import net.minecraft.tags.ItemTags;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
@@ -68,8 +70,12 @@ public final class FordDialogueScreen extends Screen {
         } else if (view.stage() == 2) {
             addChoice("Получить награду", FordChoiceRequest.CLAIM, x, y, w);
         } else if (view.stage() == 3 && profile != null && profile.selected()) {
-            addChoice("Наставничество Ильры: выучить приём (ур. 2 + улика)",
+            var mastery = minecraft.player.getAttached(OriginProgressAttachments.PROGRESS);
+            boolean learned = mastery != null && mastery.has(OriginProgressData.FORD_MENTORSHIP);
+            Button mentor = addChoice(learned ? "Наставничество Ильры уже освоено"
+                    : "Наставничество Ильры: усилить приём (ур. 2 + улика)",
                     FordChoiceRequest.MENTOR_TRAIN, x, y, w);
+            mentor.active = !learned;
         }
         addRenderableWidget(Button.builder(Component.literal("Закрыть"), button -> onClose())
                 .size(Math.min(100,w), 20).pos(x, panelTop() + 179).build());
