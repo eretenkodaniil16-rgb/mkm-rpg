@@ -16,6 +16,15 @@ loom {
             sourceSet sourceSets.main
         }
     }
+    // A test-only, opt-in CI profile; ordinary runClient and release JAR unchanged.
+    if (project.hasProperty("mkmShowcaseQuickPlay")) {
+        runs {
+            client {
+                programArguments.add("--quickPlaySingleplayer")
+                programArguments.add("mkm_visual_ci")
+            }
+        }
+    }
 }
 
 dependencies {

@@ -27,6 +27,10 @@ import com.eretenkodaniil.mkm.enemy.EnemyCommands;
 import com.eretenkodaniil.mkm.performance.MkmPerformanceRuntime;
 import com.eretenkodaniil.mkm.performance.MkmPerformanceCommands;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
+import com.eretenkodaniil.mkm.registry.MkmBlocks;
+import com.eretenkodaniil.mkm.environment.WatchtowerPlacementCommands;
+import com.eretenkodaniil.mkm.environment.EnvironmentRuneInteraction;
+import com.eretenkodaniil.mkm.environment.net.EnvironmentVisualNetworking;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -56,6 +60,9 @@ public final class MkmMod implements ModInitializer {
         EncounterAttachments.initialize();
         EncounterDefinitions.initialize();
         MkmItems.initialize();
+        MkmBlocks.initialize();
+        EnvironmentVisualNetworking.initialize();
+        EnvironmentRuneInteraction.initialize();
         EnemyService.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
@@ -90,6 +97,7 @@ public final class MkmMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> EncounterCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> EnemyCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> WatchtowerPlacementCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmPerformanceCommands.register(dispatcher));
         // Register the timing END callback after MKM's own end-tick work.
         MkmPerformanceRuntime.initialize();

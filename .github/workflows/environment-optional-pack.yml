@@ -1,0 +1,24 @@
+name: MKM Optional Cinematic 64 LabPBR Resource Pack
+on:
+  push:
+    branches: ['feature/environment-showcase-qa5-issue79']
+  workflow_dispatch:
+
+jobs:
+  optional-pack:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Build and validate optional original 64x LabPBR pack
+        run: |
+          python3 tools/environment/generate_cinematic_pack.py \
+            --out build/environment_packs/MKM_Cinematic_64_LabPBR_26.3.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MKM_Cinematic_64_LabPBR_26.3
+          path: build/environment_packs/MKM_Cinematic_64_LabPBR_26.3.zip
+          if-no-files-found: error
+          retention-days: 14

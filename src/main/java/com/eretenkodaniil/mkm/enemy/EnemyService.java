@@ -2,6 +2,7 @@ package com.eretenkodaniil.mkm.enemy;
 
 import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
 import com.eretenkodaniil.mkm.registry.MkmItems;
+import com.eretenkodaniil.mkm.environment.net.EnvironmentVisualNetworking;
 import java.lang.management.ManagementFactory;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -91,6 +92,7 @@ public final class EnemyService {
                 }
                 active++;
                 runtime.tick(level, now);
+                EnvironmentVisualNetworking.ambient(level, mob, now);
             }
             if (perLevel.isEmpty()) LOADED.remove(level);
         }
@@ -149,6 +151,7 @@ public final class EnemyService {
             }
         }
         NpcVisualSignals.emit(mob, definition.rigProfile(), NpcVisualSignals.Cue.REACT);
+        EnvironmentVisualNetworking.confirmedDamage(level, mob);
     }
 
     public static void afterDeath(LivingEntity entity, DamageSource source) {
