@@ -1,19 +1,19 @@
 package com.eretenkodaniil.mkm.encounter;
 
-import net.minecraft.world.level.block.Blocks;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
-/** Make private-building exclusions reviewable without a running world. */
+/** Pure rule: tests must NOT bootstrap the Minecraft static block registry. */
 final class EncounterGroundRulesTest {
     @Test void allowsOnlyConservativeNaturalFootingForAuthoredSpawns() {
-        assertTrue(EncounterGroundRules.isNaturalSurface(Blocks.GRASS_BLOCK));
-        assertTrue(EncounterGroundRules.isNaturalSurface(Blocks.DIRT));
-        assertTrue(EncounterGroundRules.isNaturalSurface(Blocks.STONE));
-        assertTrue(EncounterGroundRules.isNaturalSurface(Blocks.GRAVEL));
-        assertFalse(EncounterGroundRules.isNaturalSurface(Blocks.OAK_PLANKS));
-        assertFalse(EncounterGroundRules.isNaturalSurface(Blocks.CHEST));
-        assertFalse(EncounterGroundRules.isNaturalSurface(Blocks.BARREL));
-        assertFalse(EncounterGroundRules.isNaturalSurface(Blocks.BEDROCK));
+        assertTrue(EncounterGroundRules.isNaturalSurface("minecraft:grass_block"));
+        assertTrue(EncounterGroundRules.isNaturalSurface("minecraft:dirt"));
+        assertTrue(EncounterGroundRules.isNaturalSurface("minecraft:stone"));
+        assertTrue(EncounterGroundRules.isNaturalSurface("minecraft:gravel"));
+        assertFalse(EncounterGroundRules.isNaturalSurface("minecraft:oak_planks"));
+        assertFalse(EncounterGroundRules.isNaturalSurface("minecraft:chest"));
+        assertFalse(EncounterGroundRules.isNaturalSurface("minecraft:barrel"));
+        assertFalse(EncounterGroundRules.isNaturalSurface("minecraft:bedrock"));
+        assertFalse(EncounterGroundRules.isNaturalSurface(null));
     }
 }

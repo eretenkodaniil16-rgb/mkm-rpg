@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -103,7 +104,8 @@ public final class EncounterDirector {
                 BlockPos feet = anchor.offset(offset[0], 0, offset[1]);
                 if (!level.hasChunkAt(feet) || !level.getBlockState(feet.below()).isSolid()) continue;
                 if (story && (!EncounterGroundRules.isNaturalSurface(
-                        level.getBlockState(feet.below()).getBlock())
+                        BuiltInRegistries.BLOCK.getKey(
+                                level.getBlockState(feet.below()).getBlock()).toString())
                         || !level.getBlockState(feet).isAir()
                         || !level.getBlockState(feet.above()).isAir())) continue;
                 mob.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5, 0.0F, 0.0F);
