@@ -5,6 +5,7 @@ import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
 import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
 import com.eretenkodaniil.mkm.character.net.AllocationResult;
 import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionResult;
+import com.eretenkodaniil.mkm.character.origin.net.OriginClassActionRequest;
 import com.eretenkodaniil.mkm.client.gui.CharacterOriginScreen;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.client.animation.HitFeedbackParticles;
@@ -38,6 +39,9 @@ public final class MkmClient implements ClientModInitializer {
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
 
+    private static final KeyMapping CLASS_ACTION = new KeyMapping(
+            "key.mkm.origin.class_action", InputConstants.KEY_V, CATEGORY);
+
     static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
 
@@ -64,6 +68,7 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(JOURNAL);
         FordClientNetworking.initialize();
         KeyMappingHelper.registerKeyMapping(RENEWAL);
+        KeyMappingHelper.registerKeyMapping(CLASS_ACTION);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
@@ -85,6 +90,11 @@ public final class MkmClient implements ClientModInitializer {
                 if (client.player == null || client.gui.screen() != null
                         || !ClientPlayNetworking.canSend(CastAbilityRequest.TYPE)) continue;
                 ClientPlayNetworking.send(new CastAbilityRequest(AbilityCatalog.RENEWAL.id()));
+            }
+            while (CLASS_ACTION.consumeClick()) {
+                if (client.player == null || client.gui.screen() != null
+                        || !ClientPlayNetworking.canSend(OriginClassActionRequest.TYPE)) continue;
+                ClientPlayNetworking.send(new OriginClassActionRequest((byte) 1));
             }
             while (COMBO.consumeClick()) {
                 if (client.player == null || client.gui.screen() != null
