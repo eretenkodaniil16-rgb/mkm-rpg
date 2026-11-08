@@ -3,6 +3,7 @@ package com.eretenkodaniil.mkm.client;
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.environment.EnvironmentVisualSettings;
 import com.eretenkodaniil.mkm.environment.net.EnvironmentVisualEvent;
+import com.eretenkodaniil.mkm.environment.net.EnvironmentRuneEvent;
 import com.eretenkodaniil.mkm.client.environment.EnvironmentClientVisuals;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
 import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
@@ -52,6 +53,9 @@ public final class MkmClient implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         EnvironmentVisualSettings.load(Minecraft.getInstance().gameDirectory.toPath());
+        ClientPlayNetworking.registerGlobalReceiver(EnvironmentRuneEvent.TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> EnvironmentClientVisuals.acceptRune(context.client(), packet)));
         ClientPlayNetworking.registerGlobalReceiver(EnvironmentVisualEvent.TYPE,
                 (packet, context) -> context.client().execute(
                         () -> EnvironmentClientVisuals.accept(context.client(), packet)));

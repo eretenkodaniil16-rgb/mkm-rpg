@@ -4,6 +4,9 @@ import com.eretenkodaniil.mkm.enemy.EnemyCatalog;
 import com.eretenkodaniil.mkm.enemy.EnemyDefinition;
 import com.eretenkodaniil.mkm.environment.EnvironmentVfxBudget;
 import net.fabricmc.fabric.api.networking.v1.PayloadTypeRegistry;
+import net.minecraft.core.BlockPos;
+import net.minecraft.sounds.SoundEvents;
+import net.minecraft.sounds.SoundSource;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayNetworking;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.PathfinderMob;
@@ -18,6 +21,8 @@ public final class EnvironmentVisualNetworking {
     public static void initialize() {
         PayloadTypeRegistry.clientboundPlay().register(
                 EnvironmentVisualEvent.TYPE, EnvironmentVisualEvent.CODEC);
+        PayloadTypeRegistry.clientboundPlay().register(
+                EnvironmentRuneEvent.TYPE, EnvironmentRuneEvent.CODEC);
     }
 
     public static void ambient(ServerLevel level, PathfinderMob mob, long tick) {
@@ -38,6 +43,20 @@ public final class EnvironmentVisualNetworking {
         if (d == EnemyCatalog.CAVE_STALKER) return damage
                 ? EnvironmentVfxBudget.STALKER_HIT : EnvironmentVfxBudget.STALKER_AMBIENT;
         return 0;
+    }
+
+    /** Triggered only by server-validated right-click of an actual Rune Slate block. */
+    public static void runePulse(ServerLevel level, BlockPos pos) {
+        level.playSound(null, pos, SoundEvents.AMETHYST_BLOCK_CHIME,
+                SoundSource.BLOCKS, 0.45F, 0.85F);
+        for (var player : level.players()) {
+            if (player.distanceToSqr(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5)
+                    <= 32.0D * 32.0D
+                    && ServerPlayNetworking.canSend(player, EnvironmentRuneEvent.TYPE)) {
+                ServerPlayNetworking.send(player, new EnvironmentRuneEvent(
+                        pos.getX(), pos.getY(), pos.getZ()));
+            }
+        }
     }
 
     private static void broadcast(ServerLevel level, PathfinderMob mob, byte cue) {

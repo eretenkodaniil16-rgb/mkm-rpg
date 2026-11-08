@@ -3,8 +3,11 @@ package com.eretenkodaniil.mkm.client.environment;
 import com.eretenkodaniil.mkm.environment.EnvironmentVfxBudget;
 import com.eretenkodaniil.mkm.environment.EnvironmentVisualSettings;
 import com.eretenkodaniil.mkm.environment.net.EnvironmentVisualEvent;
+import com.eretenkodaniil.mkm.environment.net.EnvironmentRuneEvent;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.particles.ParticleTypes;
+import net.minecraft.core.BlockPos;
+import com.eretenkodaniil.mkm.registry.MkmBlocks;
 import net.minecraft.world.entity.Entity;
 
 /**
@@ -13,6 +16,25 @@ import net.minecraft.world.entity.Entity;
  */
 public final class EnvironmentClientVisuals {
     private EnvironmentClientVisuals() {}
+
+    public static void acceptRune(Minecraft client, EnvironmentRuneEvent event) {
+        if (client.level == null || client.player == null) return;
+        BlockPos pos = new BlockPos(event.x(), event.y(), event.z());
+        if (client.player.distanceToSqr(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5)
+                > 32.0D * 32.0D || !client.level.getBlockState(pos).is(MkmBlocks.RUNE_SLATE))
+            return;
+        int count = EnvironmentVfxBudget.particles(
+                EnvironmentVisualSettings.profile(),
+                EnvironmentVisualSettings.reducedEffects(), EnvironmentVfxBudget.RUNE_PULSE);
+        for (int i = 0; i < count; i++) {
+            double a = i * Math.PI * (3.0 - Math.sqrt(5.0));
+            client.level.addParticle(ParticleTypes.END_ROD,
+                    pos.getX() + .5 + Math.cos(a) * .35,
+                    pos.getY() + 1.1 + .08 * (i % 3),
+                    pos.getZ() + .5 + Math.sin(a) * .35,
+                    Math.cos(a) * .025, .03, Math.sin(a) * .025);
+        }
+    }
 
     public static void accept(Minecraft client, EnvironmentVisualEvent event) {
         if (client.level == null || client.player == null

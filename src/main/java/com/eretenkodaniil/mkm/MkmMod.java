@@ -29,6 +29,7 @@ import com.eretenkodaniil.mkm.performance.MkmPerformanceCommands;
 import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
 import com.eretenkodaniil.mkm.registry.MkmBlocks;
 import com.eretenkodaniil.mkm.environment.WatchtowerPlacementCommands;
+import com.eretenkodaniil.mkm.environment.EnvironmentRuneInteraction;
 import com.eretenkodaniil.mkm.environment.net.EnvironmentVisualNetworking;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import net.fabricmc.api.ModInitializer;
@@ -61,6 +62,7 @@ public final class MkmMod implements ModInitializer {
         MkmItems.initialize();
         MkmBlocks.initialize();
         EnvironmentVisualNetworking.initialize();
+        EnvironmentRuneInteraction.initialize();
         EnemyService.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
