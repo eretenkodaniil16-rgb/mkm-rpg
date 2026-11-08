@@ -168,6 +168,16 @@ def main():
                         f"execute if block {x+14} -56 10 mkm:charred_timber "
                         f"run say MKM_ENV_BRIDGE_VARIANT_{variant}_PASS")
                     wait_for_marker(f"MKM_ENV_BRIDGE_VARIANT_{variant}_PASS")
+                if os.environ.get("MKM_SHOWCASE_CAPTURE") == "1":
+                    # Disposable camera platform OUTSIDE the original site. Game-saved
+                    # position faces north toward the tower+camp for a real F2 capture.
+                    for x in (10, 11, 12):
+                        for z in (25, 26, 27):
+                            with_socket.command(f"setblock {x} -54 {z} minecraft:stone")
+                    with_socket.command("setworldspawn 11 -53 26 180")
+                    with_socket.command("defaultgamemode spectator")
+                    with_socket.command("time set 1200")
+                with_socket.command("save-all flush")
                 print("PASS: real dedicated server loaded NBT, placed structure, preserved occupied block, rune+camp+loot and rejected duplicate placement", flush=True)
             finally:
                 with_socket.close()
