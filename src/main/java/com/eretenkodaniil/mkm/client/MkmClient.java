@@ -5,6 +5,7 @@ import com.eretenkodaniil.mkm.environment.EnvironmentVisualSettings;
 import com.eretenkodaniil.mkm.environment.net.EnvironmentVisualEvent;
 import com.eretenkodaniil.mkm.environment.net.EnvironmentRuneEvent;
 import com.eretenkodaniil.mkm.client.environment.EnvironmentClientVisuals;
+import com.eretenkodaniil.mkm.client.environment.EnvironmentProfileHud;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
 import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
 import com.eretenkodaniil.mkm.character.net.AllocationResult;
@@ -86,15 +87,17 @@ public final class MkmClient implements ClientModInitializer {
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
+                MkmMod.id("environment_profile_hud"), EnvironmentProfileHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             while (VISUAL_PROFILE.consumeClick()) {
                 var active = EnvironmentVisualSettings.cycleProfile();
-                MkmMod.LOGGER.info("MKM client graphics profile -> {}", active);
+                EnvironmentProfileHud.onProfileChange(client, active);
             }
             while (REDUCED_EFFECTS.consumeClick()) {
                 boolean reduced = EnvironmentVisualSettings.toggleReducedEffects();
-                MkmMod.LOGGER.info("MKM client reduced visual effects -> {}", reduced);
+                EnvironmentProfileHud.onReducedChange(client, reduced);
             }
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
