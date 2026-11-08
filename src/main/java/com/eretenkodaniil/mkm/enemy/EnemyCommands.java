@@ -34,7 +34,8 @@ public final class EnemyCommands {
                 .then(Commands.literal("clear").executes(ctx -> clear(ctx.getSource())))
                 .then(Commands.literal("stress")
                         .then(Commands.literal("20").executes(ctx -> stress(ctx.getSource(), 20)))
-                        .then(Commands.literal("40").executes(ctx -> stress(ctx.getSource(), 40))))
+                        .then(Commands.literal("40").executes(ctx -> stress(ctx.getSource(), 40)))
+                        .then(Commands.literal("80").executes(ctx -> stress(ctx.getSource(), 80))))
                 .then(Commands.literal("spawn")
                         .then(Commands.literal("raider")
                                 .executes(ctx -> spawn(ctx.getSource(), EnemyCatalog.ROAD_RAIDER, 1))
@@ -84,8 +85,9 @@ public final class EnemyCommands {
         if (!allowed(source, world)) return 0;
         int spawned = 0;
         BlockPos origin = player.blockPosition();
-        for (int dx = -12; dx <= 12 && spawned < requested; dx += 3) {
-            for (int dz = -12; dz <= 12 && spawned < requested; dz += 3) {
+        int radius = requested >= 80 ? 18 : 12;
+        for (int dx = -radius; dx <= radius && spawned < requested; dx += 3) {
+            for (int dz = -radius; dz <= radius && spawned < requested; dz += 3) {
                 if (dx * dx + dz * dz < 16) continue;
                 EnemyDefinition definition = (spawned & 1) == 0
                         ? EnemyCatalog.ROAD_RAIDER : EnemyCatalog.CAVE_STALKER;
