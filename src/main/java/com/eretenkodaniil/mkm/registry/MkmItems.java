@@ -23,6 +23,12 @@ public final class MkmItems {
             new Item(new Item.Properties().setId(ResourceKey.create(
                     Registries.ITEM, MkmMod.id("stalker_fang")))));
 
+    /** Deliberately rare/unobtainable in ordinary survival until World loot approval. */
+    public static final Item ARCANE_TOME = Registry.register(
+            BuiltInRegistries.ITEM, MkmMod.id("arcane_tome"),
+            new Item(new Item.Properties().stacksTo(1).setId(
+                    ResourceKey.create(Registries.ITEM, MkmMod.id("arcane_tome")))));
+
     private MkmItems() {}
 
     public static void initialize() {
