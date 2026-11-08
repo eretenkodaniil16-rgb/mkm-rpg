@@ -7,6 +7,11 @@ import com.eretenkodaniil.mkm.character.net.AllocationResult;
 import com.eretenkodaniil.mkm.character.origin.net.OriginSelectionResult;
 import com.eretenkodaniil.mkm.client.gui.CharacterOriginScreen;
 import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
+import com.eretenkodaniil.mkm.client.gui.MkmActionPaletteScreen;
+import com.eretenkodaniil.mkm.client.accessibility.MkmAccessibility;
+import com.eretenkodaniil.mkm.client.input.MkmActionRouter;
+import com.eretenkodaniil.mkm.client.input.MkmSdlGamepadAdapter;
+import com.eretenkodaniil.mkm.client.input.ClientActionGate;
 import com.eretenkodaniil.mkm.client.animation.HitFeedbackParticles;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
 import com.eretenkodaniil.mkm.combat.net.DodgeRequest;
@@ -38,11 +43,15 @@ public final class MkmClient implements ClientModInitializer {
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
 
+    private static final KeyMapping ACTION_PALETTE = new KeyMapping(
+            "key.mkm.action_palette", InputConstants.KEY_M, CATEGORY);
+
     static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
 
     @Override
     public void onInitializeClient() {
+        MkmAccessibility.load();
         ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
                 context.client().execute(() -> {
                     if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
@@ -64,47 +73,36 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(JOURNAL);
         FordClientNetworking.initialize();
         KeyMappingHelper.registerKeyMapping(RENEWAL);
+        KeyMappingHelper.registerKeyMapping(ACTION_PALETTE);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
-                MkmMod.id("combat_hud"), MkmCombatHud::extract);
-        HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
-                MkmMod.id("ability_hud"), MkmAbilityHud::extract);
+                MkmMod.id("rpg_hud"), MkmRpgHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (OPEN_SHEET.consumeClick()) {
-                if (client.player != null && client.gui.screen() == null) {
-                    openCharacterSheet();
-                }
-            }
-            while (JOURNAL.consumeClick()) {
-                if (client.player != null && client.gui.screen() == null
-                        && ClientPlayNetworking.canSend(FordJournalRequest.TYPE)) {
-                    FordClientNetworking.requestJournal();
-                }
-            }
-            while (RENEWAL.consumeClick()) {
-                if (client.player == null || client.gui.screen() != null
-                        || !ClientPlayNetworking.canSend(CastAbilityRequest.TYPE)) continue;
-                ClientPlayNetworking.send(new CastAbilityRequest(AbilityCatalog.RENEWAL.id()));
-            }
-            while (COMBO.consumeClick()) {
-                if (client.player == null || client.gui.screen() != null
-                        || !ClientPlayNetworking.canSend(ComboRequest.TYPE)) continue;
-                ClientPlayNetworking.send(new ComboRequest((byte) 1));
-            }
-            while (DODGE.consumeClick()) {
-                if (client.player == null || client.gui.screen() != null ||
-                        !ClientPlayNetworking.canSend(DodgeRequest.TYPE)) {
-                    continue;
-                }
+            MkmActionRouter.tick(client);
+            MkmSdlGamepadAdapter.tick(client);
+            boolean sheet = false, journal = false, palette = false;
+            boolean combo = false, dodge = false, renewal = false;
+            // Drain accumulated clicks; at most ONE packet per action per tick.
+            while (OPEN_SHEET.consumeClick()) sheet = true;
+            while (JOURNAL.consumeClick()) journal = true;
+            while (ACTION_PALETTE.consumeClick()) palette = true;
+            while (COMBO.consumeClick()) combo = true;
+            while (DODGE.consumeClick()) dodge = true;
+            while (RENEWAL.consumeClick()) renewal = true;
 
-                // Use the movement snapshot Minecraft itself processes in
-                // KeyboardInput.tick. KeyMapping.isDown() sampling here could
-                // default G+A / G+S / G+D to a forward-only dodge.
-                var keys = client.player.input.keyPresses;
-                byte direction = DodgeDirection.fromMovement(
-                        keys.forward(), keys.backward(), keys.left(), keys.right());
-                ClientPlayNetworking.send(new DodgeRequest(direction));
+            if (client.player == null || client.gui.screen() != null) return;
+            if (sheet) { openCharacterSheet(); return; }
+            if (journal && ClientPlayNetworking.canSend(FordJournalRequest.TYPE)) {
+                FordClientNetworking.requestJournal();
+                return;
             }
+            if (palette || (combo && MkmAccessibility.get().simpleInput())) {
+                client.gui.setScreen(new MkmActionPaletteScreen());
+                return;
+            }
+            if (renewal) MkmActionRouter.request(client, ClientActionGate.Action.RENEWAL, false);
+            if (combo) MkmActionRouter.request(client, ClientActionGate.Action.COMBO, false);
+            if (dodge) MkmActionRouter.request(client, ClientActionGate.Action.DODGE, false);
         });
 
         UseItemCallback.EVENT.register((player, level, hand) -> {
