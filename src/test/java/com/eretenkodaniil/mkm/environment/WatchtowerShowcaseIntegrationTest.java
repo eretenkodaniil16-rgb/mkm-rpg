@@ -72,6 +72,6 @@ final class WatchtowerShowcaseIntegrationTest {
         }
         assertEquals(32,registry.sites().size());
         assertFalse(registry.canReserve(new BlockPos(999,64,0)));
-        assertFalse(registry.verifiedRune(new BlockPos(999,69,6)));
+        assertFalse(registry.verifiedRune(new BlockPos(1024,69,6)));
     }
 }

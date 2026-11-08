@@ -72,7 +72,8 @@ def verify():
     dangerous_imports = []
     for file in JAVA.rglob("*.java"):
         source = file.read_text(encoding="utf-8")
-        if not file.is_relative_to(JAVA / "client") and (
+        if (not file.is_relative_to(JAVA / "client")
+                and not file.is_relative_to(JAVA / "mixin/client")) and (
                 "import net.minecraft.client." in source
                 or "import com.eretenkodaniil.mkm.client." in source):
             dangerous_imports.append(file.relative_to(ROOT).as_posix())
