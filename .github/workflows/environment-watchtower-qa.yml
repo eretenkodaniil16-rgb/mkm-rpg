@@ -1,0 +1,56 @@
+name: Environment Watchtower Prototype QA
+on:
+  push:
+    branches:
+      - 'feature/environment-*'
+  pull_request:
+    branches:
+      - 'integration/world-e2-1-fabric-character-v4-qa'
+
+jobs:
+  static-asset-check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Verify NBT, texture CRC, model/atlas references, loot and no worldgen
+        run: python3 tools/environment/verify_watchtower.py
+
+  fabric-compile-test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Java 25 Fabric build & unit tests
+        run: |
+          chmod +x ./gradlew
+          ./gradlew test build --no-daemon
+
+  dedicated-server-structure-smoke:
+    needs: fabric-compile-test
+    timeout-minutes: 5
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/wrapper-validation@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '25'
+      - name: Execute guarded NBT placement on an ephemeral superflat dedicated server
+        run: |
+          chmod +x ./gradlew
+          CI=true python3 tools/environment/smoke_watchtower_server.py
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: watchtower-runtime-server-log
+          path: environment-server-smoke.log
+          if-no-files-found: warn
+          retention-days: 7
