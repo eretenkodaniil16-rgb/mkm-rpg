@@ -123,5 +123,8 @@
   "message.mkm.showcase.mage": "Маг активирует руническое зрение: ночное зрение на 50 секунд.",
   "message.mkm.showcase.warrior": "Воин укрепляет защитную стойку: сопротивление на 15 секунд.",
   "message.mkm.showcase.revisited": "Ты уже изучил эту цепочку рун. Повторной награды и эффекта нет.",
-  "message.mkm.showcase.reward": "Исследование завершено: +%s опыта MKM. Дальше — ночная засада и /mkmencounter claim."
+  "message.mkm.showcase.reward": "Исследование завершено: +%s опыта MKM. Дальше — ночная засада и /mkmencounter claim.",
+  "key.mkm.showcase_hud": "Показать/скрыть маршрут SHOWCASE",
+  "key.mkm.showcase_contrast": "Высокая контрастность MKM",
+  "key.mkm.showcase_vfx": "Уменьшить рунические частицы"
 }

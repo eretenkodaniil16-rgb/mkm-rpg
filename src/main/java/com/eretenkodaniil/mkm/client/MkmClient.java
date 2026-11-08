@@ -40,9 +40,16 @@ public final class MkmClient implements ClientModInitializer {
 
     static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
+    private static final KeyMapping SHOWCASE_HUD = new KeyMapping(
+            "key.mkm.showcase_hud", InputConstants.KEY_O, CATEGORY);
+    private static final KeyMapping SHOWCASE_CONTRAST = new KeyMapping(
+            "key.mkm.showcase_contrast", InputConstants.KEY_U, CATEGORY);
+    private static final KeyMapping SHOWCASE_VFX = new KeyMapping(
+            "key.mkm.showcase_vfx", InputConstants.KEY_B, CATEGORY);
 
     @Override
     public void onInitializeClient() {
+        ShowcaseAccessibility.load();
         ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
                 context.client().execute(() -> {
                     if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
@@ -64,12 +71,20 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(JOURNAL);
         FordClientNetworking.initialize();
         KeyMappingHelper.registerKeyMapping(RENEWAL);
+        KeyMappingHelper.registerKeyMapping(SHOWCASE_HUD);
+        KeyMappingHelper.registerKeyMapping(SHOWCASE_CONTRAST);
+        KeyMappingHelper.registerKeyMapping(SHOWCASE_VFX);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
+        HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
+                MkmMod.id("showcase_hud"), MkmShowcaseHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (SHOWCASE_HUD.consumeClick()) ShowcaseAccessibility.toggleHud();
+            while (SHOWCASE_CONTRAST.consumeClick()) ShowcaseAccessibility.toggleContrast();
+            while (SHOWCASE_VFX.consumeClick()) ShowcaseAccessibility.toggleParticles();
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();

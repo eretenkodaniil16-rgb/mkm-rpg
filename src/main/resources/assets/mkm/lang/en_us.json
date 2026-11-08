@@ -123,5 +123,8 @@
   "message.mkm.showcase.mage": "The mage awakens rune-sight: 50 seconds of night vision.",
   "message.mkm.showcase.warrior": "The warrior braces against the ambush: 15 seconds of resistance.",
   "message.mkm.showcase.revisited": "You have already deciphered this rune. No repeat reward or effect.",
-  "message.mkm.showcase.reward": "Discovery complete: +%s MKM XP. Next: night ambush, then /mkmencounter claim."
+  "message.mkm.showcase.reward": "Discovery complete: +%s MKM XP. Next: night ambush, then /mkmencounter claim.",
+  "key.mkm.showcase_hud": "Toggle showcase guide HUD",
+  "key.mkm.showcase_contrast": "MKM high-contrast HUD",
+  "key.mkm.showcase_vfx": "Reduce ambient rune particles"
 }
