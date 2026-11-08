@@ -8,6 +8,8 @@ import argparse
 import json
 import math
 import random
+import re
+import shlex
 import statistics
 from collections import defaultdict
 from pathlib import Path
@@ -19,6 +21,12 @@ RECOMMENDED_METRICS = (
     "fps_average", "fps_1pct_low", "gc_pause_total_ms",
     "allocated_bytes", "ai_callback_mean_us", "loaded_entities",
     "loaded_chunks", "heap_peak_mb", "chunks_per_second",
+)
+COMMON_CONTEXT = (
+    "minecraft", "java", "hardware", "world_seed", "scenario",
+    "player_count", "entity_count", "render_distance",
+    "simulation_distance", "duration_seconds", "world_copy_sha256",
+    "fabric_loader",
 )
 REQUIRED_CONTEXT = (
     "minecraft", "java", "hardware", "mkm_sha", "world_seed",
@@ -46,6 +54,21 @@ def _bootstrap_median_ci(values, draws=2000):
             round(samples[min(draws - 1, int(draws * 0.975))], 2)]
 
 
+def _jvm_without_experiment(flags):
+    if not isinstance(flags, str):
+        raise ValueError("jvm_args must be a JVM argument string")
+    return tuple(sorted(arg for arg in shlex.split(flags)
+                        if not arg.startswith("-Dmkm.enemy.directPlayerScan=")))
+
+
+def _identity_without_arm_settings(environment):
+    # The user may deliberately vary MKM SHA, optional modlist and the
+    # experimental property, but all shared workload settings must agree.
+    return tuple((key, environment[key]) for key in COMMON_CONTEXT) + (
+        ("jvm_common", _jvm_without_experiment(environment["jvm_args"])),
+    )
+
+
 def evaluate_manifest(manifest):
     if not isinstance(manifest, dict) or not isinstance(manifest.get("runs"), list):
         raise ValueError("Expected an object with a 'runs' array")
@@ -53,6 +76,8 @@ def evaluate_manifest(manifest):
     missing_observations = []
     missing_optional = set()
     flamegraphs = 0
+    common_identity = None
+    arm_identities = {"baseline": set(), "candidate": set()}
     for index, run in enumerate(manifest["runs"]):
         arm, phase, trial = run.get("arm"), run.get("phase"), str(run.get("trial", ""))
         if arm not in ("baseline", "candidate") or phase not in ("cold", "warm") or not trial:
@@ -73,17 +98,26 @@ def evaluate_manifest(manifest):
         mods = " ".join(str(item).lower() for item in env["modlist"])
         if "moonrise" in mods and "c2me" in mods:
             raise ValueError("Moonrise and C2ME must NEVER share a benchmark profile")
-        if not env["mkm_sha"] or not env["world_copy_sha256"]:
-            raise ValueError(f"Run {index} needs exact build/world provenance")
+        if (not re.fullmatch(r"[a-fA-F0-9]{40}", str(env["mkm_sha"]))
+                or not re.fullmatch(r"[a-fA-F0-9]{64}", str(env["world_copy_sha256"]))):
+            raise ValueError(f"Run {index} needs full hex SHA-1 build and SHA-256 world provenance")
+        identity = _identity_without_arm_settings(env)
+        if common_identity is None:
+            common_identity = identity
+        elif common_identity != identity:
+            raise ValueError(f"Run {index} differs from the shared benchmark workload")
+        arm_identities[arm].add((env["mkm_sha"], json.dumps(env["modlist"], sort_keys=True),
+                                  str(env["experiment_setting"]),
+                                  str(env["jvm_args"])))
         metrics = run.get("metrics", {})
         for k in REQUIRED_METRICS:
             _finite_positive(metrics.get(k), k)
         if metrics["tick_p50_ms"] > metrics["tick_p95_ms"] or metrics["tick_p95_ms"] > metrics["tick_p99_ms"]:
             raise ValueError(f"Run {index} tick percentiles are not monotonic")
         for k in RECOMMENDED_METRICS:
-            if k not in metrics:
+            if k not in metrics or metrics[k] is None:
                 missing_optional.add(k)
-            elif metrics[k] is not None:
+            else:
                 _finite_positive(metrics[k], k, zero=k in (
                     "gc_pause_total_ms", "allocated_bytes", "loaded_entities",
                     "loaded_chunks", "chunks_per_second", "ai_callback_mean_us"))
@@ -112,7 +146,7 @@ def evaluate_manifest(manifest):
             a, b = pair["baseline"], pair["candidate"]
             # Same hardware, seed, world copy, conditions, and run length.
             # MKM SHA, optional optimizer modlist and experiment flag may differ.
-            for key in ("world_copy_sha256", "fabric_loader", "jvm_args"):
+            for key in ("world_copy_sha256", "fabric_loader"):
                 if a["environment"][key] != b["environment"][key]:
                     raise ValueError(f"Mismatch in {key} for {phase}/{trial}")
             outcome = compare(a, b)
@@ -144,6 +178,8 @@ def evaluate_manifest(manifest):
             "confidence": "exploratory (n<5, bootstrap descriptive only)" if n < 5
                           else "replicated (bootstrap descriptive; gameplay QA required)",
         }
+    if any(len(identities) != 1 for identities in arm_identities.values()):
+        raise ValueError("Build/mod/experiment setting changed across cold or warm trials")
     provenance = not missing_observations and flamegraphs >= 1
     provisional = provenance and not missing_optional and all(
         phases[phase].get("threshold_met") for phase in ("cold", "warm"))
