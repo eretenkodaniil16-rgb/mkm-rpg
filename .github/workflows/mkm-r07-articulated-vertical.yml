@@ -3,9 +3,6 @@ on:
   push:
     branches:
       - feature/showcase-mnae-r07-fabric-v4
-  pull_request:
-    branches:
-      - integration/fabric-v4-world-origins-enemy-perf-qa5
   workflow_dispatch:
 permissions:
   contents: read
@@ -28,6 +25,8 @@ jobs:
           sudo apt-get update -qq
           sudo apt-get install -y --no-install-recommends blender xvfb libgl1
           blender --version | head -2
+      - name: Check 60fps capture protocol phase math
+        run: python3 -m unittest discover -s tools/animation/r07 -p 'test_*.py' -v
       - name: Export all 17 bones and render controlled nine-frame review
         run: |
           python3 -m py_compile tools/animation/r07/export_r07_blender.py
