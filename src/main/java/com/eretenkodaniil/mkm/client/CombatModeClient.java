@@ -11,7 +11,6 @@ import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayNetworking;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
-import net.minecraft.network.chat.Component;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.phys.EntityHitResult;
 
@@ -42,9 +41,8 @@ public final class CombatModeClient {
     public static void onStatus(Minecraft client, CombatModeStatus status) {
         enabled = status.enabled();
         if (!enabled) holding = false;
-        if (client.player != null) client.gui.setOverlayMessage(Component.literal(
-                enabled ? "MKM | COMBAT MODE ENABLED (F6 to exit)"
-                        : "MKM | VANILLA LMB / MINING"), false);
+        // The server sends the authoritative action-bar feedback; this ACK
+        // only controls whether the client may redirect entity-only LMB.
     }
 
     /** Called by Minecraft.startAttack at HEAD; true ONLY when vanilla LMB is suppressed. */
