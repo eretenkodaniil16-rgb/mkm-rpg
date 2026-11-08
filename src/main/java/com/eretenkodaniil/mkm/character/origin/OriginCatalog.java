@@ -22,13 +22,13 @@ public final class OriginCatalog {
     public static final ClassDefinition WARRIOR = new ClassDefinition(
             "mkm:warrior", "screen.mkm.origin.warrior",
             java.util.List.of("mkm:martial_training"),
-            java.util.List.of(), java.util.List.of("mkm:guardian", "mkm:duelist"),
+            java.util.List.of("mkm:warrior_brace"), java.util.List.of("mkm:guardian", "mkm:duelist"),
             Map.of(PlayerModifierId.MELEE_DAMAGE, 0.035D,
                     PlayerModifierId.STAMINA_COST, -0.025D));
     public static final ClassDefinition MAGE = new ClassDefinition(
             "mkm:mage", "screen.mkm.origin.mage",
             java.util.List.of("mkm:arcane_studies"),
-            java.util.List.of("mkm:renewal"), java.util.List.of("mkm:arcanist", "mkm:warder"),
+            java.util.List.of("mkm:renewal", "mkm:mage_ward"), java.util.List.of("mkm:arcanist", "mkm:warder"),
             Map.of(PlayerModifierId.MAX_MANA, 6.0D,
                     PlayerModifierId.HEALING_POWER, 0.035D));
 
