@@ -21,7 +21,7 @@ class R07ModeGateTest {
         for(int missing=0;missing<7;missing++){
             var c=new R07ModeGate.Context(true,true,
                     missing!=0,missing!=1,missing!=2,missing!=3,
-                    missing!=4,missing!=5,missing!=6,true,true);
+                    missing!=4,missing!=5,missing!=6,true);
             assertEquals(R07ModeGate.Choice.C3_FALLBACK,R07ModeGate.select(c));
         }
         assertThrows(IllegalArgumentException.class,()->R07ModeGate.select(null));
