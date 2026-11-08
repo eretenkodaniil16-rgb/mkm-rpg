@@ -16,6 +16,6 @@ public final class EncounterGroundRules {
             "minecraft:mud", "minecraft:clay", "minecraft:snow_block");
     private EncounterGroundRules() {}
     public static boolean isNaturalSurface(String registryId) {
-        return NATURAL_FOOTING.contains(registryId);
+        return registryId != null && NATURAL_FOOTING.contains(registryId);
     }
 }
