@@ -13,6 +13,7 @@ import com.eretenkodaniil.mkm.showcase.net.ShowcaseDecisionView;
 import com.eretenkodaniil.mkm.showcase.net.ShowcaseNetworking;
 import java.util.UUID;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.particles.ParticleTypes;
 import net.minecraft.network.chat.Component;
@@ -31,6 +32,7 @@ import net.minecraft.world.level.block.Blocks;
  */
 public final class ShowcaseService {
     private static final double RUNE_RANGE_SQ = 36.0;
+    private static final String KEEPER_TAG = "mkm.showcase.keeper.v1";
     private ShowcaseService() {}
 
     public static void initialize() {
@@ -44,6 +46,23 @@ public final class ShowcaseService {
                 return InteractionResult.SUCCESS;
             }
             return InteractionResult.PASS;
+        });
+        // A unique saved survivor provides real regional dialogue. Treat entity
+        // tags as hints, not authority: validate against world-stored keeper UUID.
+        UseEntityCallback.EVENT.register((player, level, hand, entity, hit) -> {
+            if (!entity.entityTags().contains(KEEPER_TAG)) return InteractionResult.PASS;
+            if (!(player instanceof ServerPlayer serverPlayer)) return InteractionResult.PASS;
+            if (hand == InteractionHand.MAIN_HAND && serverPlayer.isAlive()
+                    && !serverPlayer.isSpectator()
+                    && serverPlayer.distanceToSqr(entity) <= RUNE_RANGE_SQ) {
+                ShowcaseSite saved=site(serverPlayer);
+                if (saved.configured()
+                        && entity.getUUID().toString().equals(saved.keeperUuid())) {
+                    say(serverPlayer,"Хранитель: Дозор возобновлён. Дорога открыта; "
+                            + "руна сохранила память о тех, кто защитил переправу.");
+                }
+            }
+            return InteractionResult.SUCCESS;
         });
     }
 
@@ -267,6 +286,7 @@ public final class ShowcaseService {
             if (!level.noCollision(npc)) continue;
             UUID id=UUID.randomUUID();
             npc.setUUID(id);
+            npc.addTag(KEEPER_TAG);
             npc.setCustomName(Component.literal("Хранитель переправы"));
             npc.setCustomNameVisible(true);
             npc.setNoAi(true);
