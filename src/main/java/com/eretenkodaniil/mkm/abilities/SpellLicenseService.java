@@ -16,7 +16,7 @@ public final class SpellLicenseService {
         if (player == null) return Set.of();
         boolean holdsTome = player.getMainHandItem().is(MkmItems.ARCANE_TOME)
                 || player.getOffhandItem().is(MkmItems.ARCANE_TOME);
-        return holdsTome ? Set.of("mkm:arcane_barrier") : Set.of();
+        return holdsTome ? Set.of("mkm:mage_ward") : Set.of();
     }
 
     public static double offClassManaMultiplier(String classId, boolean rareLicense) {
