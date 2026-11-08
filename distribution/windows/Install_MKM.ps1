@@ -8,7 +8,7 @@ $ErrorActionPreference = 'Stop'
 $MinecraftVersion = '26.3'
 $FabricLoaderVersion = '0.20.1'
 $InstallerVersion = '1.1.2'
-$ModFilename = 'mkm-rpg-0.0.6-fabric.0-qa.5.jar'
+$ModFilename = 'mkm-rpg-0.0.6-fabric.0-qa.5-enemy77.jar'
 $InstallerUrl = "https://maven.fabricmc.net/net/fabricmc/fabric-installer/$InstallerVersion/fabric-installer-$InstallerVersion.exe"
 $InstallerHashUrl = "$InstallerUrl.sha256"
 
@@ -33,7 +33,7 @@ function Download-VerifiedInstaller {
 }
 
 try {
-    Say 'MKM 0.0.6-fabric.0-qa.5 installer - official Minecraft Launcher'
+    Say 'MKM 0.0.6-fabric.0-qa.5-enemy77 installer - official Minecraft Launcher'
     Say 'EXPERIMENTAL v4 MIGRATION: use a complete backed-up test world; never downgrade a migrated save.'
     Say "Minecraft $MinecraftVersion | Fabric Loader $FabricLoaderVersion"
 
