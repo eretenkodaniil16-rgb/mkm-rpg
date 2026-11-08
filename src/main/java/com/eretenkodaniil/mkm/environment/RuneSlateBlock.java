@@ -19,10 +19,10 @@ public final class RuneSlateBlock extends Block {
 
     @Override
     public void animateTick(BlockState state, Level level, BlockPos pos, RandomSource random) {
-        if (!Boolean.parseBoolean(System.getProperty("mkm.runeParticles", "true"))) return;
+        if (!EnvironmentVisualSettings.allowRuneTick()) return;
         // Vanilla invokes animateTick only for nearby client-side blocks.
         // Expected maximum is one particle per chosen random-display tick.
-        if (random.nextInt(12) != 0) return;
+        if (random.nextInt(EnvironmentVisualSettings.runeFrequencyDivisor()) != 0) return;
         level.addParticle(ParticleTypes.END_ROD,
                 pos.getX() + .38 + random.nextDouble() * .24,
                 pos.getY() + 1.02,

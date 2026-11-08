@@ -21,6 +21,7 @@ public final class MkmCreativeTabs {
                         output.accept(MkmBlocks.CHARRED_TIMBER);
                         output.accept(MkmBlocks.RUSTED_IRON);
                         output.accept(MkmBlocks.RUNE_SLATE);
+                        output.accept(MkmBlocks.RAIDER_WAR_MASK);
                         output.accept(MkmItems.RAIDER_INSIGNIA);
                         output.accept(MkmItems.STALKER_FANG);
                     })

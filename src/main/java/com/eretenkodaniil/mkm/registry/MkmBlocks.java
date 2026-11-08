@@ -19,6 +19,7 @@ public final class MkmBlocks {
     public static final Block CHARRED_TIMBER = register("charred_timber", false);
     public static final Block RUSTED_IRON = register("rusted_iron", false);
     public static final Block RUNE_SLATE = register("rune_slate", true);
+    public static final Block RAIDER_WAR_MASK = register("raider_war_mask", false);
 
     private MkmBlocks() {}
 

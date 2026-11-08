@@ -1,6 +1,9 @@
 package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.MkmMod;
+import com.eretenkodaniil.mkm.environment.EnvironmentVisualSettings;
+import com.eretenkodaniil.mkm.environment.net.EnvironmentVisualEvent;
+import com.eretenkodaniil.mkm.client.environment.EnvironmentClientVisuals;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
 import com.eretenkodaniil.mkm.abilities.net.CastAbilityRequest;
 import com.eretenkodaniil.mkm.character.net.AllocationResult;
@@ -38,11 +41,20 @@ public final class MkmClient implements ClientModInitializer {
     private static final KeyMapping COMBO = new KeyMapping(
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
 
+    private static final KeyMapping VISUAL_PROFILE = new KeyMapping(
+            "key.mkm.environment.profile", InputConstants.KEY_P, CATEGORY);
+    private static final KeyMapping REDUCED_EFFECTS = new KeyMapping(
+            "key.mkm.environment.reduced_effects", InputConstants.KEY_F10, CATEGORY);
+
     static final KeyMapping RENEWAL = new KeyMapping(
             "key.mkm.cast_renewal", InputConstants.KEY_H, CATEGORY);
 
     @Override
     public void onInitializeClient() {
+        EnvironmentVisualSettings.load(Minecraft.getInstance().gameDirectory.toPath());
+        ClientPlayNetworking.registerGlobalReceiver(EnvironmentVisualEvent.TYPE,
+                (packet, context) -> context.client().execute(
+                        () -> EnvironmentClientVisuals.accept(context.client(), packet)));
         ClientPlayNetworking.registerGlobalReceiver(AllocationResult.TYPE, (result, context) ->
                 context.client().execute(() -> {
                     if (context.client().gui.screen() instanceof CharacterSheetScreen sheet) {
@@ -64,12 +76,24 @@ public final class MkmClient implements ClientModInitializer {
         KeyMappingHelper.registerKeyMapping(JOURNAL);
         FordClientNetworking.initialize();
         KeyMappingHelper.registerKeyMapping(RENEWAL);
+        KeyMappingHelper.registerKeyMapping(VISUAL_PROFILE);
+        KeyMappingHelper.registerKeyMapping(REDUCED_EFFECTS);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("combat_hud"), MkmCombatHud::extract);
         HudElementRegistry.attachElementAfter(VanillaHudElements.INFO_BAR,
                 MkmMod.id("ability_hud"), MkmAbilityHud::extract);
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
+            while (VISUAL_PROFILE.consumeClick()) {
+                var active = EnvironmentVisualSettings.cycleProfile();
+                if (client.player != null) client.player.displayClientMessage(
+                        Component.translatable("message.mkm.environment.profile", active.name()), true);
+            }
+            while (REDUCED_EFFECTS.consumeClick()) {
+                boolean reduced = EnvironmentVisualSettings.toggleReducedEffects();
+                if (client.player != null) client.player.displayClientMessage(
+                        Component.translatable("message.mkm.environment.reduced_effects", reduced), true);
+            }
             while (OPEN_SHEET.consumeClick()) {
                 if (client.player != null && client.gui.screen() == null) {
                     openCharacterSheet();

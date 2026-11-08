@@ -1,6 +1,9 @@
 package com.eretenkodaniil.mkm.enemy;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.eretenkodaniil.mkm.registry.MkmBlocks;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.entity.EquipmentSlot;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
@@ -130,6 +133,12 @@ public final class EnemyCommands {
         EnemyLevelRules.Stats stats = EnemyLevelRules.forLevel(definition, level);
         mob.addTag(definition.persistentTag());
         mob.addTag(EnemyLevelRules.levelTag(stats.level()));
+        // The visual-only heraldic mask uses the original MKM block texture,
+        // with vanilla equipment rendering. No new entity AI, hitbox or attacks.
+        if (definition == EnemyCatalog.ROAD_RAIDER) {
+            mob.setItemSlot(EquipmentSlot.HEAD,
+                    new ItemStack(MkmBlocks.RAIDER_WAR_MASK));
+        }
         mob.setCustomName(Component.literal(definition == EnemyCatalog.ROAD_RAIDER
                 ? "MKM Road Raider Lv." + stats.level()
                 : "MKM Cave Stalker Lv." + stats.level()));

@@ -113,5 +113,10 @@
   "block.mkm.cracked_ashlar": "Растрескавшийся тесаный камень",
   "block.mkm.charred_timber": "Обугленное дерево",
   "block.mkm.rusted_iron": "Ржавое железо",
-  "block.mkm.rune_slate": "Рунический сланец"
+  "block.mkm.rune_slate": "Рунический сланец",
+  "block.mkm.raider_war_mask": "Шлем налётчика",
+  "key.mkm.environment.profile": "Переключить профиль графики MKM",
+  "key.mkm.environment.reduced_effects": "Снизить интенсивность эффектов MKM",
+  "message.mkm.environment.profile": "Графика MKM: %s",
+  "message.mkm.environment.reduced_effects": "Уменьшение эффектов MKM: %s"
 }
