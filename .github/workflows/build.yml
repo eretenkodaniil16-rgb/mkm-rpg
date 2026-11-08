@@ -233,6 +233,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: mkm-fabric-26.3-oneclick-windows
-          path: dist/MKM_Fabric_26.3_Integration_V4_QA_ONLY.zip
+          path: dist/MKM_Fabric_26.3_Showcase01_World_QA_ONLY.zip
           if-no-files-found: error
           retention-days: 14
