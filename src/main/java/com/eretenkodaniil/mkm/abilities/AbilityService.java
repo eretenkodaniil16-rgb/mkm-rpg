@@ -62,8 +62,9 @@ public final class AbilityService {
         if (player == null || id == null
                 || CharacterService.get(player).schemaVersion()
                     != CharacterData.CURRENT_SCHEMA_VERSION) return false;
+        var licenses = SpellLicenseService.heldResearchLicenses(player);
         AbilityGrantPolicy.Grants grants = AbilityGrantPolicy.fromSaved(
-                CharacterService.get(player), CharacterOriginService.get(player));
+                CharacterService.get(player), CharacterOriginService.get(player), licenses);
         if (!AbilityGrantPolicy.executable(grants, id)) return false;
 
         // The server consumes an attempted sequence even when the actor is
@@ -94,7 +95,10 @@ public final class AbilityService {
                 ability, actorValid, actionIdle, effectAllowed, previous, now,
                 stats.get(PlayerModifierId.MAX_MANA),
                 stats.get(PlayerModifierId.MANA_REGENERATION),
-                stats.get(PlayerModifierId.MANA_COST),
+                stats.get(PlayerModifierId.MANA_COST)
+                        * ("mkm:arcane_barrier".equals(id)
+                            ? SpellLicenseService.offClassManaMultiplier(
+                                    grants.classId(), licenses.contains(id)) : 1D),
                 stats.get(PlayerModifierId.COOLDOWN_RECOVERY),
                 stats.get(PlayerModifierId.MANA_REGEN_DELAY));
         if (paid == null) return false;
