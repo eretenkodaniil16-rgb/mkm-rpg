@@ -79,7 +79,7 @@ def main():
                 raise RuntimeError("No native Minecraft F2 screenshot captured; UI may be at title screen")
             for i,path in enumerate(screenshots):
                 data=path.read_bytes()
-                assert data[:8] == b"\\x89PNG\\r\\n\\x1a\\n"
+                assert data[:8] == bytes((137, 80, 78, 71, 13, 10, 26, 10))
                 width,height=struct.unpack(">II",data[16:24])
                 assert width>=640 and height>=360,(width,height)
                 shutil.copy2(path,REPORT/f"mkm-watchtower-f2-{i+1}.png")
