@@ -2,74 +2,101 @@ package com.eretenkodaniil.mkm.client;
 
 import com.eretenkodaniil.mkm.abilities.AbilityAttachments;
 import com.eretenkodaniil.mkm.abilities.AbilityCatalog;
+import com.eretenkodaniil.mkm.abilities.AbilityGrantPolicy;
+import com.eretenkodaniil.mkm.abilities.AbilityModifierAccess;
 import com.eretenkodaniil.mkm.abilities.AbilityRules;
 import com.eretenkodaniil.mkm.abilities.ManaLedger;
 import com.eretenkodaniil.mkm.abilities.RenewalEligibility;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
-import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
-import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.combat.CombatAttachments;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
+import net.minecraft.world.effect.MobEffects;
 
-/**
- * Owner-synced information only; never infers cast success or mutates game state.
- * Uses the same pure eligibility rules as the authoritative server.
- */
+/** Compact F5-friendly owner HUD, never source of casting authority. */
 public final class MkmAbilityHud {
-    private static final int WIDTH = 176;
     private static final int HEIGHT = 7;
-
+    private static final int WHITE = 0xFFE7E9EF;
+    private static final int READY = 0xFF86E5B9;
+    private static final int WARN = 0xFFC2A7DD;
     private MkmAbilityHud() {}
 
     public static void extract(GuiGraphicsExtractor graphics, DeltaTracker delta) {
         Minecraft client = Minecraft.getInstance();
-        if (client.player == null || client.level == null
-                || client.gui.screen() != null || client.player.isSpectator()) return;
-
-        ManaLedger attached = client.player.getAttached(AbilityAttachments.PLAYER);
+        if (client.player == null || client.level == null || client.gui.screen() != null
+                || client.player.isSpectator()) return;
+        ManaLedger ledger = client.player.getAttached(AbilityAttachments.PLAYER);
         var character = client.player.getAttached(CharacterAttachments.CHARACTER);
-        var timeline = client.player.getAttached(CombatAttachments.TIMELINE);
         var combat = client.player.getAttached(CombatAttachments.PLAYER);
-        if (attached == null || character == null || timeline == null || combat == null) return;
-
-        var stats = EquipmentSnapshots.snapshot(client.player, character);
-        double maximum = stats.get(PlayerModifierId.MAX_MANA);
-        double ratio = maximum > 0D ? Math.clamp(attached.mana() / maximum, 0D, 1D) : 0D;
-        int x = (client.getWindow().getGuiScaledWidth() - WIDTH) / 2;
-        int y = Math.max(18, client.getWindow().getGuiScaledHeight() - 113);
-
-        graphics.fill(x - 1, y - 1, x + WIDTH + 1, y + HEIGHT + 1, 0xC8000000);
-        graphics.fill(x, y, x + WIDTH, y + HEIGHT, 0xCC1D2033);
-        graphics.fill(x, y, x + (int) Math.round(WIDTH * ratio), y + HEIGHT, 0xFF827BD0);
-        graphics.text(client.font, Component.translatable("hud.mkm.mana",
-                        Math.round(attached.mana()), Math.round(maximum)),
-                x, y - 12, 0xFFE7E9EF);
+        var timeline = client.player.getAttached(CombatAttachments.TIMELINE);
+        if (ledger == null || character == null || combat == null || timeline == null) return;
+        int w = client.getWindow().getGuiScaledWidth();
+        int h = client.getWindow().getGuiScaledHeight();
+        if (w < 120 || h < 140) return;
+        ResourceHudLayout layout = ResourceHudLayout.forViewport(w, h);
+        var stats = AbilityModifierAccess.snapshot(client.player);
+        double max = stats.get(PlayerModifierId.MAX_MANA);
+        double percent = max > 0 ? Math.clamp(ledger.mana() / max, 0D, 1D) : 0D;
+        int x = layout.x(), y = layout.manaY(), width = layout.width();
+        graphics.fill(x - 1, y - 1, x + width + 1, y + HEIGHT + 1, 0xC8000000);
+        graphics.fill(x, y, x + width, y + HEIGHT, 0xCC1D2033);
+        graphics.fill(x, y, x + (int) Math.round(width * percent), y + HEIGHT, 0xFF827BD0);
+        String manaLabel = (layout.narrow() ? "MP " : "MKM MP ")
+                + Math.round(ledger.mana()) + "/" + Math.round(max);
+        graphics.text(client.font, Component.literal(
+                ResourceHudText.fit(manaLabel, width, client.font::width)),
+                x, y - 12, WHITE);
 
         long now = client.level.getGameTime();
-        ManaLedger ledger = AbilityRules.reconcileClock(attached, now);
-        long remaining = Math.max(0L, ledger.readyTick(AbilityCatalog.RENEWAL.id()) - now);
-        double cost = AbilityRules.scaledCost(AbilityCatalog.RENEWAL.baseCost(),
-                stats.get(PlayerModifierId.MANA_COST));
-        boolean actorValid = client.player.isAlive() && !client.player.isPassenger();
-        boolean actionIdle = timeline.idle() && now >= combat.heavyReadyTick();
+        ManaLedger current = AbilityRules.reconcileClock(ledger, now);
+        boolean active = client.player.isAlive() && !client.player.isPassenger();
+        boolean idle = timeline.idle() && now >= combat.heavyReadyTick();
         boolean injured = client.player.getHealth() < client.player.getMaxHealth() - 0.001F;
-        var result = RenewalEligibility.check(actorValid, actionIdle, injured, ledger, now, cost);
-        Component status = switch (result) {
-            case READY -> Component.translatable("hud.mkm.renewal.ready");
-            case INVALID_ACTOR, BUSY -> Component.translatable("hud.mkm.renewal.busy");
-            case FULL_HEALTH -> Component.translatable("hud.mkm.renewal.full_health");
-            case LOW_MANA -> Component.translatable("hud.mkm.renewal.low_mana");
-            case COOLDOWN -> Component.translatable("hud.mkm.renewal.cooldown",
-                    String.format(java.util.Locale.ROOT, "%.1f", remaining / 20.0D));
+        double costMultiplier = stats.get(PlayerModifierId.MANA_COST);
+
+        var renewal = AbilityCatalog.RENEWAL;
+        var heal = RenewalEligibility.check(active, idle, injured, current, now,
+                AbilityRules.scaledCost(renewal.baseCost(), costMultiplier));
+        String renewalStatus = switch (heal) {
+            case READY -> "READY";
+            case INVALID_ACTOR, BUSY -> "BUSY";
+            case FULL_HEALTH -> "HP FULL";
+            case LOW_MANA -> "LOW MP";
+            case COOLDOWN -> String.format(java.util.Locale.ROOT, "%.1fs",
+                    Math.max(0D, current.readyTick(renewal.id()) - now) / 20D);
         };
-        graphics.text(client.font, Component.translatable("hud.mkm.renewal.hotkey",
-                        MkmClient.RENEWAL.getTranslatedKeyMessage()),
-                x, y + 11, 0xFFE7E9EF);
-        graphics.text(client.font, status, x + 111, y + 11,
-                result == RenewalEligibility.Result.READY ? 0xFF85D4B0 : 0xFFC2A7DD);
+        String healKey = MkmClient.RENEWAL.getTranslatedKeyMessage().getString();
+        draw(graphics, client, x, y + 11, width,
+                healKey + " HEAL: " + renewalStatus, heal == RenewalEligibility.Result.READY);
+
+        var origin = client.player.getAttached(CharacterOriginAttachments.PROFILE);
+        var grant = AbilityGrantPolicy.fromSaved(character, origin);
+        boolean licensed = AbilityGrantPolicy.executable(grant, "mkm:arcane_barrier");
+        var ward = AbilityCatalog.get("mkm:arcane_barrier");
+        double wardCost = AbilityRules.scaledCost(ward.baseCost(), costMultiplier);
+        String wardStatus;
+        boolean wardReady = false;
+        if (!licensed) wardStatus = "MAGE ONLY";
+        else if (!active || !idle) wardStatus = "BUSY";
+        else if (client.player.hasEffect(MobEffects.ABSORPTION)) wardStatus = "ACTIVE";
+        else if (now < current.readyTick(ward.id()))
+            wardStatus = String.format(java.util.Locale.ROOT, "%.1fs",
+                    (current.readyTick(ward.id()) - now) / 20D);
+        else if (current.mana() < wardCost) wardStatus = "LOW MP";
+        else { wardStatus = "READY"; wardReady = true; }
+        String wardKey = MkmClient.ARCANE_WARD.getTranslatedKeyMessage().getString();
+        draw(graphics, client, x, y + 23, width,
+                wardKey + " WARD: " + wardStatus, wardReady);
+    }
+
+    private static void draw(GuiGraphicsExtractor graphics, Minecraft client,
+            int x, int y, int width, String label, boolean ready) {
+        graphics.text(client.font,
+                Component.literal(ResourceHudText.fit(label, width, client.font::width)),
+                x, y, ready ? READY : WARN);
     }
 }
