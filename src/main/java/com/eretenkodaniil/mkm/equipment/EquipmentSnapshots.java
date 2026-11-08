@@ -39,7 +39,7 @@ public final class EquipmentSnapshots {
         for (var entry : validatedExtra.entrySet()) {
             if (entry.getKey() != PlayerModifierId.MAX_MANA
                     || entry.getValue() == null || !Double.isFinite(entry.getValue())
-                    || Math.abs(entry.getValue()) > 100.0D) {
+                    || Math.abs(entry.getValue()) > 128.0D) {
                 throw new IllegalArgumentException("Unapproved ability modifier delta");
             }
             deltas.merge(entry.getKey(), entry.getValue(), Double::sum);
