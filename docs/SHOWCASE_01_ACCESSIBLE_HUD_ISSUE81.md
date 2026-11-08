@@ -45,9 +45,16 @@ CharacterData, origins, combat server rules, XP writer, abilities, save migratio
 - Fully functional existing vanilla keyboard rebinding; M action palette additionally supports mouse
   and standard keyboard focus on button controls. One key can open an action palette.
 - Keyboard KeyMapping ownership remains in MkmClient; no duplicate mappings.
-- **BLOCKED:** Fabric 26.3 QA5 has no supported native controller input adapter. The C tab explicitly
-  says this, rather than claiming gamepad support. Future implementation must detect genuine device
-  events, expose focus/axes/deadzones, test connect/disconnect and ensure exactly one C2S per press.
+- **Added opt-in SDL3 action-only adapter** (disabled by default): gamepad EAST/B = dodge,
+  WEST/X = combo, NORTH/Y = Renewal. Only three MKM actions. Poll genuine SDL3 state
+  on client tick and translate rising edges through the SAME server-checked input router;
+  no SDL event-queue draining, analog motion, Minecraft attack/mining emulation, mouse
+  cursor or full gamepad navigation. Enumerated IDs are closed and their native list freed.
+  Detected Controlify/ControlFlex disables this small adapter to avoid double ownership.
+- **NOT hardware verified:** controller connect/disconnect, Windows/Linux SDL host,
+  simultaneous keyboard+gamepad and full controller gameplay. A first-party opt-in
+  adapter and pure edge tests exist, but real-device QA remains required. Navigation,
+  deadzone handling and accessible GUI focus for controller are future work.
 
 ## Manual acceptance, not yet performed
 
@@ -63,7 +70,10 @@ On Java 25 Fabric 26.3 **matching client/server**, copied v4 world:
    server rejects invalid resources/cooldown and never duplicates cast or hit.
 5. Test ru_ru and en_us UI and switching, two-player world (local settings may be different);
    test invalid/malformed/older config and persistence after relaunch.
-6. When R07 and Environment are integrated, exercise their camera shake/flash hooks and
+6. Enable the optional SDL3 controller adapter in C tab. Attach an Xbox/PS controller;
+   test B/X/Y one press each, long holds, simultaneous keyboard key, game menus, unplug/
+   replug, disable/enable, and installed Controlify fallback. Requires physical hardware.
+7. When R07 and Environment are integrated, exercise their camera shake/flash hooks and
    actual HUD stance switch. These are **blocked today**.
 
 ## Automation
@@ -76,5 +86,5 @@ These cannot replace an actual in-world screenshot or two-human gameplay test.
 
 This PR is stacked on #69's QA5 branch, **not** historic NeoForge main.
 Do not merge #58 or #63 by blindly applying their old CharacterData v3/v2 snapshots.
-Do not call this a complete controller adapter, full player-facing skill-tree/spellbook
+Do not call the limited action-only controller poller a complete controller interface, full player-facing skill-tree/spellbook
 or final class-specific balancing implementation.

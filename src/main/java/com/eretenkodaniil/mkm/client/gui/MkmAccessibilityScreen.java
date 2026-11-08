@@ -3,6 +3,7 @@ package com.eretenkodaniil.mkm.client.gui;
 import com.eretenkodaniil.mkm.client.accessibility.MkmAccessibility;
 import com.eretenkodaniil.mkm.client.accessibility.MkmAccessibility.Options;
 import com.eretenkodaniil.mkm.client.accessibility.MkmAccessibility.Setting;
+import com.eretenkodaniil.mkm.client.input.MkmSdlGamepadAdapter;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -38,7 +39,7 @@ public final class MkmAccessibilityScreen extends Screen {
             case READABILITY -> new Setting[] {Setting.HUD_SCALE, Setting.TEXT_SCALE,
                     Setting.HIGH_CONTRAST, Setting.DISTINCT_COLORS};
             case MOTION -> new Setting[] {Setting.REDUCED_SHAKE, Setting.REDUCED_FLASH, Setting.VFX};
-            case INPUT -> new Setting[] {Setting.SIMPLE_INPUT};
+            case INPUT -> new Setting[] {Setting.SIMPLE_INPUT, Setting.GAMEPAD};
         };
         for (int i = 0; i < entries.length; i++) {
             Setting setting = entries[i];
@@ -63,6 +64,7 @@ public final class MkmAccessibilityScreen extends Screen {
             case REDUCED_FLASH -> Component.translatable("screen.mkm.access.flash", onOff(o.reducedFlash()));
             case VFX -> Component.translatable("screen.mkm.access.vfx." + o.vfx().name().toLowerCase(java.util.Locale.ROOT));
             case SIMPLE_INPUT -> Component.translatable("screen.mkm.access.simple", onOff(o.simpleInput()));
+            case GAMEPAD -> Component.translatable("screen.mkm.access.gamepad", onOff(o.gamepadEnabled()));
         };
     }
     private static Component onOff(boolean value) {
@@ -82,7 +84,7 @@ public final class MkmAccessibilityScreen extends Screen {
                     width / 2, top + 81, 0xFFE1E7F1);
             graphics.centeredText(font, Component.translatable("screen.mkm.access.controller_map"),
                     width / 2, top + 98, 0xFFE1E7F1);
-            graphics.centeredText(font, Component.translatable("screen.mkm.access.controller_blocked"),
+            graphics.centeredText(font, Component.translatable(MkmSdlGamepadAdapter.statusTranslationKey()),
                     width / 2, top + 114, 0xFFFFCF89);
         }
         super.extractRenderState(graphics, mx, my, delta);

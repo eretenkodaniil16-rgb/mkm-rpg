@@ -148,5 +148,11 @@
   "screen.mkm.access.controller_blocked": "Геймпад: адаптер пока не реализован",
   "hud.mkm.select_role": "Выберите расу/класс (K)",
   "screen.mkm.access.motion_note": "Тряска/вспышки: R07/Env ещё нет",
-  "screen.mkm.access.controller_map": "ПЛАН геймпада: B уклон., X серия"
+  "screen.mkm.access.controller_map": "B Уклон. · X Серия · Y Лечение",
+  "screen.mkm.access.gamepad": "Действия MKM с геймпада: %s",
+  "screen.mkm.access.gamepad.disabled": "Адаптер геймпада отключён",
+  "screen.mkm.access.gamepad.searching": "Поиск геймпада (SDL3)",
+  "screen.mkm.access.gamepad.connected": "Геймпад подключён к действиям MKM",
+  "screen.mkm.access.gamepad.conflict": "Обнаружен мод геймпада: пауза",
+  "screen.mkm.access.gamepad.unavailable": "SDL3 недоступен; клавиатура работает"
 }

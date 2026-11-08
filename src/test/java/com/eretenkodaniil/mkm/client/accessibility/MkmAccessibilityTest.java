@@ -14,7 +14,8 @@ class MkmAccessibilityTest {
                 .cycle(MkmAccessibility.Setting.REDUCED_SHAKE)
                 .cycle(MkmAccessibility.Setting.REDUCED_FLASH)
                 .cycle(MkmAccessibility.Setting.VFX)
-                .cycle(MkmAccessibility.Setting.SIMPLE_INPUT);
+                .cycle(MkmAccessibility.Setting.SIMPLE_INPUT)
+                .cycle(MkmAccessibility.Setting.GAMEPAD);
         assertEquals(a, MkmAccessibility.Options.fromProperties(a.toProperties()));
         assertEquals(125, a.hudScale());
         assertEquals(125, a.textScale());
@@ -24,6 +25,7 @@ class MkmAccessibilityTest {
         assertFalse(a.reducedFlash());
         assertEquals(MkmAccessibility.Vfx.REDUCED, a.vfx());
         assertTrue(a.simpleInput());
+        assertTrue(a.gamepadEnabled());
     }
     @Test void invalidAndUnknownPropertiesFallBackWithoutCrashing() {
         Properties p = new Properties();

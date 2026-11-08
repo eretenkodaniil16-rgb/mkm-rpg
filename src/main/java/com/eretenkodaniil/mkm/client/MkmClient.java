@@ -10,6 +10,7 @@ import com.eretenkodaniil.mkm.client.gui.CharacterSheetScreen;
 import com.eretenkodaniil.mkm.client.gui.MkmActionPaletteScreen;
 import com.eretenkodaniil.mkm.client.accessibility.MkmAccessibility;
 import com.eretenkodaniil.mkm.client.input.MkmActionRouter;
+import com.eretenkodaniil.mkm.client.input.MkmSdlGamepadAdapter;
 import com.eretenkodaniil.mkm.client.input.ClientActionGate;
 import com.eretenkodaniil.mkm.client.animation.HitFeedbackParticles;
 import com.eretenkodaniil.mkm.combat.net.HitConfirm;
@@ -78,6 +79,7 @@ public final class MkmClient implements ClientModInitializer {
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             MkmActionRouter.tick(client);
+            MkmSdlGamepadAdapter.tick(client);
             boolean sheet = false, journal = false, palette = false;
             boolean combo = false, dodge = false, renewal = false;
             // Drain accumulated clicks; at most ONE packet per action per tick.

@@ -16,38 +16,40 @@ import net.fabricmc.loader.api.FabricLoader;
  */
 public final class MkmAccessibility {
     public enum Setting { HUD_SCALE, TEXT_SCALE, HIGH_CONTRAST, DISTINCT_COLORS,
-        REDUCED_SHAKE, REDUCED_FLASH, VFX, SIMPLE_INPUT }
+        REDUCED_SHAKE, REDUCED_FLASH, VFX, SIMPLE_INPUT, GAMEPAD }
     public enum Vfx { NORMAL, REDUCED, OFF }
 
     public record Options(int hudScale, int textScale, boolean highContrast,
                           boolean distinctColors, boolean reducedShake,
-                          boolean reducedFlash, Vfx vfx, boolean simpleInput) {
+                          boolean reducedFlash, Vfx vfx, boolean simpleInput, boolean gamepadEnabled) {
         public Options {
             if (!validScale(hudScale) || !validScale(textScale) || vfx == null) {
                 throw new IllegalArgumentException("Unsupported MKM accessibility option");
             }
         }
         public static Options defaults() {
-            return new Options(100, 100, false, false, true, true, Vfx.NORMAL, false);
+            return new Options(100, 100, false, false, true, true, Vfx.NORMAL, false, false);
         }
         public Options cycle(Setting setting) {
             return switch (setting) {
                 case HUD_SCALE -> new Options(nextScale(hudScale), textScale, highContrast, distinctColors,
-                        reducedShake, reducedFlash, vfx, simpleInput);
+                        reducedShake, reducedFlash, vfx, simpleInput, gamepadEnabled);
                 case TEXT_SCALE -> new Options(hudScale, nextScale(textScale), highContrast, distinctColors,
-                        reducedShake, reducedFlash, vfx, simpleInput);
+                        reducedShake, reducedFlash, vfx, simpleInput, gamepadEnabled);
                 case HIGH_CONTRAST -> new Options(hudScale, textScale, !highContrast, distinctColors,
-                        reducedShake, reducedFlash, vfx, simpleInput);
+                        reducedShake, reducedFlash, vfx, simpleInput, gamepadEnabled);
                 case DISTINCT_COLORS -> new Options(hudScale, textScale, highContrast, !distinctColors,
-                        reducedShake, reducedFlash, vfx, simpleInput);
+                        reducedShake, reducedFlash, vfx, simpleInput, gamepadEnabled);
                 case REDUCED_SHAKE -> new Options(hudScale, textScale, highContrast, distinctColors,
-                        !reducedShake, reducedFlash, vfx, simpleInput);
+                        !reducedShake, reducedFlash, vfx, simpleInput, gamepadEnabled);
                 case REDUCED_FLASH -> new Options(hudScale, textScale, highContrast, distinctColors,
-                        reducedShake, !reducedFlash, vfx, simpleInput);
+                        reducedShake, !reducedFlash, vfx, simpleInput, gamepadEnabled);
                 case VFX -> new Options(hudScale, textScale, highContrast, distinctColors,
-                        reducedShake, reducedFlash, Vfx.values()[(vfx.ordinal() + 1) % Vfx.values().length], simpleInput);
+                        reducedShake, reducedFlash, Vfx.values()[(vfx.ordinal() + 1) % Vfx.values().length], simpleInput, gamepadEnabled);
                 case SIMPLE_INPUT -> new Options(hudScale, textScale, highContrast, distinctColors,
-                        reducedShake, reducedFlash, vfx, !simpleInput);
+                        reducedShake, reducedFlash, vfx, !simpleInput, gamepadEnabled);
+                case GAMEPAD -> new Options(hudScale, textScale, highContrast, distinctColors,
+                        reducedShake, reducedFlash, vfx, simpleInput, !gamepadEnabled);
             };
         }
         public Properties toProperties() {
@@ -61,6 +63,7 @@ public final class MkmAccessibility {
             p.setProperty("reducedFlash", Boolean.toString(reducedFlash));
             p.setProperty("vfx", vfx.name());
             p.setProperty("simpleInput", Boolean.toString(simpleInput));
+            p.setProperty("gamepadEnabled", Boolean.toString(gamepadEnabled));
             return p;
         }
         public static Options fromProperties(Properties p) {
@@ -75,7 +78,8 @@ public final class MkmAccessibility {
                     readBoolean(p.getProperty("distinctColors"), d.distinctColors),
                     readBoolean(p.getProperty("reducedShake"), d.reducedShake),
                     readBoolean(p.getProperty("reducedFlash"), d.reducedFlash),
-                    vfx, readBoolean(p.getProperty("simpleInput"), d.simpleInput));
+                    vfx, readBoolean(p.getProperty("simpleInput"), d.simpleInput),
+                    readBoolean(p.getProperty("gamepadEnabled"), d.gamepadEnabled));
         }
         private static boolean readBoolean(String value, boolean fallback) {
             if ("true".equalsIgnoreCase(value)) return true;

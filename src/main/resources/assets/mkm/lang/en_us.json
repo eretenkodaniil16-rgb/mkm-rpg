@@ -148,5 +148,11 @@
   "screen.mkm.access.controller_blocked": "Gamepad adapter: not shipped",
   "hud.mkm.select_role": "Choose race/class in K",
   "screen.mkm.access.motion_note": "Shake/flash: R07/Env not in QA5",
-  "screen.mkm.access.controller_map": "Controller PLAN: B Dodge, X Combo"
+  "screen.mkm.access.controller_map": "B Dodge · X Combo · Y Renewal",
+  "screen.mkm.access.gamepad": "MKM controller actions: %s",
+  "screen.mkm.access.gamepad.disabled": "Gamepad adapter is OFF",
+  "screen.mkm.access.gamepad.searching": "Waiting for a controller (SDL3)",
+  "screen.mkm.access.gamepad.connected": "Controller linked for MKM actions",
+  "screen.mkm.access.gamepad.conflict": "Controller mod detected: adapter paused",
+  "screen.mkm.access.gamepad.unavailable": "SDL3 adapter unavailable; keyboard works"
 }
