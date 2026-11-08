@@ -35,6 +35,7 @@ final class EnemyRuntime {
     private long pounceReadyTick;
     private long pounceWindupUntil;
     private boolean pounceWindingUp;
+    private long nextAllyAlertTick;
 
     EnemyRuntime(PathfinderMob mob, EnemyDefinition definition) {
         this.mob = mob;
@@ -49,6 +50,13 @@ final class EnemyRuntime {
     }
 
     PathfinderMob mob() { return mob; }
+
+    /** First hit immediately alerts allies; repeats are limited to once per 60 ticks. */
+    boolean shouldShareAlert(long now) {
+        if (now < nextAllyAlertTick) return false;
+        nextAllyAlertTick = now + 60L;
+        return true;
+    }
 
     void onAttackedBy(ServerPlayer attacker, long tick) {
         if (!attacker.isAlive() || attacker.isSpectator()) return;
@@ -214,8 +222,8 @@ final class EnemyRuntime {
             }
             return;
         }
-        if (now < pounceReadyTick || !shadow || distance < 9.0 || distance > 64.0)
-            return;
+        if (!EnemyShowcaseRules.pouncePossible(visible, blockLight, distance,
+                now < pounceReadyTick)) return;
         if (EnemyTactics.shouldRepath(now, mob.getId(), 20)) {
             pounceReadyTick = now + (elite ? 110L : 90L);
             pounceWindupUntil = now + (elite ? 20L : 15L);

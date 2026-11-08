@@ -155,7 +155,7 @@ public final class EnemyService {
         EnemyRuntime controller = known.get(mob.getUUID());
         if (controller != null) controller.onAttackedBy(aggressor, now);
         // Damage-triggered, bounded local ally alert. Never every-tick O(n^2).
-        if (controller != null && EnemyTactics.shouldRepath(now, mob.getId(), 20)) {
+        if (controller != null && controller.shouldShareAlert(now)) {
             int informed = 0;
             for (PathfinderMob nearby : level.getEntitiesOfClass(PathfinderMob.class,
                     mob.getBoundingBox().inflate(12.0),

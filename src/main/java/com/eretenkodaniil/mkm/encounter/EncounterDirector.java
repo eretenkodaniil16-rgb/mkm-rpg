@@ -185,7 +185,9 @@ public final class EncounterDirector {
             return;
         }
         FordQuestState quest = FordQuestService.get(player);
-        if (!quest.stage().equals(FordQuestState.ACTIVE) || quest.wardenId().isBlank()) return;
+        if (!(quest.stage().equals(FordQuestState.ACTIVE)
+                || quest.stage().equals(FordQuestState.RETURN_TO_WARDEN))
+                || quest.wardenId().isBlank()) return;
         Entity warden;
         try { warden = level.getEntity(UUID.fromString(quest.wardenId())); }
         catch (IllegalArgumentException malformed) { return; }

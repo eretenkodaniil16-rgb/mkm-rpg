@@ -11,7 +11,7 @@ class EnemyTacticsPerformanceTest {
     private static volatile int checksum;
 
     @Test void plannerWorkloadForTwentyAndFortyControllers() {
-        for (int n : new int[] {20, 40}) {
+        for (int n : new int[] {20, 40, 80}) {
             int decisions = 0;
             long start = System.nanoTime();
             for (int tick = 0; tick < 20_000; tick++) {
