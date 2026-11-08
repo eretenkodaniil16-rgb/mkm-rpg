@@ -1,6 +1,6 @@
 {
   "id": "mkm:ford_ambush",
-  "title": "Ночная засада у брода",
+  "title": "Ночная засада у брода: налётчики и теневой охотник",
   "category": "hostile",
   "dimension": "minecraft:overworld",
   "allowed_biomes": [
@@ -13,8 +13,20 @@
   "danger": 2,
   "reward_xp": 100,
   "roster": [
-    {"entity": "minecraft:husk", "role": "frontline", "elite": false},
-    {"entity": "minecraft:husk", "role": "frontline", "elite": false},
-    {"entity": "minecraft:skeleton", "role": "leader", "elite": true}
+    {
+      "entity": "minecraft:husk",
+      "role": "frontline",
+      "elite": false
+    },
+    {
+      "entity": "minecraft:husk",
+      "role": "frontline",
+      "elite": false
+    },
+    {
+      "entity": "minecraft:spider",
+      "role": "leader",
+      "elite": true
+    }
   ]
 }
