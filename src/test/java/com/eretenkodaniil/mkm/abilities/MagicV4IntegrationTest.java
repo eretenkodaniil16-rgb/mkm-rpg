@@ -56,6 +56,23 @@ class MagicV4IntegrationTest {
         assertEquals(4,invested.schemaVersion());
     }
 
+    @Test void rareTomeProvidesLimitedOffClassLicenseNotFreeMagePrivilege() {
+        var warrior = new AbilityGrantPolicy.Grants(
+                "mkm:warrior", 20, Set.of("mkm:arcane_barrier"));
+        var noBook = new AbilityGrantPolicy.Grants(
+                "mkm:warrior", 20, Set.of());
+        assertTrue(AbilityGrantPolicy.executable(warrior, "mkm:arcane_barrier"));
+        assertFalse(AbilityGrantPolicy.executable(noBook, "mkm:arcane_barrier"));
+        assertEquals(1.5D, SpellLicenseService.offClassManaMultiplier(
+                "mkm:warrior", true), 1e-9);
+        assertEquals(1D, SpellLicenseService.offClassManaMultiplier(
+                "mkm:mage", true), 1e-9);
+        assertEquals(1D, SpellLicenseService.offClassManaMultiplier(
+                "mkm:warrior", false), 1e-9);
+        assertTrue(AbilityGrantPolicy.executable(new AbilityGrantPolicy.Grants(
+                "mkm:mage",1,Set.of()), "mkm:arcane_barrier"));
+    }
+
     @Test void grantLevelAndResearchMetadataCannotCreateUnapprovedDamage() {
         var mage = new AbilityGrantPolicy.Grants("mkm:mage",100,Set.of("mkm:arcane_bolt"));
         assertTrue(AbilityGrantPolicy.granted(mage,"mkm:arcane_bolt"));
