@@ -9,7 +9,8 @@ import net.minecraft.world.effect.MobEffects;
  * effect is respected by Minecraft's existing health and Combat damage chain.
  */
 public final class ArcaneWardEffect {
-    public static final int DURATION_TICKS = 160;
+    public static final int DURATION_TICKS = 100;
+    public static final int MENTORED_DURATION_TICKS = 180;
     public static final int AMPLIFIER = 0; // 4 absorption HP, fixed no stacking
 
     private ArcaneWardEffect() {}
@@ -25,9 +26,18 @@ public final class ArcaneWardEffect {
 
     /** Called only after server resource debit and readiness checks. */
     public static boolean apply(ServerPlayer player) {
-        if (!canApply(player)) return false;
+        return apply(player, DURATION_TICKS);
+    }
+
+    /**
+     * Future Character M5 mentor integration may supply the trusted 180-tick
+     * duration. This method never accepts the duration from a network intent.
+     */
+    public static boolean apply(ServerPlayer player, int durationTicks) {
+        if (!canApply(player) || (durationTicks != DURATION_TICKS
+                && durationTicks != MENTORED_DURATION_TICKS)) return false;
         return player.addEffect(new MobEffectInstance(
-                MobEffects.ABSORPTION, DURATION_TICKS, AMPLIFIER,
+                MobEffects.ABSORPTION, durationTicks, AMPLIFIER,
                 false, true), player);
     }
 }
