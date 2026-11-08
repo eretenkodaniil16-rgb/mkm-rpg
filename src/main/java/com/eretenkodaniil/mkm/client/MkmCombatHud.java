@@ -3,6 +3,8 @@ package com.eretenkodaniil.mkm.client;
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.equipment.EquipmentSnapshots;
 import com.eretenkodaniil.mkm.client.animation.AnimationRenderProbe;
+import com.eretenkodaniil.mkm.client.animation.ArticulatedMode;
+import com.eretenkodaniil.mkm.client.animation.NativeRenderDiagnostics;
 import net.fabricmc.loader.api.FabricLoader;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
@@ -40,7 +42,10 @@ public final class MkmCombatHud {
         String version = FabricLoader.getInstance().getModContainer("mkm")
                 .map(mod -> mod.getMetadata().getVersion().getFriendlyString())
                 .orElse("unknown");
-        graphics.text(client.font, Component.literal("MKM RPG " + version + "  [C3.7]"),
+        graphics.text(client.font, Component.literal("MKM RPG " + version
+                        + (ArticulatedMode.nativeEnabled()
+                            ? (ArticulatedMode.articulatedEnabled() ? " [R07 17 F9]" : " [R07 6 F8]")
+                            : " [C3 QA5 F8]")),
                 x, y - 24, TEXT);
         CombatState combat = client.player.getAttached(CombatAttachments.PLAYER);
         var character = client.player.getAttached(CharacterAttachments.CHARACTER);
@@ -79,6 +84,12 @@ public final class MkmCombatHud {
             graphics.text(client.font,
                     Component.literal(AnimationRenderProbe.status(client.level.getGameTime())),
                     x, y + 24, TEXT);
+            graphics.text(client.font,
+                    Component.literal(NativeRenderDiagnostics.status(client.level.getGameTime())),
+                    x, y + 35, TEXT);
+            graphics.text(client.font,
+                    Component.literal(ArticulatedMode.loadStatus()),
+                    x, y + 46, MUTED);
         }
     }
 }
