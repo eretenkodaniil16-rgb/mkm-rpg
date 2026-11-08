@@ -62,9 +62,26 @@ public final class ArticulatedMode {
         return true;
     }
     public static Mode mode(AvatarRenderState state,LocalCombatAnimation.Frame frame){
-        if(!nativeEnabled||!eligible(state,frame)||clip()==null)return Mode.C3_QA5;
-        if(articulatedEnabled)return layerReady?Mode.R07_17:Mode.C3_QA5;
-        return Mode.SIX_PART_DERIVED;
+        R07ModeGate.Choice choice=R07ModeGate.select(new R07ModeGate.Context(
+                nativeEnabled,articulatedEnabled,clip()!=null,layerReady,
+                eligible(state,frame),
+                state!=null && !Minecraft.getInstance().options.getCameraType().isFirstPerson(),
+                frame!=null && frame.timeline()!=null
+                    && frame.timeline().kind()==ActionTimeline.Kind.LIGHT_COMBO
+                    && frame.timeline().comboStep()==1,
+                Minecraft.getInstance().player!=null
+                    && Minecraft.getInstance().player.getMainHandItem().is(ItemTags.SWORDS),
+                Minecraft.getInstance().player!=null
+                    && Minecraft.getInstance().player.getOffhandItem().isEmpty(),
+                Minecraft.getInstance().player!=null
+                    && java.util.Arrays.stream(new EquipmentSlot[]{EquipmentSlot.HEAD,
+                        EquipmentSlot.CHEST,EquipmentSlot.LEGS,EquipmentSlot.FEET})
+                        .allMatch(slot->Minecraft.getInstance().player.getItemBySlot(slot).isEmpty())));
+        return switch(choice){
+            case C3_FALLBACK->Mode.C3_QA5;
+            case SIX_DERIVED->Mode.SIX_PART_DERIVED;
+            case ARTICULATED_17->Mode.R07_17;
+        };
     }
     public static boolean active(AvatarRenderState state,LocalCombatAnimation.Frame frame){
         return mode(state,frame)==Mode.R07_17;
