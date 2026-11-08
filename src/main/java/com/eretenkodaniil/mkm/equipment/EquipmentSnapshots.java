@@ -6,6 +6,8 @@ import com.eretenkodaniil.mkm.character.origin.OriginModifierRules;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierCalculator;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
 import java.util.EnumMap;
+import java.util.Map;
+import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.EquipmentSlot;
 import net.minecraft.world.entity.LivingEntity;
@@ -17,6 +19,12 @@ public final class EquipmentSnapshots {
     private EquipmentSnapshots() {}
 
     public static PlayerModifierSnapshot snapshot(Player player, CharacterData character) {
+        return snapshot(player, character, Map.of());
+    }
+
+    /** Additional verified AbilityCore mana contribution BEFORE one Character final clamp. */
+    public static PlayerModifierSnapshot snapshot(Player player, CharacterData character,
+            Map<PlayerModifierId, Double> validatedExtra) {
         EnumMap<EquipmentRules.Slot, String> equipped = new EnumMap<>(EquipmentRules.Slot.class);
         equipped.put(EquipmentRules.Slot.MAIN_HAND, id(player.getMainHandItem()));
         equipped.put(EquipmentRules.Slot.OFF_HAND, id(player.getOffhandItem()));
@@ -25,7 +33,18 @@ public final class EquipmentSnapshots {
         equipped.put(EquipmentRules.Slot.LEGS, id(player.getItemBySlot(EquipmentSlot.LEGS)));
         equipped.put(EquipmentRules.Slot.FEET, id(player.getItemBySlot(EquipmentSlot.FEET)));
         // Original equip + origin deltas share the Character calculator and one final clamp.
-        return OriginModifierRules.snapshot(character, EquipmentRules.aggregate(equipped),
+        EnumMap<PlayerModifierId, Double> deltas =
+                new EnumMap<>(PlayerModifierId.class);
+        deltas.putAll(EquipmentRules.aggregate(equipped));
+        for (var entry : validatedExtra.entrySet()) {
+            if (entry.getKey() != PlayerModifierId.MAX_MANA
+                    || entry.getValue() == null || !Double.isFinite(entry.getValue())
+                    || Math.abs(entry.getValue()) > 100.0D) {
+                throw new IllegalArgumentException("Unapproved ability modifier delta");
+            }
+            deltas.merge(entry.getKey(), entry.getValue(), Double::sum);
+        }
+        return OriginModifierRules.snapshot(character, deltas,
                 player.getAttached(CharacterOriginAttachments.PROFILE));
     }
 
