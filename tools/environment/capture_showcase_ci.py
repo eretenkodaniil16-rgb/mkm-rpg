@@ -40,10 +40,10 @@ def main():
     folder.mkdir(parents=True,exist_ok=True)
     shutil.move(str(world),str(folder/"mkm_visual_ci"))
     REPORT.mkdir(parents=True,exist_ok=True)
-    xserver=subprocess.Popen(["Xvfb",":97","-screen","0","1280x720x24","-ac","-nolisten","tcp"],
-                             stdout=subprocess.DEVNULL,stderr=subprocess.DEVNULL)
+    if not os.environ.get("DISPLAY"):
+        raise RuntimeError("Launch capture under xvfb-run; DISPLAY missing")
     env=os.environ.copy()
-    env.update(DISPLAY=":97",LIBGL_ALWAYS_SOFTWARE="1",MKM_SHOWCASE_CAPTURE="1")
+    env.update(LIBGL_ALWAYS_SOFTWARE="1",MKM_SHOWCASE_CAPTURE="1")
     client=None
     try:
         time.sleep(2)
@@ -94,9 +94,6 @@ def main():
             try: client.wait(timeout=12)
             except subprocess.TimeoutExpired:
                 os.killpg(client.pid,signal.SIGKILL);client.wait()
-        xserver.terminate()
-        try: xserver.wait(timeout=8)
-        except subprocess.TimeoutExpired: xserver.kill();xserver.wait()
 
 
 if __name__=="__main__":

@@ -174,7 +174,7 @@ def main():
                     for x in (10, 11, 12):
                         for z in (25, 26, 27):
                             with_socket.command(f"setblock {x} -54 {z} minecraft:stone")
-                    with_socket.command("setworldspawn 11 -53 26 180")
+                    with_socket.command("setworldspawn 11 -53 26")
                     with_socket.command("defaultgamemode spectator")
                     with_socket.command("time set 1200")
                 with_socket.command("save-all flush")
