@@ -277,7 +277,7 @@ public final class CombatModeService {
         if (kind == CombatModeRules.Strike.CHARGED) {
             victim.knockback(style == FencingSchool.LIECHTENAUER ? 0.95D : 0.60D,
                     attacker.getX() - victim.getX(), attacker.getZ() - victim.getZ(),
-                    actualSource, 0F);
+                    actualSource, healthDamage);
             victim.addEffect(new MobEffectInstance(MobEffects.SLOWNESS, 32, 1));
         } else if (riposte) {
             victim.addEffect(new MobEffectInstance(MobEffects.WEAKNESS, 50, 0));
