@@ -34,7 +34,8 @@ public final class EnemyCommands {
                 .then(Commands.literal("clear").executes(ctx -> clear(ctx.getSource())))
                 .then(Commands.literal("stress")
                         .then(Commands.literal("20").executes(ctx -> stress(ctx.getSource(), 20)))
-                        .then(Commands.literal("40").executes(ctx -> stress(ctx.getSource(), 40))))
+                        .then(Commands.literal("40").executes(ctx -> stress(ctx.getSource(), 40)))
+                        .then(Commands.literal("80").executes(ctx -> stress(ctx.getSource(), 80))))
                 .then(Commands.literal("spawn")
                         .then(Commands.literal("raider")
                                 .executes(ctx -> spawn(ctx.getSource(), EnemyCatalog.ROAD_RAIDER, 1))
@@ -84,8 +85,8 @@ public final class EnemyCommands {
         if (!allowed(source, world)) return 0;
         int spawned = 0;
         BlockPos origin = player.blockPosition();
-        for (int dx = -12; dx <= 12 && spawned < requested; dx += 3) {
-            for (int dz = -12; dz <= 12 && spawned < requested; dz += 3) {
+        for (int dx = -18; dx <= 18 && spawned < requested; dx += 3) {
+            for (int dz = -18; dz <= 18 && spawned < requested; dz += 3) {
                 if (dx * dx + dz * dz < 16) continue;
                 EnemyDefinition definition = (spawned & 1) == 0
                         ? EnemyCatalog.ROAD_RAIDER : EnemyCatalog.CAVE_STALKER;
@@ -109,7 +110,8 @@ public final class EnemyCommands {
         int cleared = 0;
         for (PathfinderMob mob : level.getEntitiesOfClass(PathfinderMob.class,
                 player.getBoundingBox().inflate(48.0),
-                candidate -> EnemyCatalog.byTags(candidate.entityTags()) != null)) {
+                candidate -> EnemyCatalog.byTags(candidate.entityTags()) != null
+                        && !candidate.entityTags().contains(EnemyFactory.ENCOUNTER_TAG))) {
             mob.discard();
             cleared++;
         }
@@ -122,23 +124,12 @@ public final class EnemyCommands {
     private static PathfinderMob create(ServerLevel world, ServerPlayer player,
             EnemyDefinition definition, int level, BlockPos feet) {
         if (!world.getBlockState(feet.below()).isSolid()) return null;
-        PathfinderMob mob = definition.host() == EnemyDefinition.Host.HUSK
-                ? new Husk(EntityTypes.HUSK, world)
-                : new Spider(EntityTypes.SPIDER, world);
+        PathfinderMob mob = EnemyFactory.prepare(world, definition, level,
+                definition == EnemyCatalog.ROAD_RAIDER
+                        && Math.floorMod(feet.getX() + feet.getZ(), 2) == 0,
+                false);
         mob.snapTo(feet.getX() + 0.5, feet.getY(), feet.getZ() + 0.5, 0.0F, 0.0F);
         if (!world.noCollision(mob)) return null;
-        EnemyLevelRules.Stats stats = EnemyLevelRules.forLevel(definition, level);
-        mob.addTag(definition.persistentTag());
-        mob.addTag(EnemyLevelRules.levelTag(stats.level()));
-        mob.setCustomName(Component.literal(definition == EnemyCatalog.ROAD_RAIDER
-                ? "MKM Road Raider Lv." + stats.level()
-                : "MKM Cave Stalker Lv." + stats.level()));
-        mob.setCustomNameVisible(true);
-        mob.setPersistenceRequired();
-        setBaseAttribute(mob, Attributes.MAX_HEALTH, stats.health());
-        setBaseAttribute(mob, Attributes.ATTACK_DAMAGE, stats.attack());
-        setBaseAttribute(mob, Attributes.MOVEMENT_SPEED, stats.speed());
-        mob.setHealth((float) stats.health());
         if (!world.addFreshEntity(mob)) return null;
         EnemyService.onLoad(mob, world);
         mob.setTarget(player);

@@ -2,6 +2,11 @@ package com.eretenkodaniil.mkm.encounter;
 
 import com.eretenkodaniil.mkm.MkmMod;
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.enemy.EnemyFactory;
+import com.eretenkodaniil.mkm.enemy.EnemyCatalog;
+import com.eretenkodaniil.mkm.enemy.EnemyDefinition;
+import com.eretenkodaniil.mkm.quests.FordQuestService;
+import com.eretenkodaniil.mkm.quests.FordQuestState;
 import com.eretenkodaniil.mkm.quests.presentation.NpcVisualSignals;
 import java.util.ArrayList;
 import java.util.List;
@@ -18,6 +23,7 @@ import net.minecraft.world.entity.LivingEntity;
 import net.minecraft.world.entity.Mob;
 import net.minecraft.world.entity.monster.skeleton.Skeleton;
 import net.minecraft.world.entity.monster.zombie.Husk;
+import net.minecraft.world.entity.monster.spider.Spider;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 
@@ -76,7 +82,7 @@ public final class EncounterDirector {
         List<EncounterLedger.Member> roster = new ArrayList<>();
         BlockPos anchor = player.blockPosition();
         for (EncounterDefinition.Spawn spec : config.roster()) {
-            Mob mob = newMob(level, spec);
+            Mob mob = newMob(level, spec, prepared.size(), EncounterAutoRules.encounterLevel(CharacterService.get(player).level()));
             if (mob == null) return false;
             boolean placed = false;
             for (int[] offset : OFFSETS) {
@@ -101,10 +107,11 @@ public final class EncounterDirector {
             mob.addTag("mkm.encounter.role." + spec.role());
             if (spec.elite()) mob.addTag(ELITE_TAG);
             mob.setPersistenceRequired();
-            mob.setCustomName(Component.literal(spec.elite()
-                    ? "Костяной дозорный — командир" : spec.entityId().endsWith("husk")
-                            ? "Иссушённый налётчик" : "Дозорный-лучник"));
-            mob.setCustomNameVisible(spec.elite());
+            if (EnemyCatalog.byTags(mob.entityTags()) == null) {
+                mob.setCustomName(Component.literal(spec.elite()
+                        ? "Костяной дозорный — командир" : "Дозорный-лучник"));
+                mob.setCustomNameVisible(spec.elite());
+            }
             prepared.add(mob);
             roster.add(new EncounterLedger.Member(uuid.toString(),
                     spec.entityId(), spec.role(), spec.elite(), false));
@@ -126,40 +133,76 @@ public final class EncounterDirector {
                 return false;
             }
             mob.setTarget(player); // Vanilla AI goal scheduler; AI team owns future strategies.
-            NpcVisualSignals.emit(mob, NpcVisualSignals.Cue.THREAT);
+            EnemyDefinition enemy = EnemyCatalog.byTags(mob.entityTags());
+            if (enemy != null) NpcVisualSignals.emit(mob, enemy.rigProfile(), NpcVisualSignals.Cue.THREAT);
+            else NpcVisualSignals.emit(mob, NpcVisualSignals.Cue.THREAT);
         }
         EncounterLedger current = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS);
         EncounterLedger.Entry latest = current.find(config.id());
         // Preserve any death already confirmed while the group was materializing.
         level.setAttached(EncounterAttachments.ENCOUNTERS,
                 current.replace(config.id(), latest, latest.start()));
-        inform(player, "Ночная засада началась: 2 хуска и командир-скелет. "
+        inform(player, "Ночная засада: два вооружённых налётчика и теневой охотник. "
                 + "Победите троих и вернитесь к месту начала за наградой.");
         return true;
     }
 
-    private static Mob newMob(ServerLevel level, EncounterDefinition.Spawn spec) {
-        switch (spec.entityId()) {
-            case "minecraft:husk" -> {
-                return new Husk(EntityTypes.HUSK, level);
-            }
+    private static Mob newMob(ServerLevel level, EncounterDefinition.Spawn spec, int index, int levelHint) {
+        return switch (spec.entityId()) {
+            case "minecraft:husk" -> EnemyFactory.prepare(level, EnemyCatalog.ROAD_RAIDER,
+                    levelHint, index == 0, false);
+            case "minecraft:spider" -> EnemyFactory.prepare(level, EnemyCatalog.CAVE_STALKER,
+                    levelHint, false, spec.elite());
             case "minecraft:skeleton" -> {
+                // Compatible with already-persisted original QA5 skeleton rosters.
                 Skeleton skeleton = new Skeleton(EntityTypes.SKELETON, level);
-                // Explicit vanilla ranged equipment; commander helmet prevents
-                // daylight burn if the player sleeps through the encounter.
                 skeleton.setItemSlot(EquipmentSlot.MAINHAND, new ItemStack(Items.BOW));
-                if (spec.elite()) {
+                if (spec.elite())
                     skeleton.setItemSlot(EquipmentSlot.HEAD, new ItemStack(Items.IRON_HELMET));
-                }
-                // The direct constructor initially assesses an empty hand;
-                // explicitly select the vanilla bow goal after equipping.
                 skeleton.reassessWeaponGoal();
-                return skeleton;
+                yield skeleton;
             }
-            default -> {
-                return null; // explicit entity-family allowlist; AI mods cannot inject classes via JSON
-            }
+            default -> null;
+        };
+    }
+
+    /**
+     * Natural player-facing trigger: when an accepted Ford quest owner explores
+     * 24..96 blocks from their *loaded* Warden in an eligible nighttime biome.
+     * No GM command, global entity scan, chunk tickets or respawn after reservation.
+     */
+    public static void onPlayerTick(ServerPlayer player) {
+        if (!(player.level() instanceof ServerLevel level) || !player.isAlive()
+                || player.isSpectator() || Math.floorMod(level.getGameTime() + player.getId(), 200L) != 0L)
+            return;
+        EncounterLedger.Entry existing = level.getAttachedOrCreate(EncounterAttachments.ENCOUNTERS)
+                .find(PILOT_ID);
+        if (existing != null) {
+            if (existing.phase().equals(EncounterLedger.DEFEATED)
+                    && existing.ownerId().equals(player.getUUID().toString())
+                    && player.distanceToSqr(existing.x() + 0.5, existing.y(), existing.z() + 0.5) <= 256.0)
+                claim(player); // owner receipt is atomic within CharacterData v4
+            return;
         }
+        FordQuestState quest = FordQuestService.get(player);
+        if (!(quest.stage().equals(FordQuestState.ACTIVE)
+                || quest.stage().equals(FordQuestState.RETURN_TO_WARDEN))
+                || quest.wardenId().isBlank()) return;
+        Entity warden;
+        try { warden = level.getEntity(UUID.fromString(quest.wardenId())); }
+        catch (IllegalArgumentException malformed) { return; }
+        if (warden == null || !warden.isAlive()
+                || !warden.entityTags().contains("mkm.ford.warden.v1")) return;
+        EncounterDefinition config = EncounterDefinitions.ford();
+        if (config == null || !level.dimension().identifier().toString().equals(config.dimension())) return;
+        String biome = level.getBiome(player.blockPosition()).unwrapKey()
+                .map(key -> key.identifier().toString()).orElse("unknown");
+        boolean allowed = config.accepts(biome, level.getDefaultClockTime());
+        boolean canStart = EncounterAutoRules.canBegin(true, true, false, allowed,
+                level.getDifficulty() == Difficulty.PEACEFUL,
+                player.onGround() && !player.isPassenger(),
+                player.distanceToSqr(warden));
+        if (canStart) start(player);
     }
 
     /** AFTER_DEATH only. World roster membership, entity type and owner tag must agree. */
@@ -172,13 +215,16 @@ public final class EncounterDirector {
         boolean authorized = event.members().stream().anyMatch(member -> member.uuid().equals(deadId)
                 && member.entityId().equals(victim.getType() == EntityTypes.HUSK
                         ? "minecraft:husk" : victim.getType() == EntityTypes.SKELETON
-                        ? "minecraft:skeleton" : "unknown")
+                        ? "minecraft:skeleton" : victim.getType() == EntityTypes.SPIDER
+                        ? "minecraft:spider" : "unknown")
                 && victim.entityTags().contains(OWNER_TAG + event.ownerId()));
         if (!authorized) return;
         EncounterLedger after = ledger.markDeath(PILOT_ID, deadId);
         if (after == ledger) return; // duplicated or unrelated death callback
         level.setAttached(EncounterAttachments.ENCOUNTERS, after);
-        NpcVisualSignals.emit(victim, NpcVisualSignals.Cue.DEATH);
+        if (EnemyCatalog.byTags(victim.entityTags()) == null)
+            NpcVisualSignals.emit(victim, NpcVisualSignals.Cue.DEATH);
+        // EnemyService emits one species-specific rig DEATH cue for tagged mobs.
         var changed = after.find(PILOT_ID);
         ServerPlayer owner = null;
         try {

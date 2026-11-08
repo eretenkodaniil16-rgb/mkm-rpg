@@ -76,6 +76,7 @@ public final class MkmMod implements ModInitializer {
             for (var player : server.getPlayerList().getPlayers()) {
                 CombatService.onPlayerTick(player);
                 AbilityService.onPlayerTick(player);
+                EncounterDirector.onPlayerTick(player);
             }
         });
         ServerTickEvents.END_SERVER_TICK.register(EnemyService::onServerTick);

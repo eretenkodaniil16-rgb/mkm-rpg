@@ -8,7 +8,7 @@ MKM RPG — автоматическая установка для Windows
 ================================================
 Minecraft Java Edition: 26.3
 Fabric Loader: 0.20.1
-MKM: 0.0.6-fabric.0-qa.5 (Fabric API встроен в JAR)
+MKM: 0.0.6-fabric.0-qa.5-enemy77 (Fabric API встроен в JAR)
 
 1. Установите официальный Minecraft Launcher и один раз запустите Minecraft 26.3.
 2. Полностью закройте Minecraft и лаунчер.
