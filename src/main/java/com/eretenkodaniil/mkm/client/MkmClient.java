@@ -44,7 +44,7 @@ public final class MkmClient implements ClientModInitializer {
             "key.mkm.combo", InputConstants.KEY_R, CATEGORY);
 
     private static final KeyMapping VISUAL_PROFILE = new KeyMapping(
-            "key.mkm.environment.profile", InputConstants.KEY_P, CATEGORY);
+            "key.mkm.environment.profile", InputConstants.KEY_V, CATEGORY);
     private static final KeyMapping REDUCED_EFFECTS = new KeyMapping(
             "key.mkm.environment.reduced_effects", InputConstants.KEY_F10, CATEGORY);
 
