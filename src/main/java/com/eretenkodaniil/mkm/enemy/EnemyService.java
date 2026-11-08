@@ -87,7 +87,8 @@ public final class EnemyService {
         for (PathfinderMob ally : level.getEntitiesOfClass(PathfinderMob.class,
                 mob.getBoundingBox().inflate(10.0),
                 candidate -> candidate != mob && candidate.isAlive()
-                        && candidate.entityTags().contains(EnemyFactory.GUARD_TAG))) {
+                        && candidate.entityTags().contains(EnemyFactory.GUARD_TAG)
+                        && EnemySquadRules.sameSquad(mob.entityTags(), candidate.entityTags()))) {
             if (ally.getTarget() != null) return true;
         }
         return false;
@@ -160,7 +161,8 @@ public final class EnemyService {
             for (PathfinderMob nearby : level.getEntitiesOfClass(PathfinderMob.class,
                     mob.getBoundingBox().inflate(12.0),
                     candidate -> candidate != mob && candidate.isAlive()
-                            && candidate.entityTags().contains(definition.persistentTag()))) {
+                            && candidate.entityTags().contains(definition.persistentTag())
+                            && EnemySquadRules.sameSquad(mob.entityTags(), candidate.entityTags()))) {
                 EnemyRuntime ally = known.get(nearby.getUUID());
                 if (ally != null && ally.mob().getTarget() == null) {
                     ally.onAttackedBy(aggressor, now);
