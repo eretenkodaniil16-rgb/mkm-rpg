@@ -1,5 +1,6 @@
 package com.eretenkodaniil.mkm.quests.net;
 
+import com.eretenkodaniil.mkm.showcase.ShowcaseService;
 import com.eretenkodaniil.mkm.quests.FordQuestService;
 import com.eretenkodaniil.mkm.quests.FordQuestState;
 import com.eretenkodaniil.mkm.quests.FordDialogueSessions;
@@ -55,7 +56,12 @@ public final class FordQuestNetworking {
     public static void sendJournal(ServerPlayer player, int requestId) {
         if (!ServerPlayNetworking.canSend(player, FordJournalView.TYPE)) return;
         var quest = FordQuestService.get(player);
+        var story=ShowcaseService.get(player);
+        var site=ShowcaseService.site(player);
         ServerPlayNetworking.send(player, new FordJournalView(stage(quest), quest.foundTracks(),
-                FordQuestService.isEncounterLoaded(player), requestId));
+                FordQuestService.isEncounterLoaded(player), requestId,
+                ShowcaseService.journalStage(story),ShowcaseService.journalBranch(story),
+                site.configured()?site.x():0,site.configured()?site.y():0,
+                site.configured()?site.z():0,ShowcaseService.remaining(player)));
     }
 }

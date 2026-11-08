@@ -13,7 +13,15 @@ public final class MkmCreativeTabs {
             FabricCreativeModeTab.builder()
                     .title(Component.translatable("itemGroup.mkm.main"))
                     .icon(() -> MkmItems.CODEX.getDefaultInstance())
-                    .displayItems((params, output) -> output.accept(MkmItems.CODEX))
+                    .displayItems((params, output) -> {
+                        output.accept(MkmItems.CODEX);
+                        output.accept(MkmBlocks.AGED_ASHLAR);
+                        output.accept(MkmBlocks.MOSSY_ASHLAR);
+                        output.accept(MkmBlocks.CRACKED_ASHLAR);
+                        output.accept(MkmBlocks.CHARRED_TIMBER);
+                        output.accept(MkmBlocks.RUSTED_IRON);
+                        output.accept(MkmBlocks.RUNE_SLATE);
+                    })
                     .build());
 
     private MkmCreativeTabs() {}

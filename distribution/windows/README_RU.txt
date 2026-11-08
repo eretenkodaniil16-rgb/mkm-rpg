@@ -1,5 +1,5 @@
-ВНИМАНИЕ: ЭКСПЕРИМЕНТАЛЬНАЯ QA-СБОРКА. Encounter Director M1 (ручная засада) + Human/Dwarf × Warrior/Mage + Raider/Stalker Enemy V1 + Performance M0.
-НЕ содержит PR58/60/63/65. НЕ ПУБЛИЧНЫЙ РЕЛИЗ.
+ВНИМАНИЕ: ЭКСПЕРИМЕНТАЛЬНАЯ QA-СБОРКА. SHOWCASE-01 World: Ильра → разрушенная башня → реальная руна → 2 игровых исхода + Human/Dwarf × Warrior/Mage + Raider/Stalker Enemy V1 + Performance M0.
+Содержит ассеты и защищённую установку башни из PR60. НЕ содержит PR58/63/65. НЕ ПУБЛИЧНЫЙ РЕЛИЗ.
 Закройте Minecraft/сервер и создайте резервную копию ВСЕГО мира, включая playerdata и data.
 CharacterData переходит с v3 на v4. Нельзя открывать обновлённый мир старым JAR.
 Откат возможен только восстановлением СТАРОГО JAR И ПОЛНОЙ исходной копии мира.
@@ -8,7 +8,7 @@ MKM RPG — автоматическая установка для Windows
 ================================================
 Minecraft Java Edition: 26.3
 Fabric Loader: 0.20.1
-MKM: 0.0.6-fabric.0-qa.5 (Fabric API встроен в JAR)
+MKM: 0.0.6-fabric.0-qa.6-world (Fabric API встроен в JAR). Установленная тестовая башня создаётся только GM-командой.
 
 1. Установите официальный Minecraft Launcher и один раз запустите Minecraft 26.3.
 2. Полностью закройте Minecraft и лаунчер.

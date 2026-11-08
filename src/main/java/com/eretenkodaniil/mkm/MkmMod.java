@@ -14,6 +14,12 @@ import com.eretenkodaniil.mkm.combat.CombatEvents;
 import com.eretenkodaniil.mkm.combat.CombatService;
 import com.eretenkodaniil.mkm.combat.net.CombatNetworking;
 import com.eretenkodaniil.mkm.command.MkmCommands;
+import com.eretenkodaniil.mkm.environment.WatchtowerPlacementCommands;
+import com.eretenkodaniil.mkm.showcase.ShowcaseAttachments;
+import com.eretenkodaniil.mkm.showcase.ShowcaseService;
+import com.eretenkodaniil.mkm.showcase.ShowcaseCommands;
+import com.eretenkodaniil.mkm.showcase.net.ShowcaseNetworking;
+import com.eretenkodaniil.mkm.registry.MkmBlocks;
 import com.eretenkodaniil.mkm.encounter.EncounterAttachments;
 import com.eretenkodaniil.mkm.encounter.EncounterCommands;
 import com.eretenkodaniil.mkm.encounter.EncounterDefinitions;
@@ -54,8 +60,10 @@ public final class MkmMod implements ModInitializer {
         CombatAttachments.initialize();
         FordQuestAttachments.initialize();
         EncounterAttachments.initialize();
+        ShowcaseAttachments.initialize();
         EncounterDefinitions.initialize();
         MkmItems.initialize();
+        MkmBlocks.initialize();
         EnemyService.initialize();
         MkmCreativeTabs.initialize();
         CombatNetworking.initialize();
@@ -63,7 +71,9 @@ public final class MkmMod implements ModInitializer {
         CharacterOriginNetworking.initialize();
         AbilityNetworking.initialize();
         FordQuestNetworking.initialize();
+        ShowcaseNetworking.initialize();
         FordQuestService.initialize();
+        ShowcaseService.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);
@@ -71,6 +81,7 @@ public final class MkmMod implements ModInitializer {
             CombatService.onLogin(handler.player);
             AbilityService.onLogin(handler.player);
             FordQuestService.onLogin(handler.player);
+            ShowcaseService.onLogin(handler.player);
         });
         ServerTickEvents.END_SERVER_TICK.register(server -> {
             for (var player : server.getPlayerList().getPlayers()) {
@@ -89,6 +100,8 @@ public final class MkmMod implements ModInitializer {
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> FordQuestCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> EncounterCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> WatchtowerPlacementCommands.register(dispatcher));
+        CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> ShowcaseCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> EnemyCommands.register(dispatcher));
         CommandRegistrationCallback.EVENT.register((dispatcher, registry, env) -> MkmPerformanceCommands.register(dispatcher));
         // Register the timing END callback after MKM's own end-tick work.
