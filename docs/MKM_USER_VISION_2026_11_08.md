@@ -1,6 +1,6 @@
-# MKM RPG — user vision handoff (114 of 115 answers, 2026-11-08)
+# MKM RPG — user vision handoff (115 of 115 answers, 2026-11-08)
 
-**Status: DESIGN INTENT, NOT SHIPPED GAMEPLAY OR APPROVED TECHNICAL IMPLEMENTATION.** Source: player-completed 23-section, 115-question MKM questionnaire (2026-11-08 02:45:37). **114 answers recorded**, 1 unanswered: `S20-04` (accessibility). 29 user free-text clarifications, including 6 custom D responses. **All section priority ratings are unset.** This is an operational handoff summary; the original completed survey and line-by-line answer register are retained in the coordinating conversation, not reproduced in full here. Do not invent missing answers or treat assistant technical recommendations as explicit approvals.
+**Status: DESIGN INTENT, NOT SHIPPED GAMEPLAY OR APPROVED TECHNICAL IMPLEMENTATION.** Source: player-completed 23-section, 115-question MKM questionnaire (2026-11-08 02:45:37). **115 answers recorded; all questionnaire items answered.** The additional choice S20-04 is **A+B+C simultaneously** (accessibility across readability, motion/flash control, and controls). 29 user free-text clarifications, including 6 custom D responses. **All section priority ratings are unset.** This is an operational handoff summary; the original completed survey and line-by-line answer register are retained in the coordinating conversation, not reproduced in full here. Do not invent missing answers or treat assistant technical recommendations as explicit approvals.
 
 ## User goals, by domain
 
@@ -23,7 +23,7 @@
 17. **MNAE (S17):** own 17–26-joint articulated rigs, intense acrobatic choreographies, forward roll + lateral evasive step + backward retreat, near-vanilla first-person arms, real observer/network animation state.
 18. **Graphics (S18):** optional high-end 64x+ PBR and complex 3D geometry with Iris, localized volumetric/distortion/weather effects; THREE presets: economy, standard, cinematic. Base mod must not require shaders.
 19. **Audio (S19):** regional and combat dynamic music, mostly text/dialogue/no voice acting, impact sounds react to swing direction/speed, vanilla creature sounds kept, separate MKM audio settings.
-20. **UI (S20):** RPG character model/skills/styling, HUD customization and hybrid hotbar/controller, intentionally few handholding hints. `S20-04` accessibility options **not answered**; do not assume the priority.
+20. **UI (S20):** RPG character model/skills/styling, HUD customization and hybrid hotbar/controller, intentionally few handholding hints. `S20-04` is **A+B+C combined, explicitly selected**: scalable UI/text/high-contrast/colour aids; configurable camera shake, flashes and motion; remappable keys, assisted input and controller support. Implement incrementally but do not drop any branch. Section-wide prioritization remains unset.
 21. **Coop (S21):** solo + validated two-player cooperative as first target, common encounters but personal rewards, PvE priority over PvP, physical friendly-fire for abilities, synchronized observer MNAE clip state.
 22. **Performance (S22):** base MKM should run **without mandatory extra optimizer mods**; target 40 diverse active enemies, explore more aggressive parallel pure processing with serious testing, hardware baseline Ryzen7 5800U/16GB RAM, suggest but never auto-install optimizer profiles.
 23. **Release (S23):** integrated feature-complete QA builds rather than scattered public releases, **new disposable worlds** for incompatible branches, automated Java25/client/server/video/2-player/save/load/performance matrix, Windows official Minecraft Launcher, weekly integration governance.
@@ -44,7 +44,7 @@
 - `S15-05` no expensive unloaded simulation vs living war/economy: persist abstract events, instantiate full AI only near player.
 - `S21-04` friendly-fire vs 2-player: server-authoritative target and team rules, no self-inflicted duplicate events.
 - `S10-02` ‘unique’ schools not enumerated, do not invent a definitive school catalog without design approval.
-- `S20-04` missing accessibility answer, keep open for one follow-up question.
+- `S20-04` is resolved as **all A+B+C**. Accessibility is an acceptance criterion: UI scale/contrast, independent camera-shake/flash reduction, full MKM key rebinding and controller input mapping; test settings persistence and client-only behaviour. Controls must not bypass server attack/ability authority.
 
 ## Workstream ownership
 
