@@ -110,5 +110,9 @@
   "item.mkm.stalker_fang": "Клык охотника",
   "key.mkm.cast_arcane_ward": "Арканный оберег (маг)",
   "message.mkm.arcane_ward.cast": "Арканный оберег: поглощение урона",
-  "item.mkm.arcane_tome": "Редкий магический фолиант"
+  "item.mkm.arcane_tome": "Редкий магический фолиант",
+  "hud.mkm.renewal.short": "Лечение",
+  "hud.mkm.ward.short": "Оберег",
+  "hud.mkm.ward.locked": "НУЖЕН МАГ ИЛИ ФОЛИАНТ",
+  "hud.mkm.ward.active": "ЗАЩИТА ДЕЙСТВУЕТ"
 }
