@@ -1,6 +1,7 @@
 package com.eretenkodaniil.mkm.quests;
 
 import com.eretenkodaniil.mkm.character.CharacterService;
+import com.eretenkodaniil.mkm.character.CharacterData;
 import com.eretenkodaniil.mkm.character.origin.CharacterOriginService;
 import com.eretenkodaniil.mkm.character.origin.OriginShowcaseRules;
 import com.eretenkodaniil.mkm.character.origin.OriginProgressService;
@@ -237,6 +238,10 @@ public final class FordQuestService {
      */
     private static void discoverByOrigin(ServerPlayer player, OriginShowcaseRules.Clue clue) {
         if (!requireWarden(player)) return;
+        if (CharacterService.get(player).schemaVersion() != CharacterData.CURRENT_SCHEMA_VERSION) {
+            message(player, "MKM: Неподдерживаемая версия записи персонажа; улика не изменена.");
+            return;
+        }
         FordQuestState previous = get(player);
         var origin = CharacterOriginService.get(player);
         if (!OriginShowcaseRules.canDiscover(origin, previous, clue)) {
