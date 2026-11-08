@@ -1,6 +1,10 @@
 package com.eretenkodaniil.mkm.client.gui;
 
 import com.eretenkodaniil.mkm.quests.net.FordJournalView;
+import com.eretenkodaniil.mkm.character.origin.CharacterOriginAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginCatalog;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressAttachments;
+import com.eretenkodaniil.mkm.character.origin.OriginProgressData;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -33,9 +37,26 @@ public final class FordJournalScreen extends Screen {
             default -> "Требуется проверка сохранения.";
         };
         g.centeredText(font,Component.literal(objective),width/2,top+70,0xFFF0E3CA);
-        g.centeredText(font,Component.literal(
-                view.tracks() ? "Улика: обнаружены следы нежити." : "Улика: следы ещё не исследованы."
-        ),width/2,top+92,0xFFACB4C2);
+        var origin = minecraft != null && minecraft.player != null
+                ? minecraft.player.getAttached(CharacterOriginAttachments.PROFILE) : null;
+        String clue = view.tracks() ? "Улика: обнаружены следы нежити."
+                : "Улика: следы ещё не исследованы.";
+        if (view.tracks() && origin != null && origin.schemaVersion() == 1) {
+            if (origin.raceId().equals(OriginCatalog.HUMAN.id()))
+                clue = "Показания караванщиков: опасный иссушённый мертвец.";
+            else if (origin.raceId().equals(OriginCatalog.DWARF.id()))
+                clue = "Каменные руны: следы нежити ведут к броду.";
+        }
+        g.centeredText(font,Component.literal(clue),width/2,top+92,0xFFACB4C2);
+        var progress = minecraft != null && minecraft.player != null
+                ? minecraft.player.getAttached(OriginProgressAttachments.PROGRESS) : null;
+        if (view.stage() == 3 && origin != null && origin.selected()) {
+            g.centeredText(font,Component.literal(
+                    progress != null && progress.has(OriginProgressData.FORD_MENTORSHIP)
+                            ? "Наставничество Ильры: освоено."
+                            : "Доступно наставничество у Ильры (2-й уровень и улика)."),
+                    width/2,top+112,0xFFE4C890);
+        }
         super.extractRenderState(g,mx,my,tick);
     }
 }
