@@ -1,5 +1,7 @@
 package com.eretenkodaniil.mkm.combat.mode;
 
+import com.eretenkodaniil.mkm.MkmMod;
+
 import com.eretenkodaniil.mkm.character.CharacterAttachments;
 import com.eretenkodaniil.mkm.character.attribute.PlayerModifierId;
 import com.eretenkodaniil.mkm.character.modifier.PlayerModifierSnapshot;
@@ -37,6 +39,7 @@ import net.minecraft.world.phys.Vec3;
  */
 public final class CombatModeService {
     private static final boolean QA_OPT_IN = Boolean.getBoolean("mkm.combat.experimental");
+    private static final boolean QA_LOG = Boolean.getBoolean("mkm.combat.qaLog");
     private static final Map<ServerPlayer, Session> SESSIONS = new WeakHashMap<>();
 
     private static final class Session {
@@ -145,6 +148,9 @@ public final class CombatModeService {
             }
             player.setAttached(CombatAttachments.PLAYER, paid);
             s.state = next;
+            if (QA_LOG) MkmMod.LOGGER.info(
+                    "MKM_COMBAT_QA commit actor={} serial={} kind={} contactTick={} staminaCost={}",
+                    player.getId(), next.latestSequence(), next.strike(), next.impactAt(), cost);
             player.sendOverlayMessage(Component.literal(next.strike()
                     == CombatModeRules.Strike.CHARGED
                     ? "MKM CHARGED | committed: 7t windup"
@@ -185,6 +191,9 @@ public final class CombatModeService {
                 // Only authoritative native hit. No second DamageSource or MNAE attack.
                 player.attack(victim);
             }
+            if (QA_LOG) MkmMod.LOGGER.info(
+                    "MKM_COMBAT_QA resolve actor={} target={} kind={} confirmed={}",
+                    player.getId(), s.expectedTargetId, kind, s.hitConfirmed);
             if (!s.hitConfirmed) player.sendOverlayMessage(Component.literal(
                     "MKM " + kind + " | missed/blocked/no health damage"));
         } finally {
@@ -221,6 +230,9 @@ public final class CombatModeService {
                 || s.expectedTargetId != victim.getId()
                 || blocked || !Float.isFinite(healthDamage) || healthDamage <= 0F) return;
         s.hitConfirmed = true; // one receipt, no duplicated status effect
+        if (QA_LOG) MkmMod.LOGGER.info(
+                "MKM_COMBAT_QA confirmed actor={} target={} kind={} actualHealthDamage={}",
+                attacker.getId(), victim.getId(), s.resolving, healthDamage);
         CombatModeRules.Strike kind = s.resolving;
         FencingSchool style = school(attacker).orElse(FencingSchool.NONE);
         boolean riposte = kind == CombatModeRules.Strike.QUICK

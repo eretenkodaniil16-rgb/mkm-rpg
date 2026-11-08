@@ -1,6 +1,8 @@
 {
   "itemGroup.mkm.main": "MKM",
   "item.mkm.codex": "MKM Codex",
+  "key.categories.mkm.combat_mode": "MKM Combat Mode",
+  "key.mkm.combat_mode": "Combat Mode (server-approved F6)",
   "key.categories.mkm.general": "MKM",
   "key.mkm.open_character_sheet": "Open Character Sheet",
   "key.mkm.dodge": "Dodge (Action Combat)",

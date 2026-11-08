@@ -1,6 +1,8 @@
 {
   "itemGroup.mkm.main": "MKM",
   "item.mkm.codex": "Кодекс MKM",
+  "key.categories.mkm.combat_mode": "Боевой режим MKM",
+  "key.mkm.combat_mode": "Боевой режим (F6, подтверждение сервера)",
   "key.categories.mkm.general": "MKM",
   "key.mkm.open_character_sheet": "Открыть лист персонажа",
   "key.mkm.dodge": "Уклонение (боевой режим)",
