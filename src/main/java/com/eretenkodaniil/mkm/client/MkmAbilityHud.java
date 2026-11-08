@@ -80,8 +80,8 @@ public final class MkmAbilityHud {
         var origin = client.player.getAttached(CharacterOriginAttachments.PROFILE);
         var licenses = SpellLicenseService.heldResearchLicenses(client.player);
         var grant = AbilityGrantPolicy.fromSaved(character, origin, licenses);
-        boolean licensed = AbilityGrantPolicy.executable(grant, "mkm:arcane_barrier");
-        var ward = AbilityCatalog.get("mkm:arcane_barrier");
+        boolean licensed = AbilityGrantPolicy.executable(grant, "mkm:mage_ward");
+        var ward = AbilityCatalog.get("mkm:mage_ward");
         double wardCost = AbilityRules.scaledCost(ward.baseCost(),
                 costMultiplier * (grant != null
                         ? SpellLicenseService.offClassManaMultiplier(
