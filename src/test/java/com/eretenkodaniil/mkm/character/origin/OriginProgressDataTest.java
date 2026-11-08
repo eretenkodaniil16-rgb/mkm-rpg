@@ -30,6 +30,10 @@ final class OriginProgressDataTest {
                 List.of("mkm:future_culture/recovered"));
         assertEquals(unknownId, disk(unknownId));
         assertFalse(unknownId.has(OriginProgressData.FORD_MENTORSHIP));
+        assertFalse(unknownId.has("mkm:future_culture/recovered"),
+                "saved but unimplemented future IDs must never be executable");
+        assertThrows(IllegalArgumentException.class, () ->
+                new OriginProgressData().unlock("mkm:unregistered_skill"));
         var future = new OriginProgressData(2,
                 List.of(OriginProgressData.FORD_MENTORSHIP));
         assertEquals(future, disk(future));
