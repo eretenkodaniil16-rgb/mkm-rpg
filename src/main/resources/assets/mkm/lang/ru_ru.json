@@ -113,5 +113,15 @@
   "block.mkm.cracked_ashlar": "Растрескавшийся тесаный камень",
   "block.mkm.charred_timber": "Обугленное дерево",
   "block.mkm.rusted_iron": "Ржавое железо",
-  "block.mkm.rune_slate": "Рунический сланец"
+  "block.mkm.rune_slate": "Рунический сланец",
+  "message.mkm.showcase.unverified": "Эта руна не относится к подтверждённой сторожевой башне.",
+  "message.mkm.showcase.select": "Выбери происхождение и класс в меню персонажа (K), затем прочитай руну.",
+  "message.mkm.showcase.unknown": "Неизвестное происхождение. Руна остаётся закрытой.",
+  "message.mkm.showcase.refused": "Награда недоступна: сохранение или журнал персонажа требуют проверки.",
+  "message.mkm.showcase.human": "Человек различает знаки старого гарнизона: из башни наблюдали за ночной дорогой.",
+  "message.mkm.showcase.dwarf": "Дворф узнаёт рудничные клейма в тесаном камне: под рунами спрятана кладовая.",
+  "message.mkm.showcase.mage": "Маг активирует руническое зрение: ночное зрение на 50 секунд.",
+  "message.mkm.showcase.warrior": "Воин укрепляет защитную стойку: сопротивление на 15 секунд.",
+  "message.mkm.showcase.revisited": "Ты уже изучил эту цепочку рун. Повторной награды и эффекта нет.",
+  "message.mkm.showcase.reward": "Исследование завершено: +%s опыта MKM. Дальше — ночная засада и /mkmencounter claim."
 }

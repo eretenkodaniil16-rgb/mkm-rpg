@@ -113,5 +113,15 @@
   "block.mkm.cracked_ashlar": "Fractured Ashlar",
   "block.mkm.charred_timber": "Charred Timber",
   "block.mkm.rusted_iron": "Rusted Iron",
-  "block.mkm.rune_slate": "Rune Slate"
+  "block.mkm.rune_slate": "Rune Slate",
+  "message.mkm.showcase.unverified": "This rune is not part of a verified watchtower.",
+  "message.mkm.showcase.select": "Select an origin and class in the character screen (K), then read the rune.",
+  "message.mkm.showcase.unknown": "Unknown origin. The rune remains sealed.",
+  "message.mkm.showcase.refused": "Reward unavailable: character save or receipt ledger requires review.",
+  "message.mkm.showcase.human": "Your human heritage identifies an old garrison marker: the watchtower guarded the night road.",
+  "message.mkm.showcase.dwarf": "Your dwarven heritage identifies quarry marks: a hidden store lies beneath the runes.",
+  "message.mkm.showcase.mage": "The mage awakens rune-sight: 50 seconds of night vision.",
+  "message.mkm.showcase.warrior": "The warrior braces against the ambush: 15 seconds of resistance.",
+  "message.mkm.showcase.revisited": "You have already deciphered this rune. No repeat reward or effect.",
+  "message.mkm.showcase.reward": "Discovery complete: +%s MKM XP. Next: night ambush, then /mkmencounter claim."
 }

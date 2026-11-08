@@ -30,6 +30,8 @@ import com.eretenkodaniil.mkm.registry.MkmCreativeTabs;
 import com.eretenkodaniil.mkm.registry.MkmItems;
 import com.eretenkodaniil.mkm.registry.MkmBlocks;
 import com.eretenkodaniil.mkm.environment.WatchtowerPlacementCommands;
+import com.eretenkodaniil.mkm.environment.WatchtowerAttachments;
+import com.eretenkodaniil.mkm.environment.RuneSlateInteraction;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents;
@@ -56,6 +58,7 @@ public final class MkmMod implements ModInitializer {
         CombatAttachments.initialize();
         FordQuestAttachments.initialize();
         EncounterAttachments.initialize();
+        WatchtowerAttachments.initialize();
         EncounterDefinitions.initialize();
         MkmItems.initialize();
         MkmBlocks.initialize();
@@ -67,6 +70,7 @@ public final class MkmMod implements ModInitializer {
         AbilityNetworking.initialize();
         FordQuestNetworking.initialize();
         FordQuestService.initialize();
+        RuneSlateInteraction.initialize();
 
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
             CharacterEvents.onPlayerLoggedIn(handler.player);

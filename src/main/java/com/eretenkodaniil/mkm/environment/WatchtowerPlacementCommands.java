@@ -80,6 +80,13 @@ public final class WatchtowerPlacementCommands {
         if (!WatchtowerSiteRules.canPlace(probe)) {
             return reject(source, "Blocked or uneven site: no blocks may be overwritten; support slope <= 4");
         }
+        // Reserve a durable PENDING site before changing blocks. If a crash or
+        // partial structure placement happens, the rune cannot award XP.
+        var siteRegistry = level.getAttachedOrCreate(WatchtowerAttachments.SITES);
+        if (!siteRegistry.canReserve(origin)) {
+            return reject(source, "Watchtower location already reserved or site limit reached");
+        }
+        level.setAttached(WatchtowerAttachments.SITES, siteRegistry.reserve(origin, variant));
         // Preflight is complete before the first world mutation. Structure has NO air entries.
         if (!template.placeInWorld(level, origin, origin,
                 new StructurePlaceSettings(), RandomSource.create(), 3)) {
@@ -112,6 +119,12 @@ public final class WatchtowerPlacementCommands {
         String runeId = BuiltInRegistries.BLOCK.getKey(level.getBlockState(origin.offset(7, 5, 6)).getBlock()).toString();
         String wallId = BuiltInRegistries.BLOCK.getKey(level.getBlockState(origin.offset(4, 5, 4)).getBlock()).toString();
         String barrelId = BuiltInRegistries.BLOCK.getKey(level.getBlockState(origin.offset(11, 5, 5)).getBlock()).toString();
+        // Finalize only when the tower, bridge, foundations and rune exist.
+        if (!level.getBlockState(origin.offset(7, 5, 6)).is(MkmBlocks.RUNE_SLATE)) {
+            return reject(source, "Rune missing after template placement; site remains pending");
+        }
+        level.setAttached(WatchtowerAttachments.SITES,
+                level.getAttachedOrCreate(WatchtowerAttachments.SITES).finish(origin));
         source.sendSuccess(() -> Component.literal(
                 "MKM: watchtower " + variant + " placed at " + origin
                         + "; all target blocks were air before placement"
