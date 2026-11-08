@@ -62,9 +62,16 @@ public final class CombatModeService {
         Session s = SESSIONS.computeIfAbsent(player, ignored -> new Session());
         if (s.world != null && s.world != player.level()) {
             s.state = new CombatModeRules.State();
+            // The world's gameTime may jump backwards after a dimension switch;
+            // per-tick budget and toggle clock belong to that previous world.
+            s.budget = new CombatPacketBudget.State();
+            s.nextToggleTick = 0L;
             sendStatus(player, false);
             s.riposteUntil = 0L;
             s.resolving = CombatModeRules.Strike.NONE;
+            s.hitConfirmed = false;
+            s.confirmedDamage = 0F;
+            s.expectedTargetId = -1;
         }
         s.world = player.level();
         return s;
