@@ -64,6 +64,11 @@ public final class CombatModeClient {
         queued = false;
     }
 
+    /** The vanilla continuing-mining loop must not run during an entity-only hold. */
+    public static boolean isHoldingEntityStrike() {
+        return enabled && holding;
+    }
+
     /** Called by Minecraft.startAttack at HEAD; true ONLY when vanilla LMB is suppressed. */
     public static boolean interceptAttack(Minecraft client) {
         if (!enabled || client.player == null || client.level == null) return false;

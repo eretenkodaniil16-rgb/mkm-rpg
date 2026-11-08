@@ -21,6 +21,8 @@ assert "client.player.attack(" not in client
 assert ".hurt(" not in client
 assert "client.player.attack(" not in mixin
 assert "method = \"startAttack\"" in mixin
+assert 'method = "continueAttack"' in mixin
+assert "CombatModeClient.isHoldingEntityStrike()" in mixin
 assert service.count("player.attack(victim);") == 1
 assert "player.attack(victim);" not in events
 assert service.count("s.hitConfirmed = true;") == 1
